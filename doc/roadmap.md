@@ -1,0 +1,424 @@
+# 🗺️ Roadmap - Simulateur kubectl
+
+## 📊 État actuel du projet
+
+### ✅ Déjà configuré
+- [x] Vite + build setup
+- [x] TypeScript avec strict mode
+- [x] Tailwind CSS 4 + DaisyUI
+- [x] Vitest installé
+- [x] Scripts npm (dev, build, test, preview)
+- [x] .gitignore configuré
+
+### ✅ Nouvellement configuré
+- [x] Installation @xterm/xterm
+- [x] Configuration Vitest (vitest.config.ts)
+- [x] Test exemple validé (tests/example.test.ts)
+- [x] Nettoyage des fichiers boilerplate Vite
+
+### ❌ À faire
+- [ ] Structure des dossiers src/
+- [ ] Configuration thème dark DaisyUI
+- [ ] HTML + CSS pour le terminal
+- [ ] Implémentation du core
+
+---
+
+## 🎯 Sprint 1 : Foundation (Setup Terminal)
+
+### Objectif
+Terminal xterm.js fonctionnel, centré, avec thème dark et saisie basique
+
+### Tâches
+
+#### 1.1 - Dépendances manquantes ✅
+- [x] `npm install @xterm/xterm`
+- [x] Vérifier que `@types/node` n'est pas nécessaire (web only)
+
+#### 1.2 - Configuration Vitest ✅
+- [x] Créer `vitest.config.ts` avec config
+- [x] Environment `node` (jsdom uniquement si besoin)
+- [x] Créer un test exemple pour valider le setup (`tests/example.test.ts`)
+- [x] Tests passent (2/2 ✓)
+
+#### 1.3 - Nettoyage boilerplate ✅
+- [x] Supprimer `src/counter.ts`
+- [x] Supprimer `src/typescript.svg`
+- [x] Supprimer `public/vite.svg`
+- [x] Nettoyer `src/main.ts`
+
+#### 1.4 - Structure des dossiers
+```
+src/
+├── core/
+│   ├── cluster/
+│   │   ├── ClusterState.ts
+│   │   └── models/
+│   ├── commands/
+│   │   └── handlers/
+│   └── storage/
+├── terminal/
+├── styles/
+│   ├── main.css (import de style.css)
+│   └── terminal.css (BEM pour terminal)
+└── utils/
+tests/
+└── unit/
+```
+
+#### 1.5 - HTML + CSS Terminal
+- [ ] Modifier `index.html` : structure BEM pour terminal
+- [ ] Créer `src/styles/terminal.css` avec classes BEM
+- [ ] Configurer thème dark dans `src/style.css` (data-theme="dark")
+- [ ] Centrer le terminal (flexbox/grid)
+
+#### 1.6 - TerminalManager (TDD)
+- [ ] Créer `tests/unit/terminal/TerminalManager.test.ts`
+- [ ] Créer `src/terminal/TerminalManager.ts`
+  - Initialiser xterm
+  - Gérer le prompt
+  - Capturer les inputs
+  - Émettre les commandes saisies
+- [ ] Tests : init, write, onCommand callback
+
+#### 1.7 - Intégration dans main.ts
+- [ ] Instancier TerminalManager
+- [ ] Connecter au DOM
+- [ ] Test manuel : pouvoir taper et voir le texte
+
+**Définition de Done Sprint 1:**
+- Terminal visible, centré, thème dark
+- Peut saisir du texte
+- Affiche un prompt `kubectl> `
+- Presse Entrée → détecte la commande
+- Tests passent (`npm test`)
+
+---
+
+## 🎯 Sprint 2 : Cluster State + Models
+
+### Objectif
+Modèle de données du cluster avec données seed et persistance
+
+### Tâches
+
+#### 2.1 - Models Kubernetes (TDD)
+- [ ] `tests/unit/core/cluster/models/Pod.test.ts`
+- [ ] `src/core/cluster/models/Pod.ts`
+  - Interface Pod (selon spec.md)
+  - Factory function `createPod()`
+  - Validation basique
+- [ ] Répéter pour `Deployment.ts`
+- [ ] Répéter pour `Service.ts`
+- [ ] Répéter pour `Namespace.ts`
+
+#### 2.2 - ClusterState (TDD)
+- [ ] `tests/unit/core/cluster/ClusterState.test.ts`
+- [ ] `src/core/cluster/ClusterState.ts`
+  - Interface ClusterState
+  - Classe avec getters pour pods, deployments, services, namespaces
+  - Méthode `addPod()`, `removePod()`, `getPod(name, namespace)`
+  - Méthode `addDeployment()`, etc.
+  - Méthode `toJSON()` / `fromJSON()` pour sérialisation
+
+#### 2.3 - Seed Data
+- [ ] `src/core/cluster/seedCluster.ts`
+  - Fonction `createSeedCluster(): ClusterState`
+  - Namespaces: default, kube-system
+  - 3-4 Pods (nginx, redis, postgres dans default)
+  - 1-2 Deployments
+  - 1-2 Services
+- [ ] Tests pour vérifier la cohérence des données seed
+
+#### 2.4 - StorageAdapter (TDD)
+- [ ] `tests/unit/core/storage/StorageAdapter.test.ts`
+- [ ] `src/core/storage/StorageAdapter.ts`
+  - Interface `StorageAdapter` (save, load, clear)
+  - Implémentation `LocalStorageAdapter`
+  - Gestion des erreurs (quota exceeded, etc.)
+- [ ] Mock localStorage pour les tests
+
+**Définition de Done Sprint 2:**
+- Modèles Pod, Deployment, Service, Namespace définis
+- ClusterState peut gérer CRUD sur ces ressources
+- Seed cluster génère des données initiales valides
+- Persistance localStorage fonctionne
+- Couverture tests > 90%
+
+---
+
+## 🎯 Sprint 3 : Command Parser + Executor
+
+### Objectif
+Interpréter et router les commandes kubectl basiques
+
+### Tâches
+
+#### 3.1 - CommandParser (TDD)
+- [ ] `tests/unit/core/commands/CommandParser.test.ts`
+- [ ] `src/core/commands/CommandParser.ts`
+  - Parse `kubectl get pods`
+  - Parse `kubectl get pods -n namespace`
+  - Parse `kubectl get deployments`
+  - Parse `kubectl describe pod name`
+  - Parse `kubectl delete pod name`
+  - Retourne objet `{ action, resource, name?, flags? }`
+  - Gestion erreurs de syntaxe
+
+#### 3.2 - CommandExecutor (TDD)
+- [ ] `tests/unit/core/commands/CommandExecutor.test.ts`
+- [ ] `src/core/commands/CommandExecutor.ts`
+  - Prend ClusterState en dépendance
+  - Méthode `execute(parsedCommand): string`
+  - Route vers les handlers appropriés
+  - Retourne l'output formaté
+  - Gestion des erreurs (commande inconnue, etc.)
+
+#### 3.3 - Handler Interface
+- [ ] `src/core/commands/handlers/CommandHandler.ts` (interface)
+  - Méthode `handle(state, params): string`
+  - Type pour les params
+
+**Définition de Done Sprint 3:**
+- Parser reconnaît toutes les commandes prioritaires
+- Executor route correctement vers les handlers
+- Tests couvrent cas nominaux + erreurs
+- Commandes invalides → messages d'erreur clairs
+
+---
+
+## 🎯 Sprint 4 : Get Handlers + Output Formatting
+
+### Objectif
+Implémenter `kubectl get` avec formatage tableau
+
+### Tâches
+
+#### 4.1 - OutputFormatter / TableFormatter (TDD)
+- [ ] `tests/unit/utils/table-formatter.test.ts`
+- [ ] `src/utils/table-formatter.ts`
+  - Fonction `formatTable(headers, rows): string`
+  - Calcul largeur colonnes
+  - Alignement
+  - Format ASCII art (comme kubectl)
+  - Support couleurs ANSI (optionnel phase 1)
+
+#### 4.2 - GetPodsHandler (TDD)
+- [ ] `tests/unit/core/commands/handlers/GetHandler.test.ts`
+- [ ] `src/core/commands/handlers/GetHandler.ts`
+  - `handleGetPods(state, namespace?)`
+  - Récupère pods depuis ClusterState
+  - Filtre par namespace si fourni
+  - Formate en tableau : NAME | READY | STATUS | RESTARTS | AGE
+  - Calcul de AGE depuis creationTimestamp
+
+#### 4.3 - GetDeploymentsHandler
+- [ ] Handler pour `kubectl get deployments`
+- [ ] Format: NAME | READY | UP-TO-DATE | AVAILABLE | AGE
+
+#### 4.4 - GetServicesHandler
+- [ ] Handler pour `kubectl get services`
+- [ ] Format: NAME | TYPE | CLUSTER-IP | EXTERNAL-IP | PORT(S) | AGE
+
+#### 4.5 - GetNamespacesHandler
+- [ ] Handler pour `kubectl get namespaces`
+- [ ] Format: NAME | STATUS | AGE
+
+**Définition de Done Sprint 4:**
+- `kubectl get pods` affiche tableau formaté
+- `kubectl get pods -n kube-system` filtre correctement
+- Tous les `get` handlers implémentés
+- Output ressemble à kubectl réel
+- Tests validés
+
+---
+
+## 🎯 Sprint 5 : Describe + Delete Handlers
+
+### Objectif
+Implémenter `kubectl describe` et `kubectl delete`
+
+### Tâches
+
+#### 5.1 - DescribeHandler (TDD)
+- [ ] `tests/unit/core/commands/handlers/DescribeHandler.test.ts`
+- [ ] `src/core/commands/handlers/DescribeHandler.ts`
+  - `handleDescribePod(state, name, namespace)`
+  - Format multi-lignes avec détails :
+    - Name, Namespace, Labels
+    - Status, IP
+    - Containers (name, image, ports)
+    - Events (si implémenté)
+  - Erreur si pod non trouvé
+
+#### 5.2 - DeleteHandler (TDD)
+- [ ] `tests/unit/core/commands/handlers/DeleteHandler.test.ts`
+- [ ] `src/core/commands/handlers/DeleteHandler.ts`
+  - `handleDeletePod(state, name, namespace)`
+  - Supprime du ClusterState
+  - Message de confirmation : `pod "name" deleted`
+  - Erreur si pod non trouvé
+
+#### 5.3 - Intégration avec Storage
+- [ ] Après delete → sauvegarder dans localStorage
+- [ ] Test: delete + reload → pod toujours supprimé
+
+**Définition de Done Sprint 5:**
+- `kubectl describe pod nginx` affiche détails complets
+- `kubectl delete pod nginx` supprime le pod
+- Persistance fonctionne après delete
+- Messages d'erreur clairs
+
+---
+
+## 🎯 Sprint 6 : Intégration Finale + Polish
+
+### Objectif
+Connecter tous les modules et finaliser le MVP
+
+### Tâches
+
+#### 6.1 - Intégration complète
+- [ ] `src/main.ts` : 
+  - Initialiser ClusterState (charger depuis storage ou seed)
+  - Initialiser CommandParser
+  - Initialiser CommandExecutor
+  - Initialiser TerminalManager
+  - Connecter: Terminal → Parser → Executor → Terminal output
+- [ ] Tests d'intégration end-to-end
+
+#### 6.2 - Gestion des erreurs
+- [ ] Commande inconnue → message d'aide
+- [ ] Ressource non trouvée → erreur claire
+- [ ] Syntaxe invalide → suggestion
+- [ ] Namespace inexistant → erreur
+
+#### 6.3 - Commandes utilitaires
+- [ ] `clear` → efface le terminal
+- [ ] `help` → liste des commandes disponibles
+- [ ] `reset` → réinitialise le cluster au seed
+
+#### 6.4 - Polish UI
+- [ ] Vérifier responsive (mobile/tablet)
+- [ ] Ajuster couleurs (status: green=Running, red=Failed)
+- [ ] Favicon personnalisé
+- [ ] Title de la page
+
+#### 6.5 - Documentation
+- [ ] README.md avec :
+  - Screenshot
+  - Commandes disponibles
+  - How to run
+  - How to test
+  - Architecture overview
+
+#### 6.6 - Tests finaux
+- [ ] Couverture globale > 80%
+- [ ] Tous les tests passent
+- [ ] Tester manuellement tous les flows
+
+**Définition de Done Sprint 6:**
+- Application complète fonctionne end-to-end
+- Peut lister, décrire, supprimer des ressources
+- Persistance fonctionne parfaitement
+- UI propre et responsive
+- Documentation complète
+- Prêt pour déploiement
+
+---
+
+## 🚀 Phase 2 (Post-MVP) - Futures améliorations
+
+### P2.1 - Enhanced Terminal
+- [ ] Historique commandes (↑↓)
+- [ ] Autocomplétion (Tab)
+- [ ] Ctrl+C pour annuler
+
+### P2.2 - YAML Support
+- [ ] Parser YAML (js-yaml ou custom)
+- [ ] `kubectl create -f pod.yaml`
+- [ ] `kubectl apply -f deployment.yaml`
+- [ ] Éditeur YAML inline ?
+
+### P2.3 - Dynamic Controllers
+- [ ] DeploymentController → crée/supprime pods
+- [ ] ReplicaSet support
+- [ ] Pod restart simulation
+- [ ] Events logging
+
+### P2.4 - Advanced Features
+- [ ] `kubectl logs pod-name`
+- [ ] `kubectl exec -it pod-name -- /bin/bash` (shell simulé)
+- [ ] `kubectl port-forward`
+- [ ] Node simulation
+
+### P2.5 - Learning Mode
+- [ ] Challenges guidés
+- [ ] Scenarios (debug un pod crashé, scale un deployment)
+- [ ] Achievements/badges
+- [ ] Tips contextuels
+
+### P2.6 - UI Enhancement
+- [ ] Sidebar avec vue graphique du cluster
+- [ ] Graphes de métriques simulées
+- [ ] Dark/Light theme toggle
+- [ ] Export/import cluster state
+
+---
+
+## 📈 Métriques de succès
+
+### Sprint 1
+- [ ] Terminal s'affiche correctement
+- [ ] Tests passent
+- [ ] ~200 lignes de code
+
+### Sprint 2
+- [ ] Couverture tests > 90%
+- [ ] Seed cluster a 10+ ressources
+
+### Sprint 3-4
+- [ ] 4+ commandes fonctionnelles
+- [ ] Output formaté proprement
+
+### Sprint 5-6
+- [ ] MVP complet utilisable
+- [ ] Documentation existe
+- [ ] Déployable
+
+---
+
+## 🔄 Workflow de développement
+
+Pour chaque feature:
+1. **RED** : Écrire le test (qui échoue)
+2. **GREEN** : Implémenter le minimum pour passer le test
+3. **REFACTOR** : Nettoyer le code
+4. **COMMIT** : Commit avec message clair
+5. **REPEAT** : Feature suivante
+
+### Commandes utiles
+```bash
+npm run dev        # Lancer le dev server
+npm test          # Lancer tous les tests
+npm test -- --ui  # UI vitest (si installé)
+npm run build     # Build production
+```
+
+---
+
+## 🎯 Priorités actuelles
+
+### À faire immédiatement (Sprint 1)
+1. Installer @xterm/xterm
+2. Configurer vitest dans vite.config.js
+3. Créer la structure des dossiers
+4. Nettoyer le boilerplate
+5. Implémenter TerminalManager (TDD)
+
+### Questions en suspens
+- [ ] Couleurs ANSI dans terminal (phase 1 ou 2?)
+- [ ] Format de date pour AGE (relative comme kubectl?)
+- [ ] Support de `kubectl get all` en phase 1?
+
+
