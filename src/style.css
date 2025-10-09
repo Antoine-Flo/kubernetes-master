@@ -1,2 +1,7 @@
 @import "tailwindcss";
 @plugin "daisyui";
+@import "@xterm/xterm/css/xterm.css";
+
+.xterm {
+    padding: 1rem;
+}

@@ -16,15 +16,22 @@
 - [x] Test exemple validé (tests/example.test.ts)
 - [x] Nettoyage des fichiers boilerplate Vite
 
+### ✅ Sprint 1 - Terminé
+- [x] Structure des dossiers src/ (feature-based: kubectl/cluster/terminal)
+- [x] Configuration thème dark DaisyUI + Tailwind
+- [x] HTML + CSS pour le terminal
+- [x] TerminalManager avec TDD (7 tests passent)
+- [x] Intégration dans main.ts
+- [x] jsdom + mocks pour tests
+- [x] Refactoring en programmation fonctionnelle (factory function + closures)
+- [x] Amélioration UX terminal (focus auto, prompt correct)
+
 ### ❌ À faire
-- [ ] Structure des dossiers src/
-- [ ] Configuration thème dark DaisyUI
-- [ ] HTML + CSS pour le terminal
-- [ ] Implémentation du core
+- [ ] Implémentation du core (Sprint 2+)
 
 ---
 
-## 🎯 Sprint 1 : Foundation (Setup Terminal)
+## 🎯 Sprint 1 : Foundation (Setup Terminal) ✅ TERMINÉ
 
 ### Objectif
 Terminal xterm.js fonctionnel, centré, avec thème dark et saisie basique
@@ -33,11 +40,13 @@ Terminal xterm.js fonctionnel, centré, avec thème dark et saisie basique
 
 #### 1.1 - Dépendances manquantes ✅
 - [x] `npm install @xterm/xterm`
+- [x] `npm install --save-dev jsdom`
 - [x] Vérifier que `@types/node` n'est pas nécessaire (web only)
 
 #### 1.2 - Configuration Vitest ✅
 - [x] Créer `vitest.config.ts` avec config
-- [x] Environment `node` (jsdom uniquement si besoin)
+- [x] Environment jsdom
+- [x] Setup file pour mocks (matchMedia, ResizeObserver)
 - [x] Créer un test exemple pour valider le setup (`tests/example.test.ts`)
 - [x] Tests passent (2/2 ✓)
 
@@ -47,51 +56,75 @@ Terminal xterm.js fonctionnel, centré, avec thème dark et saisie basique
 - [x] Supprimer `public/vite.svg`
 - [x] Nettoyer `src/main.ts`
 
-#### 1.4 - Structure des dossiers
+#### 1.4 - Structure des dossiers ✅
 ```
 src/
-├── core/
-│   ├── cluster/
-│   │   ├── ClusterState.ts
-│   │   └── models/
+├── kubectl/           # Feature: kubectl command simulation
 │   ├── commands/
 │   │   └── handlers/
+│   └── formatters/
+├── cluster/           # Feature: K8s cluster state
+│   ├── models/
 │   └── storage/
-├── terminal/
-├── styles/
-│   ├── main.css (import de style.css)
-│   └── terminal.css (BEM pour terminal)
-└── utils/
+├── terminal/          # Feature: Terminal UI
+│   └── TerminalManager.ts
+└── main.ts
 tests/
 └── unit/
+    ├── terminal/
+    │   └── TerminalManager.test.ts
+    ├── kubectl/
+    └── cluster/
 ```
 
-#### 1.5 - HTML + CSS Terminal
-- [ ] Modifier `index.html` : structure BEM pour terminal
-- [ ] Créer `src/styles/terminal.css` avec classes BEM
-- [ ] Configurer thème dark dans `src/style.css` (data-theme="dark")
-- [ ] Centrer le terminal (flexbox/grid)
+#### 1.5 - HTML + CSS Terminal ✅
+- [x] Modifier `index.html` : Tailwind utility classes
+- [x] Pas de CSS BEM (utilisation de Tailwind/daisyUI)
+- [x] Configurer thème dark dans HTML (data-theme="dark")
+- [x] Centrer le terminal (flexbox)
+- [x] Import xterm.css dans style.css
 
-#### 1.6 - TerminalManager (TDD)
-- [ ] Créer `tests/unit/terminal/TerminalManager.test.ts`
-- [ ] Créer `src/terminal/TerminalManager.ts`
+#### 1.6 - TerminalManager (TDD) ✅
+- [x] Créer `tests/unit/terminal/TerminalManager.test.ts` (7 tests)
+- [x] Créer `src/terminal/TerminalManager.ts` (functional style)
+  - Factory function `createTerminalManager()` au lieu de classe
+  - Closures pour encapsuler l'état (currentLine, commandCallback)
   - Initialiser xterm
-  - Gérer le prompt
-  - Capturer les inputs
+  - Gérer le prompt `kubectl> `
+  - Capturer les inputs character-by-character
   - Émettre les commandes saisies
-- [ ] Tests : init, write, onCommand callback
+  - Handle backspace
+  - Handle Enter key
+- [x] Tous les tests passent (9/9)
 
-#### 1.7 - Intégration dans main.ts
-- [ ] Instancier TerminalManager
-- [ ] Connecter au DOM
-- [ ] Test manuel : pouvoir taper et voir le texte
+#### 1.7 - Intégration dans main.ts ✅
+- [x] Instancier TerminalManager
+- [x] Connecter au DOM
+- [x] Afficher message de bienvenue
+- [x] Logger les commandes en console
 
-**Définition de Done Sprint 1:**
-- Terminal visible, centré, thème dark
-- Peut saisir du texte
-- Affiche un prompt `kubectl> `
-- Presse Entrée → détecte la commande
-- Tests passent (`npm test`)
+#### 1.8 - Refactoring Functional Programming ✅
+- [x] Convertir TerminalManager de classe à factory function
+- [x] Utiliser closures pour l'état privé (pas de `this`)
+- [x] API publique retournée comme objet avec fonctions
+- [x] Tous les tests adaptés et passent
+
+#### 1.9 - Améliorations UX Terminal ✅
+- [x] Prompt affiché après message de bienvenue (pas avant)
+- [x] Focus automatique sur le terminal au chargement
+- [x] Correction saut de ligne en trop
+- [x] API publique étendue (showPrompt, focus)
+- [x] Configuration terminal améliorée (scrollback: 1000, rows: 24)
+
+**Définition de Done Sprint 1:** ✅
+- [x] Terminal visible, centré, thème dark
+- [x] Peut saisir du texte
+- [x] Affiche un prompt `kubectl> `
+- [x] Prompt affiché au bon moment avec cursor positionné
+- [x] Presse Entrée → détecte la commande
+- [x] Tests passent (`npm test` - 9/9)
+- [x] Code en programmation fonctionnelle (factory functions, pas de classes)
+- [x] Focus automatique et UX optimale
 
 ---
 
@@ -103,27 +136,28 @@ Modèle de données du cluster avec données seed et persistance
 ### Tâches
 
 #### 2.1 - Models Kubernetes (TDD)
-- [ ] `tests/unit/core/cluster/models/Pod.test.ts`
-- [ ] `src/core/cluster/models/Pod.ts`
+- [ ] `tests/unit/cluster/models/Pod.test.ts`
+- [ ] `src/cluster/models/Pod.ts`
   - Interface Pod (selon spec.md)
-  - Factory function `createPod()`
+  - Factory function `createPod()` (functional)
   - Validation basique
 - [ ] Répéter pour `Deployment.ts`
 - [ ] Répéter pour `Service.ts`
 - [ ] Répéter pour `Namespace.ts`
 
 #### 2.2 - ClusterState (TDD)
-- [ ] `tests/unit/core/cluster/ClusterState.test.ts`
-- [ ] `src/core/cluster/ClusterState.ts`
+- [ ] `tests/unit/cluster/ClusterState.test.ts`
+- [ ] `src/cluster/ClusterState.ts`
   - Interface ClusterState
-  - Classe avec getters pour pods, deployments, services, namespaces
-  - Méthode `addPod()`, `removePod()`, `getPod(name, namespace)`
-  - Méthode `addDeployment()`, etc.
-  - Méthode `toJSON()` / `fromJSON()` pour sérialisation
+  - Factory function `createClusterState()` (functional, pas de classe)
+  - Fonctions pures pour CRUD: `addPod()`, `removePod()`, `getPod(name, namespace)`
+  - Fonctions `addDeployment()`, etc.
+  - Fonctions `toJSON()` / `fromJSON()` pour sérialisation
+  - Utiliser closures ou retourner nouvel état (immutabilité)
 
 #### 2.3 - Seed Data
-- [ ] `src/core/cluster/seedCluster.ts`
-  - Fonction `createSeedCluster(): ClusterState`
+- [ ] `src/cluster/seedCluster.ts`
+  - Fonction pure `createSeedCluster(): ClusterState`
   - Namespaces: default, kube-system
   - 3-4 Pods (nginx, redis, postgres dans default)
   - 1-2 Deployments
@@ -131,10 +165,10 @@ Modèle de données du cluster avec données seed et persistance
 - [ ] Tests pour vérifier la cohérence des données seed
 
 #### 2.4 - StorageAdapter (TDD)
-- [ ] `tests/unit/core/storage/StorageAdapter.test.ts`
-- [ ] `src/core/storage/StorageAdapter.ts`
-  - Interface `StorageAdapter` (save, load, clear)
-  - Implémentation `LocalStorageAdapter`
+- [ ] `tests/unit/cluster/storage/StorageAdapter.test.ts`
+- [ ] `src/cluster/storage/StorageAdapter.ts`
+  - Factory function `createLocalStorageAdapter()`
+  - Fonctions: save, load, clear (functional style)
   - Gestion des erreurs (quota exceeded, etc.)
 - [ ] Mock localStorage pour les tests
 
@@ -155,8 +189,9 @@ Interpréter et router les commandes kubectl basiques
 ### Tâches
 
 #### 3.1 - CommandParser (TDD)
-- [ ] `tests/unit/core/commands/CommandParser.test.ts`
-- [ ] `src/core/commands/CommandParser.ts`
+- [ ] `tests/unit/kubectl/commands/parser.test.ts`
+- [ ] `src/kubectl/commands/parser.ts`
+  - Fonction pure `parseCommand(input: string)`
   - Parse `kubectl get pods`
   - Parse `kubectl get pods -n namespace`
   - Parse `kubectl get deployments`
@@ -166,18 +201,19 @@ Interpréter et router les commandes kubectl basiques
   - Gestion erreurs de syntaxe
 
 #### 3.2 - CommandExecutor (TDD)
-- [ ] `tests/unit/core/commands/CommandExecutor.test.ts`
-- [ ] `src/core/commands/CommandExecutor.ts`
-  - Prend ClusterState en dépendance
-  - Méthode `execute(parsedCommand): string`
-  - Route vers les handlers appropriés
+- [ ] `tests/unit/kubectl/commands/executor.test.ts`
+- [ ] `src/kubectl/commands/executor.ts`
+  - Factory function `createCommandExecutor(clusterState)`
+  - Fonction `execute(parsedCommand): string`
+  - Route vers les handlers appropriés (map de fonctions)
   - Retourne l'output formaté
   - Gestion des erreurs (commande inconnue, etc.)
 
-#### 3.3 - Handler Interface
-- [ ] `src/core/commands/handlers/CommandHandler.ts` (interface)
-  - Méthode `handle(state, params): string`
-  - Type pour les params
+#### 3.3 - Handler Functions
+- [ ] `src/kubectl/commands/handlers/` (fonctions pures)
+  - Pas d'interface/classe, juste des fonctions
+  - Type pour les params: `HandlerParams`
+  - Chaque handler: `(state, params) => string`
 
 **Définition de Done Sprint 3:**
 - Parser reconnaît toutes les commandes prioritaires
@@ -195,22 +231,22 @@ Implémenter `kubectl get` avec formatage tableau
 ### Tâches
 
 #### 4.1 - OutputFormatter / TableFormatter (TDD)
-- [ ] `tests/unit/utils/table-formatter.test.ts`
-- [ ] `src/utils/table-formatter.ts`
-  - Fonction `formatTable(headers, rows): string`
-  - Calcul largeur colonnes
+- [ ] `tests/unit/kubectl/formatters/table-formatter.test.ts`
+- [ ] `src/kubectl/formatters/table-formatter.ts`
+  - Fonction pure `formatTable(headers, rows): string`
+  - Calcul largeur colonnes (fonctions utilitaires)
   - Alignement
   - Format ASCII art (comme kubectl)
   - Support couleurs ANSI (optionnel phase 1)
 
 #### 4.2 - GetPodsHandler (TDD)
-- [ ] `tests/unit/core/commands/handlers/GetHandler.test.ts`
-- [ ] `src/core/commands/handlers/GetHandler.ts`
-  - `handleGetPods(state, namespace?)`
-  - Récupère pods depuis ClusterState
-  - Filtre par namespace si fourni
+- [ ] `tests/unit/kubectl/commands/handlers/get.test.ts`
+- [ ] `src/kubectl/commands/handlers/get.ts`
+  - Fonction pure `handleGetPods(state, namespace?): string`
+  - Récupère pods depuis ClusterState (immutable)
+  - Filtre par namespace si fourni (filter/map)
   - Formate en tableau : NAME | READY | STATUS | RESTARTS | AGE
-  - Calcul de AGE depuis creationTimestamp
+  - Calcul de AGE depuis creationTimestamp (fonction utilitaire)
 
 #### 4.3 - GetDeploymentsHandler
 - [ ] Handler pour `kubectl get deployments`

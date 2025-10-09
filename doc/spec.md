@@ -37,6 +37,7 @@ Application web interactive permettant de s'entraîner aux commandes `kubectl` v
 ### Principes architecturaux [[memory:6873972]]
 - **KISS** : Keep It Simple, Stupid
 - **DRY** : Don't Repeat Yourself
+- **Functional Programming** : Éviter les classes, préférer les fonctions pures et les closures
 - **Clean Architecture** : Séparation des responsabilités
 - **Découplage** : Modules indépendants et testables
 - **Indentation max** : 3 niveaux [[memory:7046752]]
@@ -46,36 +47,31 @@ Application web interactive permettant de s'entraîner aux commandes `kubectl` v
 
 ```
 src/
-├── core/
-│   ├── cluster/
-│   │   ├── ClusterState.ts        # État du cluster
-│   │   ├── ResourceManager.ts     # Gestion CRUD des ressources
-│   │   └── models/                # Modèles de ressources K8s
-│   │       ├── Pod.ts
-│   │       ├── Deployment.ts
-│   │       ├── Service.ts
-│   │       └── Namespace.ts
+├── kubectl/                       # Feature: kubectl simulation
 │   ├── commands/
-│   │   ├── CommandParser.ts       # Parse les commandes kubectl
-│   │   ├── CommandExecutor.ts     # Exécute les commandes
-│   │   └── handlers/              # Handlers par commande
-│   │       ├── GetHandler.ts
-│   │       ├── DescribeHandler.ts
-│   │       ├── DeleteHandler.ts
-│   │       ├── CreateHandler.ts
-│   │       └── ApplyHandler.ts
+│   │   ├── parser.ts              # Parse les commandes kubectl (fonction pure)
+│   │   ├── executor.ts            # Exécute les commandes (factory function)
+│   │   └── handlers/              # Handlers par commande (fonctions pures)
+│   │       ├── get.ts
+│   │       ├── describe.ts
+│   │       ├── delete.ts
+│   │       ├── create.ts
+│   │       └── apply.ts
+│   └── formatters/
+│       └── table-formatter.ts     # Format output en tables (fonction pure)
+├── cluster/                       # Feature: cluster K8s
+│   ├── ClusterState.ts            # État du cluster (factory function)
+│   ├── models/                    # Modèles de ressources K8s
+│   │   ├── Pod.ts                 # Factory functions
+│   │   ├── Deployment.ts
+│   │   ├── Service.ts
+│   │   └── Namespace.ts
+│   ├── seedCluster.ts             # Données initiales (fonction pure)
 │   └── storage/
-│       └── StorageAdapter.ts      # Abstraction persistance
+│       └── adapter.ts             # Abstraction persistance (factory function)
 ├── terminal/
-│   ├── TerminalManager.ts         # Gestion xterm.js
-│   └── OutputFormatter.ts         # Formatage output kubectl
-├── ui/
-│   └── styles/                    # CSS BEM
-│       ├── terminal.css
-│       └── layout.css
-└── utils/
-    ├── yaml-parser.ts             # Parse YAML pour kubectl apply
-    └── table-formatter.ts         # Format output en tables
+│   └── TerminalManager.ts         # Gestion xterm.js (factory function)
+└── main.ts                        # Point d'entrée
 ```
 
 ---
@@ -116,6 +112,22 @@ interface Pod {
     containerStatuses?: ContainerStatus[]
   }
 }
+
+// Factory function (functional programming)
+const createPod = (name: string, namespace: string, containers: Container[]): Pod => ({
+  apiVersion: "v1",
+  kind: "Pod",
+  metadata: {
+    name,
+    namespace,
+    creationTimestamp: new Date().toISOString()
+  },
+  spec: { containers },
+  status: {
+    phase: "Pending",
+    restartCount: 0
+  }
+})
 ```
 
 ---
@@ -152,15 +164,32 @@ Cluster pré-peuplé avec :
 ### Layout
 - Terminal centré horizontalement et verticalement
 - Largeur responsive (max-width pour lisibilité)
-- Theme daisyUI [[memory:7046767]]
-- Possibilité de fullscreen (?)
+- Theme daisyUI dark [[memory:7046767]]
+- Tailwind CSS utility classes (pas de BEM)
 
-### CSS BEM
-```
-.terminal
-.terminal__container
-.terminal__header
-.terminal__output
+### Exemple d'implémentation fonctionnelle
+
+```typescript
+// Terminal: Factory function avec closures
+export const createTerminalManager = (container: HTMLElement) => {
+  const terminal = new Terminal({ /* config */ })
+  let currentLine = ''
+  let commandCallback: ((cmd: string) => void) | undefined
+  
+  const handleInput = (data: string) => {
+    // Logic...
+  }
+  
+  terminal.open(container)
+  terminal.onData(handleInput)
+  
+  return {
+    write: (text: string) => terminal.write(text),
+    onCommand: (cb) => { commandCallback = cb },
+    showPrompt: () => terminal.write('kubectl> '),
+    focus: () => terminal.focus()
+  }
+}
 ```
 
 ---
@@ -169,6 +198,7 @@ Cluster pré-peuplé avec :
 
 ### Framework de tests
 - **Vitest** : Intégration native avec Vite, TypeScript support
+- **jsdom** : Pour tester les interactions DOM (terminal)
 
 ### Couverture souhaitée
 - **Parseur de commandes** : 100%
@@ -177,9 +207,40 @@ Cluster pré-peuplé avec :
 - **Formatage output** : 80%+
 
 ### Types de tests
-- Tests unitaires pour chaque module
+- Tests unitaires pour chaque module (fonctions pures = faciles à tester)
 - Tests d'intégration pour les flux complets
 - Tests de snapshot pour l'output formaté (?)
+
+### Exemple de test fonctionnel
+
+```typescript
+// Fonction pure = test simple
+describe('parseCommand', () => {
+  it('should parse get pods command', () => {
+    const result = parseCommand('kubectl get pods')
+    expect(result).toEqual({
+      action: 'get',
+      resource: 'pods',
+      name: undefined,
+      flags: {}
+    })
+  })
+})
+
+// Factory function = test avec setup
+describe('createTerminalManager', () => {
+  it('should handle commands', () => {
+    const container = document.createElement('div')
+    const terminal = createTerminalManager(container)
+    const callback = vi.fn()
+    
+    terminal.onCommand(callback)
+    terminal.simulateInput('test\r')
+    
+    expect(callback).toHaveBeenCalledWith('test')
+  })
+})
+```
 
 ---
 
