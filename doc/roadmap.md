@@ -8,9 +8,18 @@
   - Architecture validée: Pure functions + Closure-based facade
   - Seed cluster avec 4 pods réalistes
   - 52 tests total passent
+- **Sprint 3.1 (Parser Utilities)**: Parser kubectl avec validation + aliases (33 tests ✓)
+  - Pure functions pour parsing de commandes
+  - Support actions: get, describe, delete, apply, create
+  - Support resources: pods, deployments, services, namespaces
+  - Support aliases kubectl: po, deploy, svc, ns
+  - Parser flags avec validation complète
+  - Architecture flexible d'aliases (canonical → list of aliases)
+  - 83 tests total passent
 
 ### 🔄 En cours
 - Sprint 3: Command Parser + Executor (kubectl)
+  - ✅ 3.1 - Parsing Utilities (33 tests + aliases kubectl)
 
 ### 📋 À venir
 - Sprint 4: FileSystem + Shell Commands
@@ -61,13 +70,13 @@
 
 **Tâches**:
 
-### 3.1 - Parsing Utilities (TDD)
-- [ ] `src/kubectl/commands/parser.ts` - Fonctions pures de parsing
+### 3.1 - Parsing Utilities (TDD) ✅
+- [x] `src/kubectl/commands/parser.ts` - Fonctions pures de parsing
   - `parseCommand(input: string)` → `{ action, resource, name?, flags? }`
   - Parser flags (`-n`, `-o`, etc.)
   - Parser noms de ressources
   - Validation de syntaxe
-- [ ] ~15-20 tests
+- [x] 25 tests (all passing)
 
 ### 3.2 - kubectl Executor (TDD)
 - [ ] `src/kubectl/commands/executor.ts`
@@ -87,6 +96,18 @@
 - Flow end-to-end fonctionne (sans handlers encore)
 
 **Note**: Parsing utilities peuvent être réutilisées pour shell commands (Sprint 4)
+
+**Décisions architecturales (3.1)**:
+- Pure functions pour toutes les opérations de parsing (testabilité maximale)
+- Discriminated unions (type: 'success' | 'error') pour gestion d'erreurs sans exceptions
+- Validation de syntaxe en deux passes: parsing puis validation
+- Support des flags short (-n) et long (--namespace) formats
+- Types TypeScript stricts pour actions et ressources
+- **Architecture d'aliases kubectl**: Canonical resources + alias map
+  - `KUBECTL_RESOURCES`: Canonical name → list of aliases (`pods: ['pods', 'pod', 'po']`)
+  - `RESOURCE_ALIAS_MAP`: Reverse lookup (O(1) access) - any alias → canonical
+  - Flexible: support 1-N aliases par ressource, pas de distinction singulier/pluriel
+  - ParsedCommand utilise toujours la forme canonique (pods, deployments, services, namespaces)
 
 ---
 
@@ -115,18 +136,28 @@
 - [ ] `src/filesystem/seedFileSystem.ts`
   - Structure: `/examples/` avec pod/deployment/service YAML
   - Dossier `/manifests/` vide pour l'utilisateur
+  - **Fichier `/home/.bashrc`** avec aliases shell (k, kgp, kgs, kgd, etc.)
   - Fonction pure `createSeedFileSystem(): FileSystem`
 - [ ] ~8-10 tests
 
-### 4.4 - Shell Parser + Executor (TDD)
+### 4.4 - Bashrc Parser (TDD)
+- [ ] `src/shell/bashrc/parser.ts`
+  - Parse syntax `.bashrc`: `alias k='kubectl'`
+  - Fonction pure `parseBashrc(content: string): Record<string, string>`
+  - Support aliases simples (pas de functions ou scripts complexes)
+- [ ] ~8-10 tests
+
+### 4.5 - Shell Parser + Executor (TDD)
 - [ ] `src/shell/commands/parser.ts` - Réutilise utilities de kubectl parser
-  - Parse: cd, ls, pwd, mkdir, touch, cat, rm, clear, help
+  - Parse: cd, ls, pwd, mkdir, touch, cat, rm, clear, help, source
+  - Support expansion d'aliases depuis `.bashrc`
 - [ ] `src/shell/commands/executor.ts`
-  - Factory `createShellExecutor(fileSystem)`
+  - Factory `createShellExecutor(fileSystem, aliases?)`
   - Route vers handlers
+  - Load `.bashrc` au démarrage
 - [ ] ~15-20 tests
 
-### 4.5 - Shell Handlers (TDD)
+### 4.6 - Shell Handlers (TDD)
 - [ ] `src/shell/commands/handlers/cd.ts` - Change directory
 - [ ] `src/shell/commands/handlers/ls.ts` - List directory (+ formatter)
 - [ ] `src/shell/commands/handlers/pwd.ts` - Print working directory
@@ -134,9 +165,10 @@
 - [ ] `src/shell/commands/handlers/touch.ts` - Create file
 - [ ] `src/shell/commands/handlers/cat.ts` - Read file
 - [ ] `src/shell/commands/handlers/rm.ts` - Remove file/directory
+- [ ] `src/shell/commands/handlers/source.ts` - Reload `.bashrc`
 - [ ] ~30-35 tests
 
-### 4.6 - Command Dispatcher (TDD)
+### 4.7 - Command Dispatcher (TDD)
 - [ ] `src/main.ts` - Dispatcher qui route kubectl vs shell
   - Si commence par "kubectl" → kubectlExecutor
   - Sinon → shellExecutor
@@ -528,7 +560,22 @@ Gamification et finitions pour la learning platform
 - [x] 52 tests total passent
 - [ ] Seed cluster a 10+ ressources (actuellement 4 pods - suffisant pour foundation)
 
-### Sprint 3-4
+### Sprint 3.1 (Parser Utilities) ✅
+- [x] Parser reconnaît syntaxe kubectl basique
+- [x] Support des 5 actions principales (get, describe, delete, apply, create)
+- [x] Support des 4 types de ressources (pods, deployments, services, namespaces)
+- [x] Support des aliases kubectl officiels (po, pod, deploy, svc, ns)
+- [x] Architecture flexible d'aliases (KUBECTL_RESOURCES + reverse map)
+- [x] Parsing de flags avec validation (-n, -o, --namespace, --output, -f, --filename)
+- [x] 33 tests (100% coverage parser)
+- [x] 83 tests total passent
+
+### Sprint 3.2-3.3
+- [ ] Executor fonctionnel
+- [ ] Integration avec Terminal
+- [ ] Flow end-to-end complet
+
+### Sprint 4-5
 - [ ] 4+ commandes fonctionnelles
 - [ ] Output formaté proprement
 
