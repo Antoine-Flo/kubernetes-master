@@ -72,7 +72,22 @@
 - [ ] `src/shell/commands/executor.ts` - Factory `createShellExecutor(fileSystem)`
 - [ ] ~15-20 tests
 
-### 4.5 - Shell Handlers (TDD)
+### 4.5 - Image Registry + Pull Simulation (TDD)
+- [ ] `src/cluster/registry/ImageRegistry.ts`
+  - 7-10 images de base (nginx, redis, postgres, mysql, busybox, broken-app, private-image)
+  - Parser format image: `[registry/]name[:tag]`
+  - Validation stricte (reject images inconnues avec message clair)
+  - ImageManifest: comportement, ports, logGenerator par image
+- [ ] `src/cluster/controllers/ImagePuller.ts`
+  - Pure function `simulateImagePull(imageString): PullResult`
+  - Events de pull (Pulling, Pulled, Created, Started)
+  - Support ImagePullBackOff pour images invalides
+  - Support CrashLoopBackOff pour broken-app
+- [ ] Handler `debug images` - Liste images disponibles dans le registry
+- [ ] UI: Registry panel (liste images + tags disponibles)
+- [ ] ~20-25 tests
+
+### 4.6 - Shell Handlers (TDD)
 - [ ] `src/shell/commands/handlers/cd.ts` - Change directory
 - [ ] `src/shell/commands/handlers/ls.ts` - List directory (+ formatter)
 - [ ] `src/shell/commands/handlers/pwd.ts` - Print working directory
@@ -82,7 +97,17 @@
 - [ ] `src/shell/commands/handlers/rm.ts` - Remove file/directory
 - [ ] ~30-35 tests
 
-### 4.6 - Command Dispatcher (TDD)
+### 4.7 - Application Logger (TDD)
+- [ ] `src/logger/Logger.ts` - Factory `createLogger()`
+  - Log levels: info, warn, error, debug
+  - Categories: COMMAND, EXECUTOR, FILESYSTEM, CLUSTER
+  - In-memory rotation (max 500 entries)
+  - Mirror to console en dev mode
+- [ ] Intégration dans dispatcher, executor, filesystem
+- [ ] Shell command handler `debug` pour afficher/clear logs
+- [ ] ~5-8 tests
+
+### 4.8 - Command Dispatcher (TDD)
 - [ ] `src/main.ts` - Dispatcher qui route kubectl vs shell
   - Si commence par "kubectl" → kubectlExecutor
   - Sinon → shellExecutor
@@ -91,7 +116,11 @@
 
 ### Définition de Done
 - FileSystem fonctionne (création/navigation/lecture)
+- Image Registry avec 7-10 images disponibles
+- Pull simulation avec events (ImagePullBackOff si image inconnue)
 - Commandes shell de base implémentées
+- Logger applicatif intégré (commande `debug`)
+- UI Registry panel visible (liste images disponibles)
 - Prompt s'adapte selon le chemin
 - Max depth (3 niveaux) respecté
 - Tests > 80% coverage
@@ -115,6 +144,7 @@
   - Support tous les types de ressources
   - Filtre par namespace (`-n` flag)
   - Calcul AGE (fonction utilitaire)
+  - Logger les requêtes (application logger)
 - [ ] ~15-20 tests
 
 ### 5.3 - Describe Handler (TDD)
@@ -131,11 +161,28 @@
   - Create/update resource in cluster
 - [ ] ~15-20 tests
 
+### 5.5 - kubectl logs Handler (TDD)
+- [ ] Améliorer Pod model: `status.logs: LogEntry[]`
+- [ ] **Préparer Chaos Hooks** : Ajouter `chaosConfig?: ChaosConfig` dans Pod/Deployment models
+  - Flags pour injection future d'erreurs (crashOnStart, failHealthcheck, etc.)
+  - Structure optionnelle, pas utilisée en MVP mais prête pour Phase 3
+- [ ] `src/kubectl/commands/handlers/logs.ts`
+  - Support `kubectl logs <pod-name>`
+  - Support `kubectl logs <pod-name> -n <namespace>`
+  - Flag `--tail=N` (optionnel MVP)
+- [ ] `src/cluster/models/logGenerator.ts` - Pure functions
+  - `generateNginxLogs()`, `generateRedisLogs()`, etc.
+  - Logs dynamiques basés sur container type + phase
+  - Rotation automatique (max 200 lignes/pod)
+- [ ] ~15-20 tests
+
 ### Définition de Done
 - `kubectl get pods` affiche tableau formaté
 - `kubectl describe pod <name>` affiche détails complets
 - `kubectl delete pod <name>` supprime le pod
 - `kubectl apply -f <path>` crée ressource depuis fichier
+- `kubectl logs <pod-name>` affiche logs simulés
+- Commande `debug` pour logs applicatifs
 - kubectl + filesystem intégrés
 - Tests > 80% coverage
 
@@ -194,12 +241,22 @@
 **Objectif**: Améliorer l'expérience utilisateur
 
 ### Priorities
-1. **Terminal-based YAML Editor** - Éditeur nano-like intégré dans xterm
-2. **Additional Resources** - Deployment, Service, Namespace models
-3. **Enhanced Terminal** - Historique commandes (↑↓), autocomplétion (Tab)
-4. **Advanced kubectl** - `kubectl logs`, `kubectl exec`, `kubectl scale`
+1. **Real Registry Integration** - Fetch images depuis Docker Hub API
+   - Toggle "Use real registry data" dans l'UI
+   - Fetch tags/metadata depuis API Docker Hub (dry-run, pas de pull)
+   - Fallback sur liste hardcodée si offline/erreur
+   - Rate limiting et cache intelligent
+2. **Terminal-based YAML Editor** - Éditeur nano-like intégré dans xterm
+3. **Additional Resources** - Deployment, Service, Namespace models
+4. **Enhanced Terminal** - Historique commandes (↑↓), autocomplétion (Tab)
+5. **Advanced kubectl** - `kubectl exec`, `kubectl scale`, `kubectl rollout`
+6. **Chaos Hooks & Flags** - Préparer l'infrastructure pour chaos engineering (Phase 3)
+   - Ajouter flags dans Pod/Deployment/Service models (`chaosConfig`)
+   - Support injection d'erreurs programmables
+   - Events system étendu pour tracking anomalies
+   - Base pour disaster recovery scenarios (GUI en Phase 3)
 
-**Estimé**: 3-4 sprints additionnels après MVP
+**Estimé**: 5-6 sprints additionnels après MVP
 
 ---
 
@@ -207,30 +264,42 @@
 
 **Objectif**: Transformer le simulateur en plateforme d'apprentissage interactive
 
-### Challenges System (Sprint 7)
+### Chaos Engineering System (Sprint 7)
+- **GUI Interface** : Panneau dédié pour disaster recovery training
+  - Toggle enable/disable chaos mode
+  - Sélection de targets (pods, images, services)
+  - Création de scénarios personnalisés
+  - Execute/Reset buttons
+  - Visualisation temps réel de l'état du chaos
+- **Scenarios prédéfinis** : ImagePullBackOff, CrashLoopBackOff, NetworkFailure
+- **Custom scenarios** : Utilisateur crée ses propres plans de panique
+- **Scheduler** : Exécution automatique de chaos à des moments précis
+- **Integration avec Challenges** : Utiliser chaos dans les exercices
+
+### Challenges System (Sprint 8)
 - Seed clusters pré-configurés avec problèmes
 - Validation automatique des solutions
 - Hints progressifs
 - 3+ scenarios (debugging, scaling, networking)
 
-### Lessons System (Sprint 8)
+### Lessons System (Sprint 9)
 - Tutoriels interactifs guidés
 - Split-view: théorie + pratique
 - Exercices validables
 - Progress tracking
 
-### Cluster Visualizer (Sprint 9)
+### Cluster Visualizer (Sprint 10)
 - Visualisation graphique de l'état du cluster
 - Tree view / Cards grid / Graph view
 - Sync temps réel avec terminal
 
-### Integration & Polish (Sprint 10-11)
+### Integration & Polish (Sprint 11-12)
 - Layout manager (modes: terminal, learning, challenge, visual)
 - Gamification & achievements
 - Responsive layouts
 - Accessibility
 
-**Estimé**: 5-6 sprints additionnels après MVP
+**Estimé**: 6-7 sprints additionnels après Phase 2
 
 ---
 
