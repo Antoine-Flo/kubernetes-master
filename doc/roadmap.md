@@ -2,16 +2,17 @@
 
 ## 📊 État actuel du projet
 
-**107 tests passent** | **Coverage: 86.96%** | **Architecture: Functional (Factory + Pure functions)**
+**115 tests passent** | **Coverage: 85.29%** | **Architecture: Functional (Factory + Pure functions)**
 
 ### ✅ Completé
 - **Sprint 1**: Terminal xterm.js fonctionnel (9 tests)
 - **Sprint 2**: Pod model + ClusterState (43 tests)
 - **Sprint 3.1**: Parser kubectl avec aliases (33 tests)
 - **Sprint 3.2**: Executor avec routing (24 tests)
+- **Sprint 3.3**: Terminal Integration (8 tests)
 
 ### 🎯 Prochaine étape
-**Sprint 3.3 - Terminal Integration**
+**Sprint 4 - FileSystem + Shell Commands**
 
 ### 📋 À venir
 - Sprint 4: FileSystem + Shell Commands
@@ -22,21 +23,21 @@
 
 ---
 
-## 🎯 Sprint 3.3 : Integration avec Terminal
+## ✅ Sprint 3.3 : Integration avec Terminal (TERMINÉ)
 
 **Objectif**: Connecter le parser/executor au terminal pour un flow end-to-end
 
 ### Tâches
-- [ ] Connecter parser/executor au TerminalManager
-- [ ] Dispatcher: router kubectl vs shell commands (préparation Sprint 4)
-- [ ] Test end-to-end: saisir commande → parser → executor → output dans terminal
-- [ ] ~5-8 tests
+- [x] Connecter parser/executor au TerminalManager
+- [x] Dispatcher: router kubectl vs shell commands (préparation Sprint 4)
+- [x] Test end-to-end: saisir commande → parser → executor → output dans terminal
+- [x] 8 tests d'intégration
 
 ### Définition de Done
-- Commande `kubectl get pods` fonctionne dans le terminal
-- Output s'affiche correctement
-- Erreurs remontées au terminal
-- Flow complet validé
+- ✅ Commande `kubectl get pods` fonctionne dans le terminal
+- ✅ Output s'affiche correctement
+- ✅ Erreurs remontées au terminal
+- ✅ Flow complet validé
 
 ---
 
