@@ -1,4 +1,4 @@
-# 🗺️ Roadmap - Simulateur kubectl
+# 🗺️ Roadmap - Kube Simulator
 
 ## 📊 État actuel du projet
 

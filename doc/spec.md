@@ -1,4 +1,4 @@
-# Spécification - Simulateur kubectl avec xterm.js
+# Spécification - Kube Simulator
 
 ## 🎯 Vue d'ensemble
 

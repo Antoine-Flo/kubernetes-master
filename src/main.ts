@@ -20,7 +20,7 @@ const kubectlExecutor = createKubectlExecutor(clusterState)
 const terminal = createTerminalManager(terminalContainer)
 
 // Welcome message
-terminal.write('Welcome to kubectl Simulator\r\n')
+terminal.write('Welcome to Kube Simulator\r\n')
 terminal.write('Type kubectl commands to interact with the virtual cluster\r\n')
 terminal.write('\r\n')
 
