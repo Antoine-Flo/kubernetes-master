@@ -34,6 +34,7 @@ Ce document liste les règles et bonnes pratiques à appliquer lors du refactori
 - ❌ **Pas de switch statements** : utiliser des maps/objects ou if/else linéaires
 - ❌ **Pas de if imbriqués** : utiliser early returns
 - ✅ **Aplatir le code** : guard clauses en premier
+- ✅ **Toujours des accolades** : même pour les one-liners (if, for, while)
 
 **Exemple - Avant (mauvais)** :
 ```typescript
@@ -57,11 +58,38 @@ function doSomething(value: string) {
 **Exemple - Après (bon)** :
 ```typescript
 function doSomething(value: string) {
-    if (!value) return error('Null')
-    if (value.length === 0) return error('Empty')
-    if (!isValid(value)) return error('Invalid')
+    if (!value) {
+        return error('Null')
+    }
+    if (value.length === 0) {
+        return error('Empty')
+    }
+    if (!isValid(value)) {
+        return error('Invalid')
+    }
     
     return process(value)
+}
+```
+
+**Accolades obligatoires** :
+```typescript
+// ❌ BAD: Pas d'accolades
+if (validation.type === 'error') return validation
+for (const item of items) doSomething(item)
+while (condition) count++
+
+// ✅ GOOD: Toujours des accolades
+if (validation.type === 'error') {
+    return validation
+}
+
+for (const item of items) {
+    doSomething(item)
+}
+
+while (condition) {
+    count++
 }
 ```
 
@@ -567,6 +595,7 @@ Avant de considérer le refactoring terminé, vérifier :
   - [ ] Pas de if imbriqués (early returns)
   - [ ] Pas de switch statements
   - [ ] Fonctions courtes (<50 lignes)
+  - [ ] Accolades obligatoires (même pour one-liners)
 
 - [ ] **Commentaires**
   - [ ] Sections visuelles (niveau 1, 2, 3)

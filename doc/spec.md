@@ -47,6 +47,7 @@ Application web interactive permettant de s'entraîner aux commandes `kubectl` v
 - **Découplage** : Modules indépendants et testables
 - **Indentation max** : 3 niveaux [[memory:7046752]]
 - **Pas de switch statements** [[memory:7046752]]
+- **Accolades obligatoires** : Toujours utiliser {} même pour les one-liners (if, for, while)
 - **Library-First Design** : FileSystem, Shell, et Terminal sont conçus comme composants réutilisables
   - Zéro dépendances entre modules génériques (filesystem/shell/terminal) et modules applicatifs (kubectl/cluster)
   - Prêt pour extraction dans un package npm standalone pour réutilisation dans d'autres projets
@@ -105,13 +106,17 @@ Les commentaires structurels sont **encouragés** - ils rendent le code plus nav
 3. **✅ Documenter les contraintes de la spec**
    ```typescript
    // Max depth 3 prevents filesystem over-complexity (spec requirement)
-   if (getDepth(path) > 3) return error
+   if (getDepth(path) > 3) {
+       return error
+   }
    ```
 
 4. **✅ Clarifier les edge cases**
    ```typescript
    // Cannot go above root - stay at root level
-   if (parts.length === 0 && part === '..') continue
+   if (parts.length === 0 && part === '..') {
+       continue
+   }
    ```
 
 5. **✅ Signaler les side effects**

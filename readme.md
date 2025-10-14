@@ -7,61 +7,32 @@ An interactive web-based terminal to practice and learn `kubectl` commands with 
 ![Tests](https://img.shields.io/badge/tests-218%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-88.86%25-brightgreen)
 
-## ✨ Features
+---
 
-### Current (MVP Phase - Sprint 4.3 Completed)
-- ✅ **Interactive Terminal** - Built with xterm.js, beautiful dark theme
-- ✅ **Virtual Cluster** - Stateful Kubernetes cluster simulation in memory
-- ✅ **Pod Management** - Full CRUD operations on pods
-- ✅ **kubectl Parser** - Command parsing with aliases and flags support
-- ✅ **kubectl Executor** - Command routing and execution framework
-- ✅ **Virtual FileSystem** - Unix-like filesystem with 3-level depth limit
-  - Navigation (cd, pwd, ls)
-  - File operations (touch, cat, rm)
-  - Directory operations (mkdir, rm -r)
-  - Multi-format support (.yaml, .yml, .json, .kyaml)
-- ✅ **Realistic Data** - Pre-seeded cluster and filesystem with examples
-- ✅ **88.86% Test Coverage** - 218 tests passing with TDD approach
-- ✅ **Functional Architecture** - Factory functions, pure functions, closures
+## 🎯 Why Kube Simulator?
 
-### Coming Soon (Sprint 4.4+)
-- 🔜 **Shell Commands** - Full integration of cd, ls, mkdir, touch, cat, rm
-- 🔜 **Image Registry** - Container image validation and pull simulation
-- 🔜 **Application Logger** - Debug logs with command `debug`
-- 🔜 **kubectl Handlers** - get, describe, delete, create, apply
-- 🔜 **Persistence** - State saved in localStorage
-- 🔜 **Formatted Output** - kubectl-style table formatting
-
-### Future Enhancements (Phase 2)
-- Command history (↑↓ navigation)
-- Auto-completion (Tab)
-- YAML support for `kubectl apply -f`
-- Dynamic controllers (Deployment → ReplicaSet → Pods)
-- Learning scenarios and challenges
-- Visual cluster sidebar
-
-## 🎯 Why This Project?
-
-Learning Kubernetes can be challenging, especially when you need:
-- A safe environment to experiment
-- No cloud costs or local cluster overhead
-- Immediate feedback on commands
-- Ability to reset and try again
+Learning Kubernetes can be challenging when you need:
+- ✅ A **safe environment** to experiment without breaking things
+- ✅ **No cloud costs** or local cluster overhead
+- ✅ **Immediate feedback** on commands
+- ✅ Ability to **reset and try again** instantly
 
 This simulator provides a **risk-free playground** to master kubectl commands before touching production clusters.
 
-## 🏗️ Tech Stack
+---
 
-| Category | Technology |
-|----------|-----------|
-| **Language** | TypeScript (strict mode) |
-| **Terminal** | xterm.js |
-| **UI Framework** | daisyUI + Tailwind CSS 4 |
-| **Build Tool** | Vite |
-| **Testing** | Vitest + jsdom |
-| **Architecture** | Functional Programming (factory functions, pure functions, closures) |
+## ✨ Current Features
 
-## 📦 Installation
+- 🖥️ **Interactive Terminal** - Built with xterm.js, beautiful dark theme
+- ☸️ **Virtual Kubernetes Cluster** - Stateful simulation in memory
+- 📁 **Virtual File System** - Unix-like filesystem for YAML manifests
+- ⚡ **Fast Feedback** - Instant command execution and validation
+- 💾 **Persistence** - Coming soon (localStorage)
+- 🧪 **Thoroughly Tested** - 218 tests, 88.86% coverage
+
+---
+
+## 📦 Quick Start
 
 ```bash
 # Clone the repository
@@ -75,7 +46,49 @@ npm install
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173`
+Open your browser at `http://localhost:5173` and start practicing!
+
+---
+
+## 🎮 Usage
+
+### Basic Commands (Coming Soon)
+
+```bash
+# List all pods
+kubectl get pods
+
+# List pods in a namespace
+kubectl get pods -n kube-system
+
+# Describe a pod
+kubectl describe pod nginx
+
+# Delete a pod
+kubectl delete pod nginx
+
+# Apply a manifest
+kubectl apply -f pod.yaml
+```
+
+### File System Navigation
+
+```bash
+# Navigate directories
+cd /examples
+ls
+pwd
+
+# View example manifests
+cat pod-example.yaml
+
+# Create your own
+mkdir manifests
+cd manifests
+touch my-pod.yaml
+```
+
+---
 
 ## 🧪 Testing
 
@@ -83,158 +96,69 @@ The app will be available at `http://localhost:5173`
 # Run all tests
 npm test
 
-# Run tests in watch mode
+# Watch mode
 npm test -- --watch
 
-# Generate coverage report
+# Coverage report
 npm run coverage
-
-# Run specific test suite
-npm test -- tests/filesystem
 ```
 
-**Test Coverage**: **218 tests passing** (88.86% coverage)
-- **Terminal**: 7 tests
-- **Cluster**: 43 tests (Pod model, ClusterState, seed data)
-- **kubectl**: 57 tests (Parser, Executor, Integration)
-- **FileSystem**: 103 tests (Models, operations, seed data)
-- **Integration**: 8 tests (Terminal + kubectl)
+---
 
-## 🎮 Usage
+## 🏗️ For Developers
 
-Once the development server is running:
+This project follows **functional programming** principles with TypeScript:
 
-1. The terminal will display a welcome message
-2. Type commands at the `kubectl>` prompt
-3. Press Enter to execute (currently logs to console - Sprint 3 will add command processing)
+- **Factory functions** instead of classes
+- **Pure functions** for business logic
+- **Immutability** with `Object.freeze()`
+- **Discriminated unions** for error handling (no exceptions)
+- **Test-Driven Development** (TDD)
 
-### Planned Commands (Sprint 3+)
-
-```bash
-# List all pods
-kubectl get pods
-
-# List pods in a specific namespace
-kubectl get pods -n kube-system
-
-# Get detailed information about a pod
-kubectl describe pod nginx
-
-# Delete a pod
-kubectl delete pod nginx
-
-# List all resources
-kubectl get all
-
-# List namespaces
-kubectl get namespaces
-```
-
-## 🏛️ Architecture
-
-The project follows **functional programming principles** and **clean architecture**:
-
-### Directory Structure
+### Project Structure
 
 ```
 src/
-├── kubectl/              # kubectl command simulation
-│   ├── commands/
-│   │   ├── parser.ts     # Parse kubectl commands (pure function)
-│   │   ├── executor.ts   # Execute commands (factory function)
-│   │   ├── types.ts      # Command types & interfaces
-│   │   └── handlers/     # Command handlers (pure functions)
-│   │       ├── get.ts
-│   │       ├── describe.ts
-│   │       ├── delete.ts
-│   │       ├── create.ts
-│   │       └── apply.ts
-│   └── formatters/       # Output formatting (pure functions)
-├── cluster/              # Kubernetes cluster simulation
-│   ├── ClusterState.ts   # Cluster state management (hybrid: pure + facade)
-│   ├── models/           # K8s resource models (factory functions)
-│   │   └── Pod.ts
-│   ├── seedCluster.ts    # Initial cluster data (pure function)
-│   └── storage/          # Persistence layer
-├── filesystem/           # Virtual filesystem (library-ready)
-│   ├── FileSystem.ts     # Filesystem state & operations (factory function)
-│   ├── models/           # File & Directory models (factory functions)
-│   │   ├── File.ts       # Multi-format file support
-│   │   ├── Directory.ts  # Directory node
-│   │   └── index.ts      # Public exports
-│   ├── seedFileSystem.ts # Initial filesystem structure
-│   └── index.ts          # Public API
-├── terminal/
-│   └── TerminalManager.ts  # xterm.js wrapper (factory function)
-└── main.ts               # Application entry point
+├── kubectl/       # kubectl command simulation
+├── cluster/       # Virtual Kubernetes cluster
+├── filesystem/    # Virtual file system
+├── terminal/      # xterm.js wrapper
+└── main.ts        # Entry point
 ```
 
-### Design Principles
+### Contributing
 
-- **KISS** (Keep It Simple, Stupid)
-- **DRY** (Don't Repeat Yourself)
-- **Functional Programming** - Factory functions over classes, pure functions, closures for state
-- **Immutability** - All data structures are frozen, operations return new copies
-- **Type Safety** - TypeScript strict mode, discriminated unions for errors
-- **Test-Driven Development** - Write tests first, then implementation
-- **Clean Code Structure**
-  - Maximum 3 levels of indentation
-  - No switch statements (prefer object maps or if-else chains)
-  - No nested if statements (use early returns)
-  - Functions < 50 lines (extract helpers if needed)
-  - Structured comments for visual organization (3-level hierarchy)
-- **Library-First Design** - Generic modules (filesystem, terminal) decoupled from app-specific code (kubectl, cluster)
+We welcome contributions! Please:
+1. Follow functional programming patterns
+2. Write tests first (TDD)
+3. Maintain > 80% test coverage
+4. Use TypeScript strict mode
 
-## 🗺️ Roadmap
+See [doc/refactoring.md](doc/refactoring.md) for detailed code style guidelines.
 
-- [x] **Sprint 1**: Terminal foundation (xterm.js integration, input handling) - 9 tests
-- [x] **Sprint 2**: Cluster state (Pod model, ClusterState, seed data) - 43 tests
-- [x] **Sprint 3.1-3.3**: kubectl Parser, Executor, Integration - 33 + 24 + 8 tests
-- [x] **Sprint 4.1-4.3**: FileSystem Models, State, Seed - 103 tests
-- [ ] **Sprint 4.4-4.8**: Shell Commands, Image Registry, Logger, Dispatcher
-- [ ] **Sprint 5**: kubectl Handlers + Formatters
-- [ ] **Sprint 6**: Integration, persistence, polish, and MVP launch
-
-See [doc/roadmap.md](doc/roadmap.md) for detailed sprint planning and progress.
+---
 
 ## 📚 Documentation
 
-- [Specification](doc/spec.md) - Technical specification and architecture details
-- [Roadmap](doc/roadmap.md) - Development progress and sprint planning
-- [Refactoring Guide](doc/refactoring.md) - Code refactoring best practices and checklist
+- **[Specification](doc/spec.md)** - Technical details and architecture
+- **[Roadmap](doc/roadmap.md)** - Development progress and planning
+- **[Refactoring Guide](doc/refactoring.md)** - Code quality standards
 
-## 🧑‍💻 Development Workflow
+---
 
-This project follows **Test-Driven Development (TDD)**:
+## 🗺️ Roadmap
 
-1. **RED** - Write a failing test
-2. **GREEN** - Write minimal code to pass the test
-3. **REFACTOR** - Clean up and optimize
-4. **COMMIT** - Commit with a clear message
-5. **REPEAT** - Next feature
+**Current Status**: Sprint 4.3/6 completed (MVP in progress)
 
-### Code Style
+- ✅ Terminal, Cluster, kubectl Parser/Executor, FileSystem
+- 🔜 Shell Commands Integration
+- 🔜 Image Registry & Logger
+- 🔜 kubectl Handlers (get, describe, delete, apply)
+- 🔜 Persistence & Polish → **MVP Launch**
 
-- Prefer **functional programming** over OOP
-- Use **factory functions** instead of classes
-- Keep functions **pure** when possible
-- Use **closures** for state encapsulation
-- Return **typed results** (discriminated unions) instead of throwing exceptions
-- Maintain **immutability** with `Object.freeze`
+See [roadmap.md](doc/roadmap.md) for detailed sprint planning.
 
-## 🤝 Contributing
-
-This is a learning project following strict architectural principles. Contributions should:
-
-1. Follow functional programming patterns (no classes)
-2. Include tests (TDD approach)
-3. Maintain > 80% test coverage
-4. Use TypeScript strict mode
-5. Follow the existing code style (max 3 levels indentation, no switch statements)
-
-## 📄 License
-
-MIT License - Feel free to use this project for learning!
+---
 
 ## 🎓 Learning Resources
 
@@ -244,9 +168,12 @@ MIT License - Feel free to use this project for learning!
 
 ---
 
-**Status**: 🚧 In active development - MVP Sprint 4.3/6 completed (218 tests, 88.86% coverage)
+## 📄 License
 
-**Next Up**: Sprint 4.4-4.8 - Shell Commands, Image Registry, Application Logger
+MIT License - Feel free to use this project for learning!
+
+---
+
+**Status**: 🚧 In active development - MVP Sprint 4.3/6 completed
 
 Built with ❤️ for the Kubernetes learning community
-
