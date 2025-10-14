@@ -2,7 +2,7 @@
 
 ## 📊 État actuel du projet
 
-**115 tests passent** | **Coverage: 85.29%** | **Architecture: Functional (Factory + Pure functions)**
+**218 tests passent** | **Coverage: 88.86%** | **Architecture: Functional (Factory + Pure functions)**
 
 ### ✅ Completé
 - **Sprint 1**: Terminal xterm.js fonctionnel (9 tests)
@@ -10,9 +10,10 @@
 - **Sprint 3.1**: Parser kubectl avec aliases (33 tests)
 - **Sprint 3.2**: Executor avec routing (24 tests)
 - **Sprint 3.3**: Terminal Integration (8 tests)
+- **Sprint 4.1-4.3**: FileSystem Foundation (103 tests) - Library-ready design
 
 ### 🎯 Prochaine étape
-**Sprint 4 - FileSystem + Shell Commands**
+**Sprint 4.4-4.8** - Shell Commands, Image Registry, Logger, Dispatcher
 
 ### 📋 À venir
 - Sprint 4: FileSystem + Shell Commands
@@ -45,27 +46,28 @@
 
 **Objectif**: Système de fichiers virtuel et commandes shell de base
 
-### 4.1 - FileSystem Models (TDD)
-- [ ] `src/filesystem/models/File.ts` - Factory pour fichiers YAML
-- [ ] `src/filesystem/models/Directory.ts` - Factory pour dossiers
-- [ ] Immutabilité (Object.freeze)
-- [ ] ~8-10 tests
+### 4.1 - FileSystem Models (TDD) ✅ TERMINÉ
+- [x] `src/filesystem/models/File.ts` - Factory pour fichiers multi-formats
+- [x] `src/filesystem/models/Directory.ts` - Factory pour dossiers
+- [x] Support extensions: `.yaml`, `.yml`, `.json`, `.kyaml`
+- [x] Immutabilité (Object.freeze)
+- [x] 24 tests (File: 18, Directory: 6)
 
-### 4.2 - FileSystem State (TDD)
-- [ ] `src/filesystem/FileSystem.ts` - Architecture hybrid (comme ClusterState)
-  - Pure functions: `resolvePath()`, `findNode()`, `getDepth()`
+### 4.2 - FileSystem State (TDD) ✅ TERMINÉ
+- [x] `src/filesystem/FileSystem.ts` - Architecture hybrid (comme ClusterState)
+  - Pure functions: `resolvePath()`, `findNode()`, `getDepth()`, `validateFilename()`
   - Closure facade: `createFileSystem()`
-  - Operations: `changeDirectory()`, `listDirectory()`, `createDirectory()`, `createFile()`, `readFile()`, `writeFile()`
+  - Operations: `changeDirectory()`, `listDirectory()`, `createDirectory()`, `createFile()`, `readFile()`, `writeFile()`, `deleteFile()`, `deleteDirectory()`
   - Validation max depth (3 niveaux)
   - Typed results (discriminated unions)
-- [ ] ~20-25 tests
+- [x] 69 tests
 
-### 4.3 - Seed FileSystem (TDD)
-- [ ] `src/filesystem/seedFileSystem.ts`
-  - Structure: `/examples/` avec pod/deployment/service YAML
+### 4.3 - Seed FileSystem (TDD) ✅ TERMINÉ
+- [x] `src/filesystem/seedFileSystem.ts`
+  - Structure: `/examples/` avec pod (YAML), deployment (YML), service (JSON)
   - Dossier `/manifests/` vide pour l'utilisateur
-  - Fonction pure `createSeedFileSystem(): FileSystem`
-- [ ] ~8-10 tests
+  - Fonction pure `createSeedFileSystem(): FileSystemState`
+- [x] 10 tests
 
 ### 4.4 - Shell Parser + Executor (TDD)
 - [ ] `src/shell/commands/parser.ts` - Parse: cd, ls, pwd, mkdir, touch, cat, rm, clear, help
@@ -241,22 +243,33 @@
 **Objectif**: Améliorer l'expérience utilisateur
 
 ### Priorities
-1. **Real Registry Integration** - Fetch images depuis Docker Hub API
+1. **Terminal Syntax Highlighting** - Coloration en temps réel pendant la frappe
+   - Commandes valides en vert (kubectl, ls, cd, etc.)
+   - Commandes invalides/inconnues en rouge
+   - Arguments/flags en couleurs différentes
+   - Comme une extension IDE avec feedback visuel immédiat
+   - Utiliser les capacités ANSI de xterm.js
+2. **Enhanced Prompt** - Prompt dynamique et contextuel
+   - Affichage du chemin courant (déjà spécifié : `~/manifests/dev>`)
+   - Username/hostname personnalisable (ex: `user@k8s-sim:~/manifests$`)
+   - Indicateur de contexte (namespace courant, cluster name)
+   - Couleurs adaptatives (vert pour succès, rouge après erreur)
+3. **Real Registry Integration** - Fetch images depuis Docker Hub API
    - Toggle "Use real registry data" dans l'UI
    - Fetch tags/metadata depuis API Docker Hub (dry-run, pas de pull)
    - Fallback sur liste hardcodée si offline/erreur
    - Rate limiting et cache intelligent
-2. **Terminal-based YAML Editor** - Éditeur nano-like intégré dans xterm
-3. **Additional Resources** - Deployment, Service, Namespace models
-4. **Enhanced Terminal** - Historique commandes (↑↓), autocomplétion (Tab)
-5. **Advanced kubectl** - `kubectl exec`, `kubectl scale`, `kubectl rollout`
-6. **Chaos Hooks & Flags** - Préparer l'infrastructure pour chaos engineering (Phase 3)
+4. **Terminal-based YAML Editor** - Éditeur nano-like intégré dans xterm
+5. **Enhanced Terminal Features** - Historique commandes (↑↓), autocomplétion (Tab)
+6. **Additional Resources** - Deployment, Service, Namespace models
+7. **Advanced kubectl** - `kubectl exec`, `kubectl scale`, `kubectl rollout`
+8. **Chaos Hooks & Flags** - Préparer l'infrastructure pour chaos engineering (Phase 3)
    - Ajouter flags dans Pod/Deployment/Service models (`chaosConfig`)
    - Support injection d'erreurs programmables
    - Events system étendu pour tracking anomalies
    - Base pour disaster recovery scenarios (GUI en Phase 3)
 
-**Estimé**: 5-6 sprints additionnels après MVP
+**Estimé**: 6-7 sprints additionnels après MVP
 
 ---
 
@@ -330,5 +343,6 @@ npm run build      # Build production
 - Discriminated unions pour error handling (pas d'exceptions)
 - Immutabilité complète (Object.freeze)
 - Types TypeScript stricts
+- Conventions de commentaires structurels (2-3 niveaux) pour organisation visuelle du code
 
 **À appliquer pour tous les nouveaux modules**.

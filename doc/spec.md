@@ -47,6 +47,87 @@ Application web interactive permettant de s'entraîner aux commandes `kubectl` v
 - **Découplage** : Modules indépendants et testables
 - **Indentation max** : 3 niveaux [[memory:7046752]]
 - **Pas de switch statements** [[memory:7046752]]
+- **Library-First Design** : FileSystem, Shell, et Terminal sont conçus comme composants réutilisables
+  - Zéro dépendances entre modules génériques (filesystem/shell/terminal) et modules applicatifs (kubectl/cluster)
+  - Prêt pour extraction dans un package npm standalone pour réutilisation dans d'autres projets
+  - Parsing/validation des formats de fichiers se fait au niveau applicatif (kubectl apply)
+  - FileSystem est agnostique au format (stocke le contenu comme string)
+
+### Conventions de commentaires
+
+**Philosophie** : Les commentaires ont deux rôles distincts :
+1. **Structurels** : Organiser le code en sections visuellement identifiables
+2. **Explicatifs** : Expliquer le **pourquoi**, les comportements K8s, et les décisions non-évidentes
+
+Les commentaires structurels sont **encouragés** - ils rendent le code plus navigable d'un coup d'œil.
+
+#### Commentaires structurels (Organisation)
+
+**Hiérarchie à 2 niveaux (+ optionnel niveau 3)** :
+
+```typescript
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION PRINCIPALE
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ───────────────────────────────────────────────────────────────────────────
+// Sous-section
+// ───────────────────────────────────────────────────────────────────────────
+
+// ─── Niveau 3 optionnel (si groupe de 3+ fonctions) ───────────────────────
+```
+
+**Règles d'usage** :
+- **Niveau 1** : Grandes sections du fichier (TYPES, PATH OPERATIONS, FACTORY, etc.)
+- **Niveau 2** : Groupes logiques de fonctions (Resolution, Validation, Mutation, etc.)
+- **Niveau 3** : Seulement si nécessaire pour subdiviser un grand groupe (3+ fonctions liées)
+- **Position** : Toujours au niveau root (colonne 0), jamais indentés à l'intérieur des fonctions
+- **Longueur standard** : 79 caractères
+
+#### Règles pour les commentaires explicatifs
+
+1. **✅ JSDoc pour les exports publics**
+   ```typescript
+   /**
+    * Parse kubectl command string into structured object
+    * @param input - Raw command (e.g., "kubectl get pods -n default")
+    * @returns Parsed command or error
+    */
+   export const parseCommand = (input: string): ParseResult => { /* ... */ }
+   ```
+
+2. **✅ Expliquer les comportements Kubernetes**
+   ```typescript
+   // Kubernetes behavior: Pods default to 'default' namespace when unspecified
+   const namespace = parsed.namespace || 'default'
+   ```
+
+3. **✅ Documenter les contraintes de la spec**
+   ```typescript
+   // Max depth 3 prevents filesystem over-complexity (spec requirement)
+   if (getDepth(path) > 3) return error
+   ```
+
+4. **✅ Clarifier les edge cases**
+   ```typescript
+   // Cannot go above root - stay at root level
+   if (parts.length === 0 && part === '..') continue
+   ```
+
+5. **✅ Signaler les side effects**
+   ```typescript
+   // Side effect: Mutates parent.children Map
+   parent.children.set(name, node)
+   ```
+
+6. **✅ TODOs avec phase et contexte**
+   ```typescript
+   // TODO(Phase 2): Implement truly immutable tree with structural sharing
+   ```
+
+7. **❌ Jamais de code commenté** : Utiliser git pour l'historique
+
+8. **❌ Pas de séparateurs indentés** : Les commentaires de section restent toujours en colonne 0
 
 ### Structure des modules
 
@@ -197,7 +278,7 @@ const createFile = (name: string, path: string, content = ""): FileNode => ({
   - Exemple valide : `/manifests/dev/pods/nginx.yaml` (profondeur 3)
   - Exemple invalide : `/a/b/c/d/file.yaml` (profondeur 4)
 - **Noms de fichiers** : alphanumérique + `-_./`
-- **Extensions** : `.yaml`, `.yml` supportées
+- **Extensions** : `.yaml`, `.yml`, `.json`, `.kyaml` supported (extensible for future formats)
 - **Caractères interdits** : `*`, `?`, `<`, `>`, `|`, espaces
 - **Chemins** : Format Unix (`/path/to/file`)
 - **Racine** : Toujours `/` (home directory virtuel)
@@ -722,7 +803,7 @@ L'utilisateur peut :
   - Execute/Reset buttons
   - Visualisation temps réel de l'état actif du chaos
 
-### Prompt Terminal Dynamique
+### Prompt Terminal Dynamique (Phase 1 - MVP)
 
 Le prompt du terminal s'adapte selon le contexte :
 
@@ -738,7 +819,7 @@ kubectl> ls
 ~/manifests/dev> ls
 ```
 
-**Format du prompt** :
+**Format du prompt MVP** :
 - Racine `/` → `kubectl> `
 - Autres dossiers → `~{chemin}> ` (ex: `~/manifests/dev> `)
 - Couleur : vert (success) pour cohérence avec terminaux Unix
@@ -749,6 +830,73 @@ kubectl> ls
 const getPrompt = (currentPath: string): string => {
   if (currentPath === '/') return 'kubectl> '
   return `~${currentPath}> `
+}
+```
+
+### Enhanced Terminal Features (Phase 2)
+
+#### Syntax Highlighting en temps réel
+
+Coloration de la commande pendant la frappe, comme une extension IDE :
+
+```bash
+# Commande valide (vert)
+kubectl get pods
+
+# Commande invalide (rouge)
+kubect get pods
+
+# Avec arguments colorés
+kubectl get pods -n default --watch
+#       ^^^ resource (cyan)
+#                  ^^ flag (jaune)
+#                     ^^^^^^^ value (blanc)
+```
+
+**Implémentation** :
+- Parser la ligne en temps réel pendant la frappe (`onData`)
+- Validation contre liste de commandes connues (kubectl + shell)
+- Application des codes ANSI de xterm.js pour coloration
+- Feedback visuel immédiat (pas besoin d'exécuter)
+
+**Palette de couleurs** :
+- Commande valide : vert (`\x1b[32m`)
+- Commande invalide : rouge (`\x1b[31m`)
+- Resource/argument : cyan (`\x1b[36m`)
+- Flag (--flag, -f) : jaune (`\x1b[33m`)
+- Valeur : blanc/défaut (`\x1b[0m`)
+- Chemin de fichier : bleu (`\x1b[34m`)
+
+#### Prompt avancé et contextuel
+
+**format** :
+
+```bash
+☸ ~/manifests> kubectl get pods
+```
+
+**Éléments du prompt** :
+- **Username** : Configurable (défaut: `user`, `admin`, ou custom)
+- **Hostname** : `k8s-sim`, `k8s-simulator`, ou custom
+- **Current path** : Chemin relatif avec `~` (déjà implémenté en MVP)
+- **Context indicator** : Namespace courant entre `[brackets]` (optionnel)
+- **Symbol** : `☸` (kubernetes icon)
+
+**Couleurs adaptatives** :
+- Prompt normal : vert
+- Après erreur : rouge (puis retour au vert)
+- Namespace prod : rouge (warning)
+- Namespace dev/staging : jaune
+
+**Configuration utilisateur** :
+```typescript
+interface PromptConfig {
+  format: 'minimal' | 'bash' | 'compact' | 'namespace'
+  username: string
+  hostname: string
+  showNamespace: boolean
+  showPath: boolean
+  symbol: '$' | '#' | '>' | '☸'
 }
 ```
 
