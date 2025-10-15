@@ -45,6 +45,7 @@ const VALID_COMMANDS: ShellCommand[] = [
     'rm',
     'clear',
     'help',
+    'debug',
 ]
 
 // Shell flags that require values (for future use)

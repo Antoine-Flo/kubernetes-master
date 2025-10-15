@@ -3,6 +3,7 @@ import { parseShellCommand } from './parser'
 import type { ParsedShellCommand } from './types'
 import type { ExecutionResult } from '../../shared/result'
 import { error, success } from '../../shared/result'
+import { createImageRegistry } from '../../containers/registry/ImageRegistry'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SHELL COMMAND EXECUTOR
@@ -32,6 +33,7 @@ const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     touch: (fs, args) => handleTouch(fs, args),
     cat: (fs, args) => handleCat(fs, args),
     rm: (fs, args, flags) => handleRm(fs, args, flags),
+    debug: (_fs, args) => handleDebug(args),
 }
 
 /**
@@ -220,9 +222,43 @@ const handleHelp = (): ExecutionResult => {
   rm -r <dir>     Remove directory
   clear           Clear terminal
   help            Show this help
+  debug images    List available container images
 
 Use 'kubectl' prefix for Kubernetes commands`
 
     return success(helpText)
+}
+
+const handleDebug = (args: string[]): ExecutionResult => {
+    const subcommand = args[0]
+
+    if (!subcommand || subcommand !== 'images') {
+        const usageText = `Debug commands:
+  debug images    List all available container images
+
+Usage: debug <subcommand>`
+
+        return success(usageText)
+    }
+
+    // Instantiate registry locally - no need to pass as dependency
+    const imageRegistry = createImageRegistry()
+    const images = imageRegistry.listAllImages()
+
+    const lines = ['=== Available Container Images ===', '']
+
+    images.forEach((img) => {
+        lines.push(`${img.registry}/${img.name}`)
+        lines.push(`  Tags: ${img.tags.join(', ')}`)
+        if (img.defaultPorts.length > 0) {
+            lines.push(`  Ports: ${img.defaultPorts.join(', ')}`)
+        }
+        lines.push(`  Status: ${img.behavior.defaultStatus}`)
+        lines.push('')
+    })
+
+    lines.push('Use these images in your pod manifests.')
+
+    return success(lines.join('\n'))
 }
 

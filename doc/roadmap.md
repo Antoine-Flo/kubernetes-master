@@ -39,19 +39,19 @@
 **Objectif**: Système de fichiers virtuel et commandes shell de base
 
 ### 4.5 - Image Registry + Pull Simulation (TDD)
-- [ ] `src/cluster/registry/ImageRegistry.ts`
+- [x] `src/containers/registry/ImageRegistry.ts`
   - 7-10 images de base (nginx, redis, postgres, mysql, busybox, broken-app, private-image)
   - Parser format image: `[registry/]name[:tag]`
   - Validation stricte (reject images inconnues avec message clair)
   - ImageManifest: comportement, ports, logGenerator par image
-- [ ] `src/cluster/controllers/ImagePuller.ts`
+- [x] `src/containers/ImagePuller.ts`
   - Pure function `simulateImagePull(imageString): PullResult`
   - Events de pull (Pulling, Pulled, Created, Started)
   - Support ImagePullBackOff pour images invalides
   - Support CrashLoopBackOff pour broken-app
-- [ ] Handler `debug images` - Liste images disponibles dans le registry
+- [x] Handler `debug images` - Liste images disponibles dans le registry
 - [ ] UI: Registry panel (liste images + tags disponibles)
-- [ ] ~20-25 tests
+- [x] ~20-25 tests
 
 ### 4.6 - Shell Handlers (TDD)
 - [ ] `src/shell/commands/handlers/cd.ts` - Change directory

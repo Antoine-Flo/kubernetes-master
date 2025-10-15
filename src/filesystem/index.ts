@@ -14,7 +14,6 @@ export {
     insertNode,
     removeNode,
     type FileSystemState,
-    type Result
 } from './FileSystem'
 
 // Export seed data

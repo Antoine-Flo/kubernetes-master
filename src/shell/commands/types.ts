@@ -14,6 +14,7 @@ export type ShellCommand =
     | 'rm'
     | 'clear'
     | 'help'
+    | 'debug'
 
 export interface ParsedShellCommand {
     command: ShellCommand

@@ -285,5 +285,48 @@ describe('Shell Executor', () => {
             }
         })
     })
+
+    describe('debug command', () => {
+        it('should list all available images with debug images', () => {
+            const result = executor.execute('debug images')
+
+            expect(result.type).toBe('success')
+            if (result.type === 'success') {
+                expect(result.data).toContain('Available Container Images')
+                expect(result.data).toContain('nginx')
+                expect(result.data).toContain('redis')
+                expect(result.data).toContain('postgres')
+            }
+        })
+
+        it('should show image details including tags and ports', () => {
+            const result = executor.execute('debug images')
+
+            expect(result.type).toBe('success')
+            if (result.type === 'success') {
+                expect(result.data).toContain('Tags:')
+                expect(result.data).toContain('Ports:')
+                expect(result.data).toContain('Status:')
+            }
+        })
+
+        it('should show usage message for debug without args', () => {
+            const result = executor.execute('debug')
+
+            expect(result.type).toBe('success')
+            if (result.type === 'success') {
+                expect(result.data).toContain('debug images')
+            }
+        })
+
+        it('should show usage message for unknown debug subcommand', () => {
+            const result = executor.execute('debug unknown')
+
+            expect(result.type).toBe('success')
+            if (result.type === 'success') {
+                expect(result.data).toContain('debug images')
+            }
+        })
+    })
 })
 
