@@ -8,12 +8,14 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "prune": "ts-prune"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^3.2.4",
     "daisyui": "^5.1.29",
     "jsdom": "^27.0.0",
+    "ts-prune": "^0.10.3",
     "typescript": "~5.9.3",
     "vite": "^7.1.7",
     "vitest": "^3.2.4"

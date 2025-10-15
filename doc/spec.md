@@ -4,6 +4,12 @@
 
 Application web interactive permettant de s'entraîner aux commandes `kubectl` via un terminal simulé, avec un cluster Kubernetes virtuel stateful.
 
+### Commandes utiles
+```bash
+npm test           # Lancer tous les tests
+npm run coverage   # Coverage report
+```
+
 ---
 
 ## 📋 Objectifs principaux

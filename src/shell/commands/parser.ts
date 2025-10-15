@@ -1,12 +1,39 @@
 import type { ShellCommand, ParsedShellCommand } from './types'
 import type { Result } from '../../shared/result'
 import { success, error } from '../../shared/result'
+import {
+    trim,
+    tokenize,
+    extract,
+    parseFlags,
+    checkFlags,
+    extractArgs,
+    pipeResult
+} from '../../shared/parsing'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SHELL COMMAND PARSER
 // ═══════════════════════════════════════════════════════════════════════════
 // Parses shell command strings into structured objects with args and flags.
 // Validates commands against allowed list and extracts boolean/value flags.
+// 
+// Uses Railway-oriented programming (pipeResult) for clean pipeline composition.
+// Each step transforms a ParseContext and can fail, stopping the pipeline.
+
+// ─── Types ───────────────────────────────────────────────────────────────
+
+/**
+ * Internal parsing context that accumulates state through the pipeline
+ */
+type ParseContext = {
+    input: string
+    tokens?: string[]
+    command?: ShellCommand
+    args?: string[]
+    flags?: Record<string, string | boolean>
+}
+
+// ─── Constants ───────────────────────────────────────────────────────────
 
 const VALID_COMMANDS: ShellCommand[] = [
     'cd',
@@ -20,80 +47,48 @@ const VALID_COMMANDS: ShellCommand[] = [
     'help',
 ]
 
+// Shell flags that require values (for future use)
+const FLAGS_REQUIRING_VALUES: string[] = []
+
 /**
  * Parse shell command string into structured object
+ * Pure function using Railway-oriented programming (pipeResult)
+ * 
+ * Pipeline: validate input → tokenize → extract command → 
+ *           parse flags → extract args → build result
+ * 
  * @param input - Raw command string (e.g., "ls -l", "cd /manifests")
  * @returns Parsed command or error
  */
 export const parseShellCommand = (input: string): Result<ParsedShellCommand> => {
-    // Trim and check for empty input
-    const trimmed = input.trim()
-    if (!trimmed) {
-        return error('Command cannot be empty')
+    // Create the parsing pipeline
+    const pipeline = pipeResult<ParseContext>(
+        trim,
+        tokenize,
+        extract(0, VALID_COMMANDS, 'command', 'Unknown command'),
+        parseFlags(1),
+        checkFlags(FLAGS_REQUIRING_VALUES),
+        extractArgs(1)
+    )
+
+    // Execute pipeline
+    const result = pipeline({ input })
+
+    // Transform ParseContext result to ParsedShellCommand result
+    if (result.type === 'error') {
+        return result
     }
 
-    // Split into tokens, filtering out empty strings
-    const tokens = trimmed.split(/\s+/).filter((t) => t.length > 0)
-
-    if (tokens.length === 0) {
-        return error('Command cannot be empty')
+    const ctx = result.data
+    if (!ctx.command || !ctx.args || !ctx.flags) {
+        return error('Internal parsing error: incomplete context')
     }
 
-    // Extract command (first token)
-    const command = extractCommand(tokens)
-    if (!command) {
-        return error(`Unknown command: ${tokens[0]}`)
-    }
-
-    // Parse flags and args
-    const { flags, args } = parseTokens(tokens.slice(1))
-
-    // Build parsed command
-    const parsed: ParsedShellCommand = {
-        command,
-        args,
-        flags,
-    }
-
-    return success(parsed)
+    return success({
+        command: ctx.command,
+        args: ctx.args,
+        flags: ctx.flags,
+    })
 }
 
-const extractCommand = (tokens: string[]): ShellCommand | undefined => {
-    const cmd = tokens[0]
-    return VALID_COMMANDS.includes(cmd as ShellCommand) ? (cmd as ShellCommand) : undefined
-}
-
-/**
- * Parse flags and arguments from tokens
- * Flags start with - (e.g., -l, -p, -r)
- * Everything else is an argument
- */
-const parseTokens = (tokens: string[]): { flags: Record<string, boolean | string>; args: string[] } => {
-    const flags: Record<string, boolean | string> = {}
-    const args: string[] = []
-
-    for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i]
-
-        // Check if token is a flag
-        if (token.startsWith('-')) {
-            const flagName = token.replace(/^-+/, '') // Remove leading dashes
-
-            // Check if next token is a value (not a flag)
-            const nextToken = tokens[i + 1]
-            if (nextToken && !nextToken.startsWith('-')) {
-                flags[flagName] = nextToken
-                i++ // Skip the value token
-            } else {
-                // Boolean flag (no value)
-                flags[flagName] = true
-            }
-        } else {
-            // Regular argument
-            args.push(token)
-        }
-    }
-
-    return { flags, args }
-}
 
