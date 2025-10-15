@@ -37,7 +37,7 @@ describe('kubectl Executor', () => {
                 const result = executor.execute('kubectl get pods')
                 expect(result.type).toBe('success')
                 if (result.type === 'success') {
-                    expect(result.output).toContain('nginx-pod')
+                    expect(result.data).toContain('nginx-pod')
                 }
             })
 
@@ -47,7 +47,7 @@ describe('kubectl Executor', () => {
 
                 expect(result.type).toBe('success')
                 if (result.type === 'success') {
-                    expect(result.output).toContain('nginx-pod')
+                    expect(result.data).toContain('nginx-pod')
                 }
             })
 
@@ -57,7 +57,7 @@ describe('kubectl Executor', () => {
 
                 expect(result.type).toBe('success')
                 if (result.type === 'success') {
-                    expect(result.output).toContain('deleted')
+                    expect(result.data).toContain('deleted')
                 }
             })
 
@@ -67,7 +67,7 @@ describe('kubectl Executor', () => {
 
                 expect(result.type).toBe('success')
                 if (result.type === 'success') {
-                    expect(result.output).toContain('apply')
+                    expect(result.data).toContain('apply')
                 }
             })
 
@@ -77,7 +77,7 @@ describe('kubectl Executor', () => {
 
                 expect(result.type).toBe('success')
                 if (result.type === 'success') {
-                    expect(result.output).toContain('create')
+                    expect(result.data).toContain('create')
                 }
             })
         })
@@ -119,8 +119,8 @@ describe('kubectl Executor', () => {
 
                 expect(result.type).toBe('success')
                 if (result.type === 'success') {
-                    expect(result.output).toContain('redis-pod')
-                    expect(result.output).not.toContain('nginx-pod')
+                    expect(result.data).toContain('redis-pod')
+                    expect(result.data).not.toContain('nginx-pod')
                 }
             })
 
@@ -130,7 +130,7 @@ describe('kubectl Executor', () => {
 
                 expect(result.type).toBe('success')
                 if (result.type === 'success') {
-                    expect(result.output).toContain('redis-pod')
+                    expect(result.data).toContain('redis-pod')
                 }
             })
 
@@ -140,8 +140,8 @@ describe('kubectl Executor', () => {
 
                 expect(result.type).toBe('success')
                 if (result.type === 'success') {
-                    expect(result.output).toContain('nginx-pod')
-                    expect(result.output).not.toContain('redis-pod')
+                    expect(result.data).toContain('nginx-pod')
+                    expect(result.data).not.toContain('redis-pod')
                 }
             })
         })
@@ -228,7 +228,7 @@ describe('kubectl Executor', () => {
 
                 expect(result.type).toBe('success')
                 if (result.type === 'success') {
-                    expect(result.output).toContain('nginx-pod')
+                    expect(result.data).toContain('nginx-pod')
                 }
             })
 
@@ -238,7 +238,7 @@ describe('kubectl Executor', () => {
 
                 expect(result.type).toBe('success')
                 if (result.type === 'success') {
-                    expect(result.output).toContain('nginx-pod')
+                    expect(result.data).toContain('nginx-pod')
                 }
             })
 
@@ -257,8 +257,8 @@ describe('kubectl Executor', () => {
 
                 expect(result.type).toBe('success')
                 if (result.type === 'success') {
-                    expect(result.output).toBeTruthy()
-                    expect(result.output).toContain('nginx-pod')
+                    expect(result.data).toBeTruthy()
+                    expect(result.data).toContain('nginx-pod')
                 }
             })
 

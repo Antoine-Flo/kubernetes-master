@@ -29,7 +29,7 @@ describe('Terminal-Kubectl Integration', () => {
         terminal.onCommand((command) => {
             const result = kubectlExecutor.execute(command)
             if (result.type === 'success') {
-                const formattedOutput = result.output.split('\n').join('\r\n')
+                const formattedOutput = result.data.split('\n').join('\r\n')
                 terminal.write(`${formattedOutput}\r\n`)
             }
         })
@@ -49,7 +49,7 @@ describe('Terminal-Kubectl Integration', () => {
         terminal.onCommand((command) => {
             const result = kubectlExecutor.execute(command)
             if (result.type === 'success') {
-                const formattedOutput = result.output.split('\n').join('\r\n')
+                const formattedOutput = result.data.split('\n').join('\r\n')
                 terminal.write(`${formattedOutput}\r\n`)
             }
         })
@@ -66,7 +66,7 @@ describe('Terminal-Kubectl Integration', () => {
         terminal.onCommand((command) => {
             const result = kubectlExecutor.execute(command)
             if (result.type === 'success') {
-                const formattedOutput = result.output.split('\n').join('\r\n')
+                const formattedOutput = result.data.split('\n').join('\r\n')
                 terminal.write(`${formattedOutput}\r\n`)
             }
         })
@@ -85,7 +85,7 @@ describe('Terminal-Kubectl Integration', () => {
         terminal.onCommand((command) => {
             const result = kubectlExecutor.execute(command)
             if (result.type === 'success') {
-                const formattedOutput = result.output.split('\n').join('\r\n')
+                const formattedOutput = result.data.split('\n').join('\r\n')
                 terminal.write(`${formattedOutput}\r\n`)
             }
         })
@@ -145,7 +145,7 @@ describe('Terminal-Kubectl Integration', () => {
 
             const result = kubectlExecutor.execute(commandReceived)
             if (result.type === 'success') {
-                terminal.write(`${result.output}\r\n`)
+                terminal.write(`${result.data}\r\n`)
             }
         })
 
@@ -174,7 +174,7 @@ describe('Terminal-Kubectl Integration', () => {
             const result = kubectlExecutor.execute(trimmed)
 
             if (result.type === 'success') {
-                const formattedOutput = result.output.split('\n').join('\r\n')
+                const formattedOutput = result.data.split('\n').join('\r\n')
                 terminal.write(`${formattedOutput}\r\n`)
             } else {
                 terminal.write(`Error: ${result.message}\r\n`)

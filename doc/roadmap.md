@@ -11,7 +11,7 @@
 - **Sprint 3.2**: Executor avec routing (24 tests)
 - **Sprint 3.3**: Terminal Integration (8 tests)
 - **Sprint 4.1-4.3**: FileSystem Foundation (103 tests) - Library-ready design
-- **Sprint 4.4**: Shell Parser + Executor (47 tests) - Pure functions + Factory pattern
+- **Sprint 4.4**: Shell Parser + Executor (47 tests) - Pure functions + Factory pattern + Result centralization
 
 ### 🎯 Prochaine étape
 **Sprint 4.5-4.8** - Image Registry, Shell Handlers, Logger, Dispatcher
@@ -31,59 +31,12 @@
 - Labels & Selectors avancés (filtrage `-l`)
 - kubectl label/annotate (manipulation metadata)
 
----
-
-## ✅ Sprint 3.3 : Integration avec Terminal (TERMINÉ)
-
-**Objectif**: Connecter le parser/executor au terminal pour un flow end-to-end
-
-### Tâches
-- [x] Connecter parser/executor au TerminalManager
-- [x] Dispatcher: router kubectl vs shell commands (préparation Sprint 4)
-- [x] Test end-to-end: saisir commande → parser → executor → output dans terminal
-- [x] 8 tests d'intégration
-
-### Définition de Done
-- ✅ Commande `kubectl get pods` fonctionne dans le terminal
-- ✅ Output s'affiche correctement
-- ✅ Erreurs remontées au terminal
-- ✅ Flow complet validé
 
 ---
 
 ## 🎯 Sprint 4 : FileSystem + Shell Commands
 
 **Objectif**: Système de fichiers virtuel et commandes shell de base
-
-### 4.1 - FileSystem Models (TDD) ✅ TERMINÉ
-- [x] `src/filesystem/models/File.ts` - Factory pour fichiers multi-formats
-- [x] `src/filesystem/models/Directory.ts` - Factory pour dossiers
-- [x] Support extensions: `.yaml`, `.yml`, `.json`, `.kyaml`
-- [x] Immutabilité (Object.freeze)
-- [x] 24 tests (File: 18, Directory: 6)
-
-### 4.2 - FileSystem State (TDD) ✅ TERMINÉ
-- [x] `src/filesystem/FileSystem.ts` - Architecture hybrid (comme ClusterState)
-  - Pure functions: `resolvePath()`, `findNode()`, `getDepth()`, `validateFilename()`
-  - Closure facade: `createFileSystem()`
-  - Operations: `changeDirectory()`, `listDirectory()`, `createDirectory()`, `createFile()`, `readFile()`, `writeFile()`, `deleteFile()`, `deleteDirectory()`
-  - Validation max depth (3 niveaux)
-  - Typed results (discriminated unions)
-- [x] 69 tests
-
-### 4.3 - Seed FileSystem (TDD) ✅ TERMINÉ
-- [x] `src/filesystem/seedFileSystem.ts`
-  - Structure: `/examples/` avec pod (YAML), deployment (YML), service (JSON)
-  - Dossier `/manifests/` vide pour l'utilisateur
-  - Fonction pure `createSeedFileSystem(): FileSystemState`
-- [x] 10 tests
-
-### 4.4 - Shell Parser + Executor (TDD) ✅ TERMINÉ
-- [x] `src/shell/commands/types.ts` - Types pour shell commands
-- [x] `src/shell/commands/parser.ts` - Parse: cd, ls, pwd, mkdir, touch, cat, rm, clear, help
-- [x] `src/shell/commands/executor.ts` - Factory `createShellExecutor(fileSystem)`
-- [x] 47 tests (Parser: 23, Executor: 24)
-- [x] **Refactoring**: Command routing via object lookup (`COMMAND_HANDLERS`) au lieu de chaîne de `if` (auto-documente les dépendances)
 
 ### 4.5 - Image Registry + Pull Simulation (TDD)
 - [ ] `src/cluster/registry/ImageRegistry.ts`
@@ -992,8 +945,40 @@ npm run build      # Build production
 - Factory functions pour injection de dépendances via closures
 - Pure functions pour logique métier (testabilité maximale)
 - Discriminated unions pour error handling (pas d'exceptions)
+- **Result types centralisés** : `src/shared/result.ts` avec helpers `success()` / `error()`
+- Pattern Unix-like : Success = stdout, Error = stderr
 - Immutabilité complète (Object.freeze)
 - Types TypeScript stricts
-- Conventions de commentaires structurels (2-3 niveaux) pour organisation visuelle du code
+- Command routing via object lookup (pas de switch)
+- Conventions de commentaires structurels (2-3 niveaux)
 
 **À appliquer pour tous les nouveaux modules**.
+
+---
+
+## 🔧 Refactorings Complétés
+
+### Centralisation des Result Types (Octobre 2025)
+
+**Problème identifié** : 5 types Result dupliqués + ~100 lignes de boilerplate manuel
+
+**Solution** : Fichier central `src/shared/result.ts`
+
+**Impact** :
+- Types centralisés : `Result<T>`, `ExecutionResult = Result<string>`
+- Helpers : `success()`, `error()` (2 fonctions au lieu de 5+)
+- Pattern Unix-like : success = stdout, error = stderr
+- Supprimé type spécial `'clear'` → traité comme commande normale
+- Unifié `output` → `data` partout
+
+**Fichiers refactorisés** (8 fichiers) :
+- `src/filesystem/FileSystem.ts`
+- `src/cluster/ClusterState.ts`
+- `src/kubectl/commands/parser.ts`
+- `src/kubectl/commands/executor.ts`
+- `src/kubectl/commands/handlers/*.ts`
+- `src/shell/commands/parser.ts`
+- `src/shell/commands/executor.ts`
+- `src/main.ts`
+
+**Tests** : ✅ 265/265 passent (100% compatibility)

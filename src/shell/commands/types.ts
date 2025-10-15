@@ -21,7 +21,3 @@ export interface ParsedShellCommand {
     flags: Record<string, boolean | string>
 }
 
-export type ShellResult<T> =
-    | { type: 'success'; data: T }
-    | { type: 'error'; message: string }
-

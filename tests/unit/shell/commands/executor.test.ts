@@ -18,7 +18,7 @@ describe('Shell Executor', () => {
 
             expect(result.type).toBe('success')
             if (result.type === 'success') {
-                expect(result.output).toBe('/')
+                expect(result.data).toBe('/')
             }
         })
 
@@ -30,7 +30,7 @@ describe('Shell Executor', () => {
 
             expect(result.type).toBe('success')
             if (result.type === 'success') {
-                expect(result.output).toBe('/test')
+                expect(result.data).toBe('/test')
             }
         })
     })
@@ -71,7 +71,7 @@ describe('Shell Executor', () => {
 
             expect(result.type).toBe('success')
             if (result.type === 'success') {
-                expect(result.output).toBe('')
+                expect(result.data).toBe('')
             }
         })
 
@@ -83,8 +83,8 @@ describe('Shell Executor', () => {
 
             expect(result.type).toBe('success')
             if (result.type === 'success') {
-                expect(result.output).toContain('examples')
-                expect(result.output).toContain('manifests')
+                expect(result.data).toContain('examples')
+                expect(result.data).toContain('manifests')
             }
         })
 
@@ -96,8 +96,8 @@ describe('Shell Executor', () => {
 
             expect(result.type).toBe('success')
             if (result.type === 'success') {
-                expect(result.output).toContain('d  examples/')
-                expect(result.output).toContain('-  test.yaml')
+                expect(result.data).toContain('d  examples/')
+                expect(result.data).toContain('-  test.yaml')
             }
         })
 
@@ -111,7 +111,7 @@ describe('Shell Executor', () => {
 
             expect(result.type).toBe('success')
             if (result.type === 'success') {
-                expect(result.output).toContain('pod.yaml')
+                expect(result.data).toContain('pod.yaml')
             }
         })
     })
@@ -179,7 +179,7 @@ describe('Shell Executor', () => {
 
             expect(result.type).toBe('success')
             if (result.type === 'success') {
-                expect(result.output).toBe('Hello World')
+                expect(result.data).toBe('Hello World')
             }
         })
 
@@ -239,7 +239,10 @@ describe('Shell Executor', () => {
         it('should return clear signal', () => {
             const result = executor.execute('clear')
 
-            expect(result.type).toBe('clear')
+            expect(result.type).toBe('success')
+            if (result.type === 'success') {
+                expect(result.data).toBe('')
+            }
         })
     })
 
@@ -249,16 +252,16 @@ describe('Shell Executor', () => {
 
             expect(result.type).toBe('success')
             if (result.type === 'success') {
-                expect(result.output).toContain('Available shell commands')
-                expect(result.output).toContain('cd')
-                expect(result.output).toContain('ls')
-                expect(result.output).toContain('pwd')
-                expect(result.output).toContain('mkdir')
-                expect(result.output).toContain('touch')
-                expect(result.output).toContain('cat')
-                expect(result.output).toContain('rm')
-                expect(result.output).toContain('clear')
-                expect(result.output).toContain('help')
+                expect(result.data).toContain('Available shell commands')
+                expect(result.data).toContain('cd')
+                expect(result.data).toContain('ls')
+                expect(result.data).toContain('pwd')
+                expect(result.data).toContain('mkdir')
+                expect(result.data).toContain('touch')
+                expect(result.data).toContain('cat')
+                expect(result.data).toContain('rm')
+                expect(result.data).toContain('clear')
+                expect(result.data).toContain('help')
             }
         })
     })

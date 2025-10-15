@@ -6,6 +6,8 @@ import {
     type FileSystemNode
 } from './models'
 import { getFileExtension, isValidExtension } from './models/File'
+import type { Result } from '../shared/result'
+import { success, error } from '../shared/result'
 
 // ╔═══════════════════════════════════════════════════════════════════════╗
 // ║                      FILESYSTEM STATE MANAGEMENT                      ║
@@ -17,10 +19,6 @@ export interface FileSystemState {
     currentPath: string
     tree: DirectoryNode
 }
-
-export type Result<T, E> =
-    | { type: 'success'; data: T }
-    | { type: 'error'; message: E }
 
 // ─── Path Operations ─────────────────────────────────────────────────────
 
@@ -178,20 +176,20 @@ const createDirectoriesRecursive = (
 const createSingleDirectory = (
     tree: DirectoryNode,
     absolutePath: string
-): Result<void, string> => {
+): Result<void> => {
     const parts = absolutePath.split('/').filter(p => p.length > 0)
     const parentPath = '/' + parts.slice(0, -1).join('/')
     const parent = findNode(tree, parentPath)
 
     if (!parent || parent.type !== 'directory') {
-        return { type: 'error', message: `Parent directory not found: ${parentPath}` }
+        return error(`Parent directory not found: ${parentPath}`)
     }
 
     const dirName = parts[parts.length - 1]
     const dir = createDirectory(dirName, absolutePath)
     insertNode(tree, absolutePath, dir)
 
-    return { type: 'success', data: undefined }
+    return success(undefined)
 }
 
 // ─── Validation Helpers ──────────────────────────────────────────────────
@@ -203,22 +201,22 @@ const validateDirectoryCreation = (
     name: string,
     absolutePath: string,
     tree: DirectoryNode
-): Result<void, string> => {
+): Result<void> => {
     if (!validateFilename(name.split('/').pop() || '')) {
-        return { type: 'error', message: `Invalid directory name: ${name}` }
+        return error(`Invalid directory name: ${name}`)
     }
 
     // Max depth check (spec requirement)
     if (getDepth(absolutePath) > 3) {
-        return { type: 'error', message: `Max depth of 3 exceeded: ${absolutePath}` }
+        return error(`Max depth of 3 exceeded: ${absolutePath}`)
     }
 
     const existing = findNode(tree, absolutePath)
     if (existing) {
-        return { type: 'error', message: `Directory already exists: ${absolutePath}` }
+        return error(`Directory already exists: ${absolutePath}`)
     }
 
-    return { type: 'success', data: undefined }
+    return success(undefined)
 }
 
 /**
@@ -229,27 +227,27 @@ const validateFileCreation = (
     absolutePath: string,
     currentPath: string,
     tree: DirectoryNode
-): Result<void, string> => {
+): Result<void> => {
     if (!validateFilename(name)) {
-        return { type: 'error', message: `Invalid filename: ${name}` }
+        return error(`Invalid filename: ${name}`)
     }
 
     // Files don't add to depth - check parent directory depth only
     if (getDepth(currentPath) > 3) {
-        return { type: 'error', message: `Max depth of 3 exceeded: ${absolutePath}` }
+        return error(`Max depth of 3 exceeded: ${absolutePath}`)
     }
 
     const existing = findNode(tree, absolutePath)
     if (existing) {
-        return { type: 'error', message: `File already exists: ${absolutePath}` }
+        return error(`File already exists: ${absolutePath}`)
     }
 
     const ext = getFileExtension(name)
     if (!isValidExtension(ext)) {
-        return { type: 'error', message: `Unsupported file extension: ${ext}` }
+        return error(`Unsupported file extension: ${ext}`)
     }
 
-    return { type: 'success', data: undefined }
+    return success(undefined)
 }
 
 /**
@@ -258,16 +256,16 @@ const validateFileCreation = (
 const validateIsDirectory = (
     node: FileSystemNode | undefined,
     path: string
-): Result<DirectoryNode, string> => {
+): Result<DirectoryNode> => {
     if (!node) {
-        return { type: 'error', message: `Directory not found: ${path}` }
+        return error(`Directory not found: ${path}`)
     }
 
     if (node.type !== 'directory') {
-        return { type: 'error', message: `Not a directory: ${path}` }
+        return error(`Not a directory: ${path}`)
     }
 
-    return { type: 'success', data: node }
+    return success(node)
 }
 
 /**
@@ -276,16 +274,16 @@ const validateIsDirectory = (
 const validateIsFile = (
     node: FileSystemNode | undefined,
     path: string
-): Result<FileNode, string> => {
+): Result<FileNode> => {
     if (!node) {
-        return { type: 'error', message: `File not found: ${path}` }
+        return error(`File not found: ${path}`)
     }
 
     if (node.type !== 'file') {
-        return { type: 'error', message: `Not a file: ${path}` }
+        return error(`Not a file: ${path}`)
     }
 
-    return { type: 'success', data: node }
+    return success(node)
 }
 
 // ─── Navigation Operations ───────────────────────────────────────────────
@@ -295,7 +293,7 @@ const createNavigationOps = (getState: () => FileSystemState, setState: (s: File
         return getState().currentPath
     },
 
-    changeDirectory: (path: string): Result<string, string> => {
+    changeDirectory: (path: string): Result<string> => {
         const state = getState()
         const absolutePath = resolvePath(state.currentPath, path)
         const node = findNode(state.tree, absolutePath)
@@ -304,10 +302,10 @@ const createNavigationOps = (getState: () => FileSystemState, setState: (s: File
         if (validation.type === 'error') return validation
 
         setState({ ...state, currentPath: absolutePath })
-        return { type: 'success', data: absolutePath }
+        return success(absolutePath)
     },
 
-    listDirectory: (path?: string): Result<FileSystemNode[], string> => {
+    listDirectory: (path?: string): Result<FileSystemNode[]> => {
         const state = getState()
         const targetPath = path ? resolvePath(state.currentPath, path) : state.currentPath
         const node = findNode(state.tree, targetPath)
@@ -315,14 +313,14 @@ const createNavigationOps = (getState: () => FileSystemState, setState: (s: File
         const validation = validateIsDirectory(node, targetPath)
         if (validation.type === 'error') return validation
 
-        return { type: 'success', data: Array.from(validation.data.children.values()) }
+        return success(Array.from(validation.data.children.values()))
     }
 })
 
 // ─── Directory Operations ────────────────────────────────────────────────
 
 const createDirectoryOps = (getState: () => FileSystemState) => ({
-    createDirectory: (name: string, recursive = false): Result<string, string> => {
+    createDirectory: (name: string, recursive = false): Result<string> => {
         const state = getState()
         const absolutePath = resolvePath(state.currentPath, name)
 
@@ -331,21 +329,21 @@ const createDirectoryOps = (getState: () => FileSystemState) => ({
 
         if (recursive) {
             createDirectoriesRecursive(state.tree, absolutePath)
-            return { type: 'success', data: absolutePath }
+            return success(absolutePath)
         }
 
         const result = createSingleDirectory(state.tree, absolutePath)
         if (result.type === 'error') return result
 
-        return { type: 'success', data: absolutePath }
+        return success(absolutePath)
     },
 
-    deleteDirectory: (path: string, recursive = false): Result<void, string> => {
+    deleteDirectory: (path: string, recursive = false): Result<void> => {
         const state = getState()
         const absolutePath = resolvePath(state.currentPath, path)
 
         if (absolutePath === '/') {
-            return { type: 'error', message: 'Cannot delete root directory' }
+            return error('Cannot delete root directory')
         }
 
         const node = findNode(state.tree, absolutePath)
@@ -353,18 +351,18 @@ const createDirectoryOps = (getState: () => FileSystemState) => ({
         if (validation.type === 'error') return validation
 
         if (!recursive && validation.data.children.size > 0) {
-            return { type: 'error', message: `Directory not empty: ${absolutePath}` }
+            return error(`Directory not empty: ${absolutePath}`)
         }
 
         removeNode(state.tree, absolutePath)
-        return { type: 'success', data: undefined }
+        return success(undefined)
     }
 })
 
 // ─── File Operations ─────────────────────────────────────────────────────
 
 const createFileOps = (getState: () => FileSystemState) => ({
-    createFile: (name: string, content = ''): Result<FileNode, string> => {
+    createFile: (name: string, content = ''): Result<FileNode> => {
         const state = getState()
         const absolutePath = resolvePath(state.currentPath, name)
 
@@ -379,13 +377,13 @@ const createFileOps = (getState: () => FileSystemState) => ({
         try {
             const file = createFile(name, absolutePath, content)
             insertNode(state.tree, absolutePath, file)
-            return { type: 'success', data: file }
-        } catch (error) {
-            return { type: 'error', message: (error as Error).message }
+            return success(file)
+        } catch (err) {
+            return error((err as Error).message)
         }
     },
 
-    readFile: (path: string): Result<string, string> => {
+    readFile: (path: string): Result<string> => {
         const state = getState()
         const absolutePath = resolvePath(state.currentPath, path)
         const node = findNode(state.tree, absolutePath)
@@ -393,10 +391,10 @@ const createFileOps = (getState: () => FileSystemState) => ({
         const validation = validateIsFile(node, absolutePath)
         if (validation.type === 'error') return validation
 
-        return { type: 'success', data: validation.data.content }
+        return success(validation.data.content)
     },
 
-    writeFile: (path: string, content: string): Result<void, string> => {
+    writeFile: (path: string, content: string): Result<void> => {
         const state = getState()
         const absolutePath = resolvePath(state.currentPath, path)
         const node = findNode(state.tree, absolutePath)
@@ -409,10 +407,10 @@ const createFileOps = (getState: () => FileSystemState) => ({
         removeNode(state.tree, absolutePath)
         insertNode(state.tree, absolutePath, updatedFile)
 
-        return { type: 'success', data: undefined }
+        return success(undefined)
     },
 
-    deleteFile: (path: string): Result<void, string> => {
+    deleteFile: (path: string): Result<void> => {
         const state = getState()
         const absolutePath = resolvePath(state.currentPath, path)
         const node = findNode(state.tree, absolutePath)
@@ -421,7 +419,7 @@ const createFileOps = (getState: () => FileSystemState) => ({
         if (validation.type === 'error') return validation
 
         removeNode(state.tree, absolutePath)
-        return { type: 'success', data: undefined }
+        return success(undefined)
     }
 })
 

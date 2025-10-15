@@ -1,5 +1,7 @@
 import type { ClusterState } from '../../../cluster/ClusterState'
 import type { ParsedCommand } from '../types'
+import type { ExecutionResult } from '../../../shared/result'
+import { success, error } from '../../../shared/result'
 
 /**
  * Handle kubectl delete command
@@ -8,49 +10,31 @@ import type { ParsedCommand } from '../types'
 export const handleDelete = (
     clusterState: ClusterState,
     parsed: ParsedCommand
-): { type: 'success'; output: string } | { type: 'error'; message: string } => {
+): ExecutionResult => {
     const namespace = parsed.namespace || 'default'
 
     if (!parsed.name) {
-        return {
-            type: 'error',
-            message: `Resource name is required for delete command`
-        }
+        return error(`Resource name is required for delete command`)
     }
 
     if (parsed.resource === 'pods') {
         const result = clusterState.deletePod(parsed.name, namespace)
 
         if (result.type === 'error') {
-            return {
-                type: 'error',
-                message: result.message
-            }
+            return error(result.message)
         }
 
-        return {
-            type: 'success',
-            output: `pod "${parsed.name}" deleted`
-        }
+        return success(`pod "${parsed.name}" deleted`)
     }
 
     if (parsed.resource === 'deployments') {
-        return {
-            type: 'success',
-            output: `deployment "${parsed.name}" deleted`
-        }
+        return success(`deployment "${parsed.name}" deleted`)
     }
 
     if (parsed.resource === 'services') {
-        return {
-            type: 'success',
-            output: `service "${parsed.name}" deleted`
-        }
+        return success(`service "${parsed.name}" deleted`)
     }
 
-    return {
-        type: 'success',
-        output: `${parsed.resource} "${parsed.name}" deleted`
-    }
+    return success(`${parsed.resource} "${parsed.name}" deleted`)
 }
 

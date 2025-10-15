@@ -13,8 +13,3 @@ export interface ParsedCommand {
   flags: Record<string, string>
 }
 
-// Result type using discriminated unions
-export type CommandResult<T> =
-  | { type: 'success'; data: T }
-  | { type: 'error'; message: string }
-

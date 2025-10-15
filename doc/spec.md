@@ -34,33 +34,105 @@ Application web interactive permettant de s'entraîner aux commandes `kubectl` v
 ### Stack technologique
 - **Frontend** : HTML5, TypeScript, CSS (BEM)
 - **Terminal** : xterm.js
-- **Build** : Vite [[memory:7046759]]
-- **UI Framework** : daisyUI [[memory:6873963]]
+- **Build** : Vite
+- **UI Framework** : daisyUI
 - **Tests** : Vitest
 - **Persistance** : localStorage (Phase 1), IndexedDB (Phase 2+)
 
-### Principes architecturaux [[memory:6873972]]
+### Principes architecturaux
 - **KISS** : Keep It Simple, Stupid
 - **DRY** : Don't Repeat Yourself
-- **Functional Programming** : Éviter les classes, préférer les fonctions pures et les closures
-- **Clean Architecture** : Séparation des responsabilités
-- **Découplage** : Modules indépendants et testables
-- **Indentation max** : 3 niveaux [[memory:7046752]]
-- **Pas de switch statements** [[memory:7046752]]
-- **Accolades obligatoires** : Toujours utiliser {} même pour les one-liners (if, for, while)
-- **Library-First Design** : FileSystem, Shell, et Terminal sont conçus comme composants réutilisables
-  - Zéro dépendances entre modules génériques (filesystem/shell/terminal) et modules applicatifs (kubectl/cluster)
-  - Prêt pour extraction dans un package npm standalone pour réutilisation dans d'autres projets
-  - Parsing/validation des formats de fichiers se fait au niveau applicatif (kubectl apply)
-  - FileSystem est agnostique au format (stocke le contenu comme string)
+- **Functional Programming** : Factory functions + Pure functions (pas de classes)
+- **Indentation max** : 3 niveaux
+- **Pas de switch** : Utiliser object lookup ou if/else
+- **Library-First Design** : Modules génériques réutilisables
+
+### Patterns techniques essentiels
+
+#### 1. Result Types (Error Handling)
+
+**Pattern Unix-like** : Success = stdout, Error = stderr
+
+```typescript
+// src/shared/result.ts - Centralisé pour tout le projet
+export type Result<T> = 
+    | { type: 'success'; data: T }
+    | { type: 'error'; message: string }
+
+export type ExecutionResult = Result<string>  // Pour commandes
+
+// Helpers
+export const success = <T>(data: T): Result<T> => ({ type: 'success', data })
+export const error = (message: string): Result<never> => ({ type: 'error', message })
+```
+
+**Usage**:
+```typescript
+import { success, error } from '../../shared/result'
+
+// Au lieu de: return { type: 'success', data: value }
+return success(value)
+
+// Au lieu de: return { type: 'error', message: 'error' }
+return error('error message')
+```
+
+#### 2. Factory Functions (State Management)
+
+**Pattern** : Closure pour encapsuler l'état mutable
+
+```typescript
+export const createSomething = (initialState?: State) => {
+    let state = initialState || defaultState
+    
+    return {
+        method1: () => { /* use/modify state */ },
+        method2: () => { /* use/modify state */ },
+        toJSON: () => ({ ...state })
+    }
+}
+```
+
+#### 3. Pure Functions (Business Logic)
+
+**Pattern** : Fonctions sans side-effects pour logique métier
+
+```typescript
+// ✅ Pure - testable, prévisible
+export const calculateAge = (timestamp: string): string => {
+    const now = new Date()
+    const created = new Date(timestamp)
+    const diffMs = now.getTime() - created.getTime()
+    return `${Math.floor(diffMs / 60000)}m`
+}
+
+// ❌ Impure - side effects
+const updateGlobalState = (value) => { globalVar = value }
+```
+
+#### 4. Command Pattern
+
+**Pattern** : Object lookup au lieu de if/switch chains
+
+```typescript
+const HANDLERS: Record<string, HandlerFn> = {
+    get: (args) => handleGet(args),
+    describe: (args) => handleDescribe(args),
+    delete: (args) => handleDelete(args),
+}
+
+const handler = HANDLERS[command]
+if (!handler) return error(`Unknown command: ${command}`)
+return handler(args)
+```
 
 ### Conventions de commentaires
 
-**Philosophie** : Les commentaires ont deux rôles distincts :
-1. **Structurels** : Organiser le code en sections logiques significatives
-2. **Explicatifs** : Expliquer le **pourquoi**, les comportements K8s, et les décisions non-évidentes
+**2 types** :
+1. **Structurels** : Header de fichier + sous-sections si >8 fonctions
+2. **Explicatifs** : Pourquoi, comportements K8s, décisions non-évidentes
 
-**Principe** : Aérer sans alourdir - créer des sections logiques, pas annoter chaque fonction.
+**Règle simple** : Commenter le pourquoi, pas le quoi
 
 #### Commentaires structurels (Organisation)
 
@@ -292,24 +364,9 @@ interface FileNode {
 }
 
 type FileSystemNode = DirectoryNode | FileNode
-
-// Factory functions (functional programming)
-const createDirectory = (name: string, path: string): DirectoryNode => ({
-  type: "directory",
-  name,
-  path,
-  children: new Map()
-})
-
-const createFile = (name: string, path: string, content = ""): FileNode => ({
-  type: "file",
-  name,
-  path,
-  content,
-  createdAt: new Date().toISOString(),
-  modifiedAt: new Date().toISOString()
-})
 ```
+
+Voir `src/filesystem/models/` pour l'implémentation des factory functions.
 
 ### Contraintes du filesystem
 
@@ -322,50 +379,14 @@ const createFile = (name: string, path: string, content = ""): FileNode => ({
 - **Chemins** : Format Unix (`/path/to/file`)
 - **Racine** : Toujours `/` (home directory virtuel)
 
-### Exemple de ressource Pod
+### Ressources Kubernetes
 
-```typescript
-interface Pod {
-  apiVersion: "v1"
-  kind: "Pod"
-  metadata: {
-    name: string
-    namespace: string
-    labels?: Record<string, string>
-    creationTimestamp: string
-  }
-  spec: {
-    containers: Container[]
-  }
-  status: {
-    phase: "Pending" | "Running" | "Succeeded" | "Failed" | "Unknown"
-    restartCount: number
-    containerStatuses?: ContainerStatus[]
-  }
-  // Chaos hooks (préparation Phase 3, optionnel en MVP)
-  chaosConfig?: {
-    enabled: boolean
-    scenario?: "crash" | "imagePullError" | "networkFailure"
-    triggerAfter?: number  // ms
-  }
-}
+Voir `src/cluster/models/Pod.ts` pour l'implémentation complète.
 
-// Factory function (functional programming)
-const createPod = (name: string, namespace: string, containers: Container[]): Pod => ({
-  apiVersion: "v1",
-  kind: "Pod",
-  metadata: {
-    name,
-    namespace,
-    creationTimestamp: new Date().toISOString()
-  },
-  spec: { containers },
-  status: {
-    phase: "Pending",
-    restartCount: 0
-  }
-})
-```
+**Principes** :
+- Factory functions pour créer les ressources
+- Interfaces TypeScript strictes
+- Chaos hooks optionnels (Phase 3)
 
 ---
 
@@ -420,60 +441,13 @@ Format standard : `[registry/]name[:tag]`
 - Tag inexistant → Erreur avec liste des tags disponibles
 - Format invalide → Erreur de parsing
 
-### Simulation du Pull
+### Simulation du Pull (Phase 1 - Sprint 4.5)
 
-Pure function qui simule le processus de pull d'image :
+Pure function qui simule le pull et retourne :
+- Success → Events normaux + logs générés
+- Error → ImagePullBackOff si image inconnue
 
-```typescript
-interface PullResult {
-  type: 'success' | 'error'
-  phase: PodPhase
-  events: Event[]
-  logs: LogEntry[]
-}
-
-// Pure function
-const simulateImagePull = (imageString: string): PullResult => {
-  const resolved = resolveImage(imageString)
-  
-  if (resolved.type === 'error') {
-    return {
-      type: 'error',
-      phase: 'Pending',
-      events: [
-        {
-          type: 'Warning',
-          reason: 'Failed',
-          message: `Failed to pull image "${imageString}": image not found`,
-          timestamp: new Date().toISOString()
-        },
-        {
-          type: 'Warning',
-          reason: 'BackOff',
-          message: 'Back-off pulling image',
-          timestamp: new Date().toISOString()
-        }
-      ],
-      logs: []
-    }
-  }
-  
-  const { manifest, tag } = resolved
-  
-  return {
-    type: 'success',
-    phase: manifest.behavior.defaultStatus,
-    events: [
-      { type: 'Normal', reason: 'Scheduled', message: 'Successfully assigned pod to node', timestamp: '...' },
-      { type: 'Normal', reason: 'Pulling', message: `Pulling image "${imageString}"`, timestamp: '...' },
-      { type: 'Normal', reason: 'Pulled', message: `Successfully pulled image`, timestamp: '...' },
-      { type: 'Normal', reason: 'Created', message: 'Created container', timestamp: '...' },
-      { type: 'Normal', reason: 'Started', message: 'Started container', timestamp: '...' }
-    ],
-    logs: manifest.behavior.logGenerator(pod)
-  }
-}
-```
+Voir roadmap Sprint 4.5 pour détails d'implémentation.
 
 ### UI Registry Panel
 
@@ -615,27 +589,7 @@ interface Pod {
 - **Réalisme** : Format et contenu similaires aux vrais containers
 - **Persistance** : Sauvegardés avec le ClusterState dans localStorage
 
-**Exemple de génération de logs** :
-
-```typescript
-// Pure function pour générer logs nginx
-const generateNginxLogs = (pod: Pod): LogEntry[] => {
-  const baseTime = new Date(pod.metadata.creationTimestamp)
-  return [
-    {
-      timestamp: baseTime.toISOString(),
-      stream: "stdout",
-      message: "Starting nginx 1.21.0..."
-    },
-    {
-      timestamp: new Date(baseTime.getTime() + 1000).toISOString(),
-      stream: "stdout",
-      message: "GET / 200 0.002s - [10.0.1.1]"
-    },
-    // ... plus de logs
-  ]
-}
-```
+**Implémentation** : Pure functions par type de container (nginx, redis, etc.) - Voir Sprint 5.6
 
 ### Logs applicatifs (debug)
 
@@ -658,41 +612,7 @@ interface ApplicationLogEntry {
 - **Dev mirror** : Logs également visibles dans la console navigateur en mode dev
 - **Accessible** : Via commande `debug` dans le terminal
 
-**Factory function** :
-
-```typescript
-const createLogger = () => {
-  const entries: ApplicationLogEntry[] = []
-  const MAX_ENTRIES = 500
-  
-  const log = (level: LogLevel, category: string, message: string) => {
-    entries.push({
-      timestamp: new Date().toISOString(),
-      level,
-      category,
-      message
-    })
-    
-    if (entries.length > MAX_ENTRIES) {
-      entries.shift()
-    }
-    
-    // Mirror to console in dev
-    if (import.meta.env.DEV) {
-      console.log(`[${category}] ${message}`)
-    }
-  }
-  
-  return {
-    info: (cat: string, msg: string) => log("info", cat, msg),
-    warn: (cat: string, msg: string) => log("warn", cat, msg),
-    error: (cat: string, msg: string) => log("error", cat, msg),
-    debug: (cat: string, msg: string) => log("debug", cat, msg),
-    getEntries: () => [...entries],
-    clear: () => { entries.length = 0 }
-  }
-}
-```
+**Implémentation** : Factory function avec closure (Sprint 4.7 - voir roadmap)
 
 **Exemple d'utilisation** :
 
@@ -955,142 +875,13 @@ interface PromptConfig {
   - Badges pour les achievements
   - Buttons pour la navigation (Next, Previous, Try Again)
 
-### Exemple d'implémentation fonctionnelle
+### Implémentation
 
-```typescript
-// Terminal: Factory function avec closures
-export const createTerminalManager = (container: HTMLElement) => {
-  const terminal = new Terminal({ /* config */ })
-  let currentLine = ''
-  let commandCallback: ((cmd: string) => void) | undefined
-  
-  const handleInput = (data: string) => {
-    // Logic...
-  }
-  
-  terminal.open(container)
-  terminal.onData(handleInput)
-  
-  return {
-    write: (text: string) => terminal.write(text),
-    onCommand: (cb) => { commandCallback = cb },
-    showPrompt: () => terminal.write('kubectl> '),
-    focus: () => terminal.focus()
-  }
-}
-```
-
-```typescript
-// Command Dispatcher: Route vers kubectl ou shell commands
-export const createCommandDispatcher = (
-  clusterState: ClusterState,
-  fileSystem: FileSystem,
-  terminal: TerminalManager
-) => {
-  const kubectlExecutor = createKubectlExecutor(clusterState, fileSystem)
-  const shellExecutor = createShellExecutor(fileSystem)
-  
-  const dispatch = (input: string): string => {
-    const trimmed = input.trim()
-    
-    if (trimmed.startsWith('kubectl ')) {
-      return kubectlExecutor.execute(trimmed)
-    }
-    
-    // Shell commands (cd, ls, pwd, mkdir, touch, cat, rm, clear, help)
-    return shellExecutor.execute(trimmed)
-  }
-  
-  return { dispatch }
-}
-```
-
-```typescript
-// FileSystem: Factory function avec closures + pure functions
-// Pure functions pour les opérations
-const resolvePath = (currentPath: string, targetPath: string): string => {
-  // Résout chemin relatif/absolu
-  if (targetPath.startsWith('/')) return targetPath
-  // ... logic
-}
-
-const getDepth = (path: string): number => {
-  return path.split('/').filter(p => p.length > 0).length
-}
-
-const findNode = (tree: DirectoryNode, path: string): FileSystemNode | undefined => {
-  // Traverse l'arbre pour trouver le nœud (fonction pure)
-}
-
-// Facade avec closures
-export const createFileSystem = (initialState?: FileSystemState) => {
-  let state: FileSystemState = initialState || {
-    currentPath: '/',
-    tree: createDirectory('root', '/')
-  }
-
-  return {
-    getCurrentPath: () => state.currentPath,
-    
-    changeDirectory: (path: string) => {
-      const absolutePath = resolvePath(state.currentPath, path)
-      const node = findNode(state.tree, absolutePath)
-      
-      if (!node || node.type !== 'directory') {
-        return { type: 'error', message: 'Directory not found' }
-      }
-      
-      state = { ...state, currentPath: absolutePath }
-      return { type: 'success', data: absolutePath }
-    },
-    
-    listDirectory: (path?: string) => {
-      const targetPath = path ? resolvePath(state.currentPath, path) : state.currentPath
-      const node = findNode(state.tree, targetPath)
-      
-      if (!node || node.type !== 'directory') {
-        return { type: 'error', message: 'Not a directory' }
-      }
-      
-      return { type: 'success', data: Array.from(node.children.values()) }
-    },
-    
-    createDirectory: (name: string) => {
-      const newPath = `${state.currentPath}/${name}`.replace('//', '/')
-      
-      if (getDepth(newPath) > 3) {
-        return { type: 'error', message: 'Max depth of 3 exceeded' }
-      }
-      
-      // ... mutation de state.tree (immutable update)
-      return { type: 'success', data: newPath }
-    },
-    
-    createFile: (name: string, content = '') => {
-      const newPath = `${state.currentPath}/${name}`.replace('//', '/')
-      // ... créer fichier
-    },
-    
-    readFile: (path: string) => {
-      const absolutePath = resolvePath(state.currentPath, path)
-      const node = findNode(state.tree, absolutePath)
-      
-      if (!node || node.type !== 'file') {
-        return { type: 'error', message: 'File not found' }
-      }
-      
-      return { type: 'success', data: node.content }
-    },
-    
-    writeFile: (path: string, content: string) => {
-      // Update file content (immutable)
-    },
-    
-    toJSON: () => state,
-    loadState: (newState: FileSystemState) => { state = newState }
-  }
-}
-```
+Voir le code source pour les détails :
+- `src/terminal/TerminalManager.ts` - Terminal avec xterm.js
+- `src/filesystem/FileSystem.ts` - Filesystem avec factory + pure functions  
+- `src/main.ts` - Dispatcher kubectl vs shell
+- Tous suivent les patterns définis ci-dessus
 
 ---
 
@@ -1111,36 +902,11 @@ export const createFileSystem = (initialState?: FileSystemState) => {
 - Tests d'intégration pour les flux complets
 - Tests de snapshot pour l'output formaté (?)
 
-### Exemple de test fonctionnel
+### Stratégie de tests
 
-```typescript
-// Fonction pure = test simple
-describe('parseCommand', () => {
-  it('should parse get pods command', () => {
-    const result = parseCommand('kubectl get pods')
-    expect(result).toEqual({
-      action: 'get',
-      resource: 'pods',
-      name: undefined,
-      flags: {}
-    })
-  })
-})
-
-// Factory function = test avec setup
-describe('createTerminalManager', () => {
-  it('should handle commands', () => {
-    const container = document.createElement('div')
-    const terminal = createTerminalManager(container)
-    const callback = vi.fn()
-    
-    terminal.onCommand(callback)
-    terminal.simulateInput('test\r')
-    
-    expect(callback).toHaveBeenCalledWith('test')
-  })
-})
-```
+- **Pure functions** → Tests simples, pas de setup
+- **Factory functions** → Tests avec setup/teardown
+- Voir `tests/` pour exemples complets
 
 ---
 
@@ -1270,143 +1036,36 @@ interface Pod {
 - **Integration Challenges** : Utiliser chaos dans les exercices
 - **Reset rapide** : Restaurer état normal en un clic
 
-#### Exemples d'utilisation
-
-**Scénario 1 : Debug a Crashing Pod**
-```
-1. Active chaos mode
-2. Sélectionne pod nginx-abc123
-3. Configure scenario: "crash"
-4. Execute
-→ Pod passe en CrashLoopBackOff
-→ Utilisateur doit diagnostiquer et corriger
-```
-
-**Scénario 2 : ImagePullBackOff Recovery**
-```
-1. Configure scenario sur image "myapp:v2.0"
-2. Trigger after 60s
-3. Execute
-→ Après 60s, nouveaux pods échouent à pull l'image
-→ Utilisateur doit identifier et corriger (rollback, fix tag, etc.)
-```
+**Scénarios** : CrashLoopBackOff, ImagePullBackOff, NetworkFailure, OOM (Sprint 15)
 
 ### Challenges System
 
 **Objectif** : Scénarios pratiques où l'utilisateur doit résoudre un problème réel
 
-#### Modèle de données Challenge
+#### Structure
 
-```typescript
-interface Challenge {
-  id: string
-  title: string
-  description: string
-  difficulty: "beginner" | "intermediate" | "advanced"
-  category: "debugging" | "scaling" | "networking" | "security"
-  
-  // Seed cluster pré-configuré pour ce challenge
-  initialClusterState: ClusterState
-  
-  // Objectifs à atteindre
-  objectives: Objective[]
-  
-  // Hints progressifs
-  hints: string[]
-  
-  // Validation
-  validator: (state: ClusterState, history: string[]) => ValidationResult
-}
+- Seed cluster pré-configuré avec problème
+- Objectifs à valider
+- Hints progressifs
+- Validator automatique
 
-interface Objective {
-  id: string
-  description: string
-  isCompleted: (state: ClusterState) => boolean
-}
+Détails d'implémentation : Voir roadmap Sprint 16.
 
-type ValidationResult = 
-  | { type: 'incomplete', nextHint?: string }
-  | { type: 'success', message: string, score: number }
-  | { type: 'failed', reason: string }
-```
-
-#### Exemples de Challenges
-
-1. **"Debug a Crashing Pod"**
-   - État initial : Pod en CrashLoopBackOff
-   - Objectif : Identifier le problème et le corriger
-   - Validation : Pod passe en Running
-
-2. **"Scale a Deployment"**
-   - État initial : Deployment avec 1 replica sous charge
-   - Objectif : Scaler à 3 replicas
-   - Validation : 3 pods Running avec bon label
-
-3. **"Fix Networking Issue"**
-   - État initial : Service pointe vers mauvais pods
-   - Objectif : Corriger les labels/selectors
-   - Validation : Service expose les bons pods
-
-4. **"Resource Cleanup"**
-   - État initial : Cluster avec ressources orphelines
-   - Objectif : Supprimer pods non utilisés
-   - Validation : Seulement pods essentiels restent
+**Exemples** : Debug pod, Scale deployment, Fix service, Resource cleanup (Sprint 16)
 
 ### Lessons System
 
 **Objectif** : Tutoriels interactifs guidés avec théorie + pratique
 
-#### Modèle de données Lesson
+#### Structure
 
-```typescript
-interface Lesson {
-  id: string
-  title: string
-  category: "basics" | "intermediate" | "advanced"
-  duration: number  // minutes estimées
-  
-  // Contenu pédagogique
-  sections: LessonSection[]
-  
-  // Cluster pour expérimentation
-  playgroundState?: ClusterState
-  
-  // Progression
-  progress: number  // 0-100%
-}
+- Sections : text, examples, exercises, quiz
+- Validation automatique des exercices
+- Progress tracking
 
-interface LessonSection {
-  type: "text" | "example" | "exercise" | "quiz"
-  title: string
-  content: string | ExerciseContent | QuizContent
-}
+Détails : Voir roadmap Sprint 17.
 
-interface ExerciseContent {
-  instruction: string
-  expectedCommands?: string[]
-  validator: (state: ClusterState, commands: string[]) => boolean
-  solution: string
-}
-```
-
-#### Exemples de Lessons
-
-1. **"Introduction to Pods"**
-   - Qu'est-ce qu'un Pod ?
-   - Anatomy d'un Pod (containers, labels, status)
-   - Exercice : Lister et inspecter des pods
-   - Quiz : Identifier l'état d'un Pod
-
-2. **"Working with Deployments"**
-   - Pourquoi les Deployments ?
-   - Relation Deployment → ReplicaSet → Pods
-   - Exercice : Créer et scaler un deployment
-   - Challenge : Rolling update
-
-3. **"Kubernetes Networking Basics"**
-   - Services et leurs types
-   - Labels et selectors
-   - Exercice : Exposer une app avec un Service
+**Exemples** : Intro Pods, Deployments, Networking (Sprint 17)
 
 ### Cluster Visualizer
 
@@ -1439,31 +1098,7 @@ interface ExerciseContent {
 - Icônes pour types de ressources
 - Badges pour statuts
 
-#### Implémentation recommandée (Phase 3)
-
-```typescript
-// Factory function pour le visualizer
-const createClusterVisualizer = (container: HTMLElement, mode: 'tree' | 'graph' | 'cards') => {
-  let currentState: ClusterState
-  
-  const render = (state: ClusterState) => {
-    currentState = state
-    if (mode === 'tree') renderTree(container, state)
-    if (mode === 'graph') renderGraph(container, state)
-    if (mode === 'cards') renderCards(container, state)
-  }
-  
-  const renderTree = (container: HTMLElement, state: ClusterState) => {
-    // Pure HTML/CSS tree avec accordéons daisyUI
-  }
-  
-  return {
-    render,
-    setMode: (newMode) => { mode = newMode; render(currentState) },
-    destroy: () => { container.innerHTML = '' }
-  }
-}
-```
+**Implémentation** : Factory function avec modes (tree/graph/cards) - Sprint 18
 
 ### Intégration UI
 
@@ -1518,9 +1153,8 @@ const createClusterVisualizer = (container: HTMLElement, mode: 'tree' | 'graph' 
 
 ## 📝 Notes
 
-- Privilégier les APIs web natives quand possible [[memory:7046756]]
+- Privilégier les APIs web natives quand possible
 - Garder le code simple et lisible
 - Chaque module doit être testable indépendamment
 - La simulation n'a pas besoin d'être parfaite, juste pédagogiquement utile
-- Phase 3 (Learning Platform) : à concevoir après validation du MVP
 

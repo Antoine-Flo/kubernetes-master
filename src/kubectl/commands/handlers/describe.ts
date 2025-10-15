@@ -1,5 +1,7 @@
 import type { ClusterStateData } from '../../../cluster/ClusterState'
 import type { ParsedCommand } from '../types'
+import type { ExecutionResult } from '../../../shared/result'
+import { success, error } from '../../../shared/result'
 
 /**
  * Handle kubectl describe command
@@ -8,14 +10,11 @@ import type { ParsedCommand } from '../types'
 export const handleDescribe = (
     state: ClusterStateData,
     parsed: ParsedCommand
-): { type: 'success'; output: string } | { type: 'error'; message: string } => {
+): ExecutionResult => {
     const namespace = parsed.namespace || 'default'
 
     if (!parsed.name) {
-        return {
-            type: 'error',
-            message: `Resource name is required for describe command`
-        }
+        return error(`Resource name is required for describe command`)
     }
 
     if (parsed.resource === 'pods') {
@@ -24,10 +23,7 @@ export const handleDescribe = (
         )
 
         if (!pod) {
-            return {
-                type: 'error',
-                message: `Pod "${parsed.name}" not found in namespace "${namespace}"`
-            }
+            return error(`Pod "${parsed.name}" not found in namespace "${namespace}"`)
         }
 
         // Placeholder detailed format - will be replaced with proper formatter in Sprint 5
@@ -41,15 +37,9 @@ export const handleDescribe = (
             ...pod.spec.containers.map(c => `    Image: ${c.image}`)
         ]
 
-        return {
-            type: 'success',
-            output: lines.join('\n')
-        }
+        return success(lines.join('\n'))
     }
 
-    return {
-        type: 'success',
-        output: `Placeholder: describe ${parsed.resource} ${parsed.name}`
-    }
+    return success(`Placeholder: describe ${parsed.resource} ${parsed.name}`)
 }
 

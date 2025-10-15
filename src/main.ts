@@ -51,10 +51,10 @@ terminal.onCommand((command) => {
     // Execute kubectl command
     const result = kubectlExecutor.execute(trimmed)
 
-    // Display result
+    // Display result (stdout/stderr)
     if (result.type === 'success') {
         // Format output with proper line endings
-        const formattedOutput = result.output.split('\n').join('\r\n')
+        const formattedOutput = result.data.split('\n').join('\r\n')
         terminal.write(`${formattedOutput}\r\n`)
     } else {
         terminal.write(`Error: ${result.message}\r\n`)

@@ -1,4 +1,5 @@
 import type { Pod } from './models/Pod'
+import type { Result } from '../shared/result'
 
 // ╔═══════════════════════════════════════════════════════════════════════╗
 // ║                    KUBERNETES CLUSTER STATE                           ║
@@ -10,10 +11,6 @@ export interface ClusterStateData {
 }
 
 // Result types for operations
-export type OperationResult<T> =
-    | { type: 'success'; data: T }
-    | { type: 'error'; message: string }
-
 export type DeleteResult =
     | { type: 'success'; data: Pod; state: ClusterStateData }
     | { type: 'error'; message: string }
@@ -40,7 +37,7 @@ export const findPod = (
     state: ClusterStateData,
     name: string,
     namespace: string
-): OperationResult<Pod> => {
+): Result<Pod> => {
     const pod = state.pods.find(
         (p) => p.metadata.name === name && p.metadata.namespace === namespace
     )
@@ -88,8 +85,8 @@ export const deletePod = (
 export interface ClusterState {
     getPods: (namespace?: string) => Pod[]
     addPod: (pod: Pod) => void
-    findPod: (name: string, namespace: string) => OperationResult<Pod>
-    deletePod: (name: string, namespace: string) => OperationResult<Pod>
+    findPod: (name: string, namespace: string) => Result<Pod>
+    deletePod: (name: string, namespace: string) => Result<Pod>
     toJSON: () => ClusterStateData
     loadState: (state: ClusterStateData) => void
 }

@@ -1,4 +1,6 @@
-import type { ShellCommand, ParsedShellCommand, ShellResult } from './types'
+import type { ShellCommand, ParsedShellCommand } from './types'
+import type { Result } from '../../shared/result'
+import { success, error } from '../../shared/result'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SHELL COMMAND PARSER
@@ -23,24 +25,24 @@ const VALID_COMMANDS: ShellCommand[] = [
  * @param input - Raw command string (e.g., "ls -l", "cd /manifests")
  * @returns Parsed command or error
  */
-export const parseShellCommand = (input: string): ShellResult<ParsedShellCommand> => {
+export const parseShellCommand = (input: string): Result<ParsedShellCommand> => {
     // Trim and check for empty input
     const trimmed = input.trim()
     if (!trimmed) {
-        return { type: 'error', message: 'Command cannot be empty' }
+        return error('Command cannot be empty')
     }
 
     // Split into tokens, filtering out empty strings
     const tokens = trimmed.split(/\s+/).filter((t) => t.length > 0)
 
     if (tokens.length === 0) {
-        return { type: 'error', message: 'Command cannot be empty' }
+        return error('Command cannot be empty')
     }
 
     // Extract command (first token)
     const command = extractCommand(tokens)
     if (!command) {
-        return { type: 'error', message: `Unknown command: ${tokens[0]}` }
+        return error(`Unknown command: ${tokens[0]}`)
     }
 
     // Parse flags and args
@@ -53,7 +55,7 @@ export const parseShellCommand = (input: string): ShellResult<ParsedShellCommand
         flags,
     }
 
-    return { type: 'success', data: parsed }
+    return success(parsed)
 }
 
 const extractCommand = (tokens: string[]): ShellCommand | undefined => {

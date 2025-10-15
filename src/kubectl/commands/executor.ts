@@ -6,11 +6,8 @@ import { handleDescribe } from './handlers/describe'
 import { handleDelete } from './handlers/delete'
 import { handleApply } from './handlers/apply'
 import { handleCreate } from './handlers/create'
-
-// Execution result type using discriminated unions
-export type ExecutionResult =
-    | { type: 'success'; output: string }
-    | { type: 'error'; message: string }
+import type { ExecutionResult } from '../../shared/result'
+import { error, success } from '../../shared/result'
 
 /**
  * Kubectl executor interface
@@ -33,10 +30,7 @@ export const createKubectlExecutor = (clusterState: ClusterState): KubectlExecut
 
         // Handle parser errors
         if (parseResult.type === 'error') {
-            return {
-                type: 'error',
-                message: parseResult.message
-            }
+            return error(parseResult.message)
         }
 
         const parsed = parseResult.data
@@ -57,7 +51,7 @@ const routeCommand = (clusterState: ClusterState, parsed: ParsedCommand): Execut
 
     if (action === 'get') {
         const output = handleGet(clusterState.toJSON(), parsed)
-        return { type: 'success', output }
+        return success(output)
     }
 
     if (action === 'describe') {
@@ -70,18 +64,15 @@ const routeCommand = (clusterState: ClusterState, parsed: ParsedCommand): Execut
 
     if (action === 'apply') {
         const output = handleApply(parsed)
-        return { type: 'success', output }
+        return success(output)
     }
 
     if (action === 'create') {
         const output = handleCreate(parsed)
-        return { type: 'success', output }
+        return success(output)
     }
 
     // This should never happen due to parser validation, but TypeScript needs exhaustiveness
-    return {
-        type: 'error',
-        message: `Unknown action: ${action}`
-    }
+    return error(`Unknown action: ${action}`)
 }
 

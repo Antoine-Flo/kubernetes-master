@@ -1,4 +1,6 @@
-import type { Action, Resource, ParsedCommand, CommandResult } from './types'
+import type { Action, Resource, ParsedCommand } from './types'
+import type { Result } from '../../shared/result'
+import { success, error } from '../../shared/result'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // KUBECTL COMMAND PARSER
@@ -35,11 +37,11 @@ function buildResourceAliasMap(): Record<string, string> {
  * Main entry point for parsing kubectl commands
  * Pure function that takes a command string and returns a parsed result
  */
-export const parseCommand = (input: string): CommandResult<ParsedCommand> => {
+export const parseCommand = (input: string): Result<ParsedCommand> => {
     // Trim and check for empty input
     const trimmed = input.trim()
     if (!trimmed) {
-        return { type: 'error', message: 'Command cannot be empty' }
+        return error('Command cannot be empty')
     }
 
     // Split into tokens, filtering out empty strings
@@ -47,33 +49,30 @@ export const parseCommand = (input: string): CommandResult<ParsedCommand> => {
 
     // Validate kubectl prefix
     if (tokens.length === 0 || tokens[0] !== 'kubectl') {
-        return { type: 'error', message: 'Command must start with kubectl' }
+        return error('Command must start with kubectl')
     }
 
     // Extract action (second token)
     const action = extractAction(tokens)
     if (!action) {
-        return { type: 'error', message: 'Invalid or missing action' }
+        return error('Invalid or missing action')
     }
 
     // For apply/create, resource might not be specified
     if (action === 'apply' || action === 'create') {
         const flags = parseFlags(tokens)
-        return {
-            type: 'success',
-            data: {
-                action,
-                resource: 'pods' as Resource, // Default, will be determined from file content
-                flags,
-                namespace: flags.n || flags.namespace,
-            },
-        }
+        return success({
+            action,
+            resource: 'pods' as Resource, // Default, will be determined from file content
+            flags,
+            namespace: flags.n || flags.namespace,
+        })
     }
 
     // Extract resource (third token, unless it's a flag)
     const resource = extractResource(tokens)
     if (!resource) {
-        return { type: 'error', message: 'Invalid or missing resource type' }
+        return error('Invalid or missing resource type')
     }
 
     // Extract resource name (fourth token, if present and not a flag)
@@ -85,7 +84,7 @@ export const parseCommand = (input: string): CommandResult<ParsedCommand> => {
     // Validate flags - ensure flag values are present
     const flagValidation = validateFlags(tokens)
     if (flagValidation) {
-        return { type: 'error', message: flagValidation }
+        return error(flagValidation)
     }
 
     // Build parsed command
@@ -97,7 +96,7 @@ export const parseCommand = (input: string): CommandResult<ParsedCommand> => {
         flags,
     }
 
-    return { type: 'success', data: parsed }
+    return success(parsed)
 }
 
 /**

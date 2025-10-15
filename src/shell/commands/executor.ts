@@ -1,6 +1,8 @@
 import { createFileSystem } from '../../filesystem/FileSystem'
 import { parseShellCommand } from './parser'
 import type { ParsedShellCommand } from './types'
+import type { ExecutionResult } from '../../shared/result'
+import { error, success } from '../../shared/result'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SHELL COMMAND EXECUTOR
@@ -9,11 +11,6 @@ import type { ParsedShellCommand } from './types'
 // Supports navigation (cd, pwd), listing (ls), file ops (touch, cat, rm), etc.
 
 export type FileSystem = ReturnType<typeof createFileSystem>
-
-export type ExecutionResult =
-    | { type: 'success'; output: string }
-    | { type: 'error'; message: string }
-    | { type: 'clear' }
 
 export interface ShellExecutor {
     execute: (input: string) => ExecutionResult
@@ -27,7 +24,7 @@ type CommandHandler = (
 
 const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     pwd: (fs) => handlePwd(fs),
-    clear: () => ({ type: 'clear' }),
+    clear: () => handleClear(),
     help: () => handleHelp(),
     cd: (fs, args) => handleCd(fs, args),
     ls: (fs, args, flags) => handleLs(fs, args, flags),
@@ -51,10 +48,7 @@ export const createShellExecutor = (fileSystem: FileSystem): ShellExecutor => {
 
         // Handle parser errors
         if (parseResult.type === 'error') {
-            return {
-                type: 'error',
-                message: parseResult.message
-            }
+            return error(parseResult.message)
         }
 
         const parsed = parseResult.data
@@ -72,10 +66,7 @@ const routeCommand = (fileSystem: FileSystem, parsed: ParsedShellCommand): Execu
     const handler = COMMAND_HANDLERS[command]
 
     if (!handler) {
-        return {
-            type: 'error',
-            message: `Unknown command: ${command}`
-        }
+        return error(`Unknown command: ${command}`)
     }
 
     return handler(fileSystem, args, flags)
@@ -83,7 +74,12 @@ const routeCommand = (fileSystem: FileSystem, parsed: ParsedShellCommand): Execu
 
 const handlePwd = (fileSystem: FileSystem): ExecutionResult => {
     const currentPath = fileSystem.getCurrentPath()
-    return { type: 'success', output: currentPath }
+    return success(currentPath)
+}
+
+const handleClear = (): ExecutionResult => {
+    // Return empty output - terminal will handle clearing
+    return success('')
 }
 
 const handleCd = (fileSystem: FileSystem, args: string[]): ExecutionResult => {
@@ -91,19 +87,19 @@ const handleCd = (fileSystem: FileSystem, args: string[]): ExecutionResult => {
         // cd without args goes to root
         const result = fileSystem.changeDirectory('/')
         if (result.type === 'error') {
-            return { type: 'error', message: result.message }
+            return error(result.message)
         }
-        return { type: 'success', output: '' }
+        return success('')
     }
 
     const path = args[0]
     const result = fileSystem.changeDirectory(path)
 
     if (result.type === 'error') {
-        return { type: 'error', message: result.message }
+        return error(result.message)
     }
 
-    return { type: 'success', output: '' }
+    return success('')
 }
 
 const handleLs = (fileSystem: FileSystem, args: string[], flags: Record<string, boolean | string>): ExecutionResult => {
@@ -113,19 +109,19 @@ const handleLs = (fileSystem: FileSystem, args: string[], flags: Record<string, 
     const result = fileSystem.listDirectory(targetPath)
 
     if (result.type === 'error') {
-        return { type: 'error', message: result.message }
+        return error(result.message)
     }
 
     const nodes = result.data
 
     // Simple listing (just names)
     if (!flags.l) {
-        const names = nodes.map(node => node.name).join('  ')
-        return { type: 'success', output: names }
+        const names = nodes.map((node) => node.name).join('  ')
+        return success(names)
     }
 
     // Detailed listing (-l flag)
-    const lines = nodes.map(node => {
+    const lines = nodes.map((node) => {
         const type = node.type === 'directory' ? 'd' : '-'
         const name = node.name
         if (node.type === 'directory') {
@@ -134,7 +130,7 @@ const handleLs = (fileSystem: FileSystem, args: string[], flags: Record<string, 
         return `${type}  ${name}`
     })
 
-    return { type: 'success', output: lines.join('\n') }
+    return success(lines.join('\n'))
 }
 
 const handleMkdir = (fileSystem: FileSystem, args: string[], flags: Record<string, boolean | string>): ExecutionResult => {
@@ -142,47 +138,47 @@ const handleMkdir = (fileSystem: FileSystem, args: string[], flags: Record<strin
     const dirName = typeof flags.p === 'string' ? flags.p : args[0]
 
     if (!dirName) {
-        return { type: 'error', message: 'mkdir: missing operand' }
+        return error('mkdir: missing operand')
     }
 
     // Note: -p recursive creation will be handled in future sprint
     const result = fileSystem.createDirectory(dirName)
 
     if (result.type === 'error') {
-        return { type: 'error', message: result.message }
+        return error(result.message)
     }
 
-    return { type: 'success', output: '' }
+    return success('')
 }
 
 const handleTouch = (fileSystem: FileSystem, args: string[]): ExecutionResult => {
     if (args.length === 0) {
-        return { type: 'error', message: 'touch: missing file operand' }
+        return error('touch: missing file operand')
     }
 
     const fileName = args[0]
     const result = fileSystem.createFile(fileName)
 
     if (result.type === 'error') {
-        return { type: 'error', message: result.message }
+        return error(result.message)
     }
 
-    return { type: 'success', output: '' }
+    return success('')
 }
 
 const handleCat = (fileSystem: FileSystem, args: string[]): ExecutionResult => {
     if (args.length === 0) {
-        return { type: 'error', message: 'cat: missing file operand' }
+        return error('cat: missing file operand')
     }
 
     const filePath = args[0]
     const result = fileSystem.readFile(filePath)
 
     if (result.type === 'error') {
-        return { type: 'error', message: result.message }
+        return error(result.message)
     }
 
-    return { type: 'success', output: result.data }
+    return success(result.data)
 }
 
 const handleRm = (fileSystem: FileSystem, args: string[], flags: Record<string, boolean | string>): ExecutionResult => {
@@ -190,25 +186,25 @@ const handleRm = (fileSystem: FileSystem, args: string[], flags: Record<string, 
     const target = typeof flags.r === 'string' ? flags.r : args[0]
 
     if (!target) {
-        return { type: 'error', message: 'rm: missing operand' }
+        return error('rm: missing operand')
     }
 
     // If -r flag is present (boolean or string), delete directory
     if (flags.r) {
         const result = fileSystem.deleteDirectory(target)
         if (result.type === 'error') {
-            return { type: 'error', message: result.message }
+            return error(result.message)
         }
-        return { type: 'success', output: '' }
+        return success('')
     }
 
     // Otherwise delete file
     const result = fileSystem.deleteFile(target)
     if (result.type === 'error') {
-        return { type: 'error', message: result.message }
+        return error(result.message)
     }
 
-    return { type: 'success', output: '' }
+    return success('')
 }
 
 const handleHelp = (): ExecutionResult => {
@@ -227,6 +223,6 @@ const handleHelp = (): ExecutionResult => {
 
 Use 'kubectl' prefix for Kubernetes commands`
 
-    return { type: 'success', output: helpText }
+    return success(helpText)
 }
 
