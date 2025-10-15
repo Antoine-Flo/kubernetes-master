@@ -2,7 +2,7 @@
 
 ## 📊 État actuel du projet
 
-**218 tests passent** | **Coverage: 88.86%** | **Architecture: Functional (Factory + Pure functions)**
+**265 tests passent** | **Coverage: 90.35%** | **Architecture: Functional (Factory + Pure functions)**
 
 ### ✅ Completé
 - **Sprint 1**: Terminal xterm.js fonctionnel (9 tests)
@@ -11,16 +11,25 @@
 - **Sprint 3.2**: Executor avec routing (24 tests)
 - **Sprint 3.3**: Terminal Integration (8 tests)
 - **Sprint 4.1-4.3**: FileSystem Foundation (103 tests) - Library-ready design
+- **Sprint 4.4**: Shell Parser + Executor (47 tests) - Pure functions + Factory pattern
 
 ### 🎯 Prochaine étape
-**Sprint 4.4-4.8** - Shell Commands, Image Registry, Logger, Dispatcher
+**Sprint 4.5-4.8** - Image Registry, Shell Handlers, Logger, Dispatcher
 
-### 📋 À venir
-- Sprint 4: FileSystem + Shell Commands
-- Sprint 5: kubectl Handlers + Formatters
-- Sprint 6: Storage + Integration (MVP)
-- Phase 2: Enhanced Features
-- Phase 3: Learning Platform
+### 📋 À venir (Roadmap complète enrichie - 26 sprints)
+- **Sprint 4-6**: MVP (FileSystem, Shell, kubectl + Core K8s Resources, Storage)
+- **Phase 2 (Sprint 7-14)**: Advanced K8s Resources (Multi-container, PV/PVC, Jobs, RBAC, HPA, Terminal UX)
+- **Phase 3 (Sprint 15-20)**: Learning Platform (Chaos, Challenges, Lessons, Visualizer)
+- **Phase 4 (Sprint 21-26)**: Advanced Infrastructure (Nodes, CoreDNS, Control Plane, Differentiators)
+
+### 🎯 Must-Have pour rivaliser avec KodeKloud/Killer.sh
+**Sprint 5** intègre maintenant les éléments critiques:
+- ConfigMaps & Secrets (stockage configuration)
+- kubectl exec (debugging #1)
+- Resource requests/limits (QoS)
+- Liveness/Readiness probes (health checks)
+- Labels & Selectors avancés (filtrage `-l`)
+- kubectl label/annotate (manipulation metadata)
 
 ---
 
@@ -69,10 +78,12 @@
   - Fonction pure `createSeedFileSystem(): FileSystemState`
 - [x] 10 tests
 
-### 4.4 - Shell Parser + Executor (TDD)
-- [ ] `src/shell/commands/parser.ts` - Parse: cd, ls, pwd, mkdir, touch, cat, rm, clear, help
-- [ ] `src/shell/commands/executor.ts` - Factory `createShellExecutor(fileSystem)`
-- [ ] ~15-20 tests
+### 4.4 - Shell Parser + Executor (TDD) ✅ TERMINÉ
+- [x] `src/shell/commands/types.ts` - Types pour shell commands
+- [x] `src/shell/commands/parser.ts` - Parse: cd, ls, pwd, mkdir, touch, cat, rm, clear, help
+- [x] `src/shell/commands/executor.ts` - Factory `createShellExecutor(fileSystem)`
+- [x] 47 tests (Parser: 23, Executor: 24)
+- [x] **Refactoring**: Command routing via object lookup (`COMMAND_HANDLERS`) au lieu de chaîne de `if` (auto-documente les dépendances)
 
 ### 4.5 - Image Registry + Pull Simulation (TDD)
 - [ ] `src/cluster/registry/ImageRegistry.ts`
@@ -129,9 +140,9 @@
 
 ---
 
-## 🎯 Sprint 5 : kubectl Handlers + Formatters
+## 🎯 Sprint 5 : kubectl Handlers + Core Resources (MVP)
 
-**Objectif**: Implémenter les commandes kubectl essentielles avec formatage propre
+**Objectif**: Implémenter les commandes kubectl essentielles + ressources K8s critiques
 
 ### 5.1 - Table Formatter (TDD)
 - [ ] `src/kubectl/formatters/table-formatter.ts`
@@ -140,53 +151,86 @@
   - Format ASCII (comme kubectl)
 - [ ] ~10-12 tests
 
-### 5.2 - Get Handlers (TDD)
+### 5.2 - Core Resource Models (TDD) 🔥 CRITIQUE
+- [ ] `src/cluster/models/ConfigMap.ts` - Factory pour ConfigMaps
+  - Store configuration data (key-value pairs)
+  - Support `data` et `binaryData` fields
+- [ ] `src/cluster/models/Secret.ts` - Factory pour Secrets
+  - Store sensitive data (base64 encoded)
+  - Types: Opaque, kubernetes.io/service-account-token, etc.
+- [ ] Enrichir Pod model avec:
+  - Resource requests/limits (CPU, memory) dans container spec
+  - Liveness/Readiness/Startup probes (httpGet, exec, tcpSocket)
+  - Environment variables (valueFrom: configMapKeyRef, secretKeyRef)
+  - Volume mounts (configMap, secret, emptyDir)
+- [ ] `src/cluster/models/probeSimulator.ts` - Pure functions
+  - `evaluateLivenessProbe()`, `evaluateReadinessProbe()`
+  - Simulation health checks → restart pod si liveness fail
+- [ ] ~25-30 tests
+
+### 5.3 - Get Handlers (TDD)
 - [ ] Améliorer `src/kubectl/commands/handlers/get.ts`
   - Utiliser table formatter
-  - Support tous les types de ressources
+  - Support: pods, deployments, services, configmaps, secrets, namespaces
   - Filtre par namespace (`-n` flag)
+  - Filtre par labels (`-l` flag) 🔥 CRITIQUE
   - Calcul AGE (fonction utilitaire)
   - Logger les requêtes (application logger)
-- [ ] ~15-20 tests
+- [ ] ~20-25 tests
 
-### 5.3 - Describe Handler (TDD)
+### 5.4 - Describe Handler (TDD)
 - [ ] Améliorer `src/kubectl/commands/handlers/describe.ts`
   - Format multi-lignes détaillé
-  - Affichage complet des métadonnées
-- [ ] ~8-10 tests
+  - Affichage complet des métadonnées, labels, annotations
+  - Environment variables (avec masquage secrets)
+  - Volume mounts
+  - Probes configuration
+- [ ] ~12-15 tests
 
-### 5.4 - Apply/Create Handlers (TDD)
+### 5.5 - Apply/Create Handlers (TDD)
 - [ ] Install `js-yaml` dependency
 - [ ] Améliorer `src/kubectl/commands/handlers/apply.ts`
   - Read file from FileSystem
   - Parse YAML (`js-yaml`)
-  - Create/update resource in cluster
-- [ ] ~15-20 tests
+  - Create/update: Pod, ConfigMap, Secret, Deployment, Service
+  - Validation schema basique
+- [ ] ~20-25 tests
 
-### 5.5 - kubectl logs Handler (TDD)
+### 5.6 - kubectl logs + exec (TDD) 🔥 CRITIQUE
 - [ ] Améliorer Pod model: `status.logs: LogEntry[]`
 - [ ] **Préparer Chaos Hooks** : Ajouter `chaosConfig?: ChaosConfig` dans Pod/Deployment models
-  - Flags pour injection future d'erreurs (crashOnStart, failHealthcheck, etc.)
-  - Structure optionnelle, pas utilisée en MVP mais prête pour Phase 3
 - [ ] `src/kubectl/commands/handlers/logs.ts`
   - Support `kubectl logs <pod-name>`
-  - Support `kubectl logs <pod-name> -n <namespace>`
-  - Flag `--tail=N` (optionnel MVP)
+  - Support `-n <namespace>`, `--tail=N`, `-f` (simulation follow)
+- [ ] `src/kubectl/commands/handlers/exec.ts` 🔥 MUST-HAVE
+  - `kubectl exec -it <pod> -- <command>`
+  - Simulation interactive shell (commandes: ls, pwd, env, cat, echo, exit)
+  - Message pédagogique si commande non supportée
 - [ ] `src/cluster/models/logGenerator.ts` - Pure functions
-  - `generateNginxLogs()`, `generateRedisLogs()`, etc.
-  - Logs dynamiques basés sur container type + phase
+  - Logs dynamiques par container type + phase
   - Rotation automatique (max 200 lignes/pod)
+- [ ] ~25-30 tests
+
+### 5.7 - kubectl label & annotate (TDD) 🔥 CRITIQUE
+- [ ] `src/kubectl/commands/handlers/label.ts`
+  - `kubectl label pods <name> <key>=<value>`
+  - `kubectl label pods <name> <key>-` (remove label)
+  - Support `--overwrite` flag
+- [ ] `src/kubectl/commands/handlers/annotate.ts`
+  - Même logique que label mais pour annotations
 - [ ] ~15-20 tests
 
 ### Définition de Done
-- `kubectl get pods` affiche tableau formaté
-- `kubectl describe pod <name>` affiche détails complets
-- `kubectl delete pod <name>` supprime le pod
-- `kubectl apply -f <path>` crée ressource depuis fichier
-- `kubectl logs <pod-name>` affiche logs simulés
-- Commande `debug` pour logs applicatifs
-- kubectl + filesystem intégrés
-- Tests > 80% coverage
+- ✅ ConfigMaps & Secrets créables et injectables dans pods
+- ✅ Resource requests/limits supportés dans Pod spec
+- ✅ Probes (liveness/readiness) fonctionnels avec simulation restart
+- ✅ `kubectl get pods -l app=nginx` filtre par labels
+- ✅ `kubectl exec -it pod -- /bin/sh` fonctionne (shell simulé)
+- ✅ `kubectl label/annotate` pour manipuler metadata
+- ✅ `kubectl describe` affiche toutes les infos (env, volumes, probes)
+- ✅ `kubectl apply -f` crée ConfigMaps/Secrets depuis YAML
+- ✅ Tests > 85% coverage
+- ✅ **~130-160 tests total pour Sprint 5**
 
 ---
 
@@ -238,81 +282,688 @@
 
 ---
 
-## 🚀 Phase 2 : Enhanced Features
+## 🚀 Phase 2 : Advanced Kubernetes Features
 
-**Objectif**: Améliorer l'expérience utilisateur
+**Objectif**: Ressources K8s avancées pour reproduction complète de l'expérience CKA/CKAD
 
-### Priorities
-1. **Terminal Syntax Highlighting** - Coloration en temps réel pendant la frappe
-   - Commandes valides en vert (kubectl, ls, cd, etc.)
-   - Commandes invalides/inconnues en rouge
-   - Arguments/flags en couleurs différentes
-   - Comme une extension IDE avec feedback visuel immédiat
-   - Utiliser les capacités ANSI de xterm.js
-2. **Enhanced Prompt** - Prompt dynamique et contextuel
-   - Affichage du chemin courant (déjà spécifié : `~/manifests/dev>`)
-   - Username/hostname personnalisable (ex: `user@k8s-sim:~/manifests$`)
-   - Indicateur de contexte (namespace courant, cluster name)
-   - Couleurs adaptatives (vert pour succès, rouge après erreur)
-3. **Real Registry Integration** - Fetch images depuis Docker Hub API
-   - Toggle "Use real registry data" dans l'UI
-   - Fetch tags/metadata depuis API Docker Hub (dry-run, pas de pull)
-   - Fallback sur liste hardcodée si offline/erreur
-   - Rate limiting et cache intelligent
-4. **Terminal-based YAML Editor** - Éditeur nano-like intégré dans xterm
-5. **Enhanced Terminal Features** - Historique commandes (↑↓), autocomplétion (Tab)
-6. **Additional Resources** - Deployment, Service, Namespace models
-7. **Advanced kubectl** - `kubectl exec`, `kubectl scale`, `kubectl rollout`
-8. **Chaos Hooks & Flags** - Préparer l'infrastructure pour chaos engineering (Phase 3)
-   - Ajouter flags dans Pod/Deployment/Service models (`chaosConfig`)
-   - Support injection d'erreurs programmables
-   - Events system étendu pour tracking anomalies
-   - Base pour disaster recovery scenarios (GUI en Phase 3)
+### Sprint 7 : Multi-Container Pods & Init Containers ⭐ HAUTE
 
-**Estimé**: 6-7 sprints additionnels après MVP
+**Objectif**: Patterns architecturaux courants (sidecar, adapter, ambassador)
+
+- [ ] Enrichir Pod model pour multi-containers
+  - Support multiple containers dans `spec.containers[]`
+  - Shared volumes entre containers (emptyDir)
+  - Network namespace partagé (localhost communication)
+- [ ] Init Containers
+  - `spec.initContainers[]` - s'exécutent avant main containers
+  - Séquence d'exécution (ordre dans le array)
+  - Simulation setup tasks (migration DB, wait-for dependencies)
+- [ ] Exemples seed:
+  - Sidecar pattern: app + logging agent
+  - Init pattern: DB migration before app start
+- [ ] ~20-25 tests
+
+**Définition de Done**:
+- ✅ Pod avec 2+ containers fonctionnel
+- ✅ Init containers s'exécutent avant main containers
+- ✅ Shared volumes fonctionnent (emptyDir)
+- ✅ `kubectl logs <pod> -c <container>` spécifie container
+
+---
+
+### Sprint 8 : Storage (PV/PVC) & StatefulSets ⭐ HAUTE
+
+**Objectif**: Storage persistent et workloads stateful
+
+#### 8.1 - PersistentVolumes & Claims (TDD)
+- [ ] `src/cluster/models/PersistentVolume.ts` - Factory pour PV
+  - Capacity, accessModes (ReadWriteOnce, ReadWriteMany, ReadOnlyMany)
+  - StorageClass, reclaimPolicy (Retain, Delete, Recycle)
+  - Status: Available, Bound, Released, Failed
+- [ ] `src/cluster/models/PersistentVolumeClaim.ts` - Factory pour PVC
+  - Requested capacity, accessModes, storageClassName
+  - Binding logic (match PV to PVC)
+- [ ] Binding simulation (pure function)
+  - Automatic binding: find matching PV for PVC
+  - Status transitions: Pending → Bound
+- [ ] ~20-25 tests
+
+#### 8.2 - StatefulSets (TDD)
+- [ ] `src/cluster/models/StatefulSet.ts` - Factory pour StatefulSets
+  - Ordered pod creation/deletion (pod-0, pod-1, pod-2...)
+  - Stable network identities: `<statefulset>-<ordinal>.<service>`
+  - Persistent storage per replica (volumeClaimTemplates)
+  - Update strategies: RollingUpdate, OnDelete
+- [ ] Controllers simulation
+  - Create pods in order
+  - Maintain stable naming
+  - Auto-create PVCs from templates
+- [ ] `kubectl scale statefulset` handler
+- [ ] ~25-30 tests
+
+**Définition de Done**:
+- ✅ PV/PVC lifecycle complet (Available → Bound)
+- ✅ StatefulSet crée pods ordonnés avec storage persistent
+- ✅ `kubectl get pv/pvc` fonctionne
+- ✅ Scaling StatefulSet respecte l'ordre
+
+---
+
+### Sprint 9 : Workloads - Jobs, CronJobs, DaemonSets ⭐ HAUTE
+
+**Objectif**: Workloads spécialisés pour batch et infrastructure
+
+#### 9.1 - Jobs (TDD)
+- [ ] `src/cluster/models/Job.ts` - Factory pour Jobs
+  - Completions, parallelism, backoffLimit
+  - Status: Active, Succeeded, Failed
+  - Pod template spec
+- [ ] Job controller simulation
+  - Create pods until completion
+  - Track completions
+  - Cleanup policy (TTL after finished)
+- [ ] `kubectl create job`, `kubectl delete job`
+- [ ] ~15-20 tests
+
+#### 9.2 - CronJobs (TDD)
+- [ ] `src/cluster/models/CronJob.ts` - Factory pour CronJobs
+  - Schedule (cron syntax)
+  - Job template
+  - concurrencyPolicy: Allow, Forbid, Replace
+  - successfulJobsHistoryLimit, failedJobsHistoryLimit
+- [ ] CronJob controller (simulation timestamp-based)
+  - Parse cron schedule
+  - Create Jobs selon schedule
+  - History cleanup
+- [ ] ~15-20 tests
+
+#### 9.3 - DaemonSets (TDD)
+- [ ] `src/cluster/models/DaemonSet.ts` - Factory pour DaemonSets
+  - Un pod par node (simulation multi-node)
+  - updateStrategy: RollingUpdate, OnDelete
+- [ ] DaemonSet controller
+  - Ensure 1 pod per node
+  - Node selector support
+- [ ] ~15-20 tests
+
+**Définition de Done**:
+- ✅ Job exécute task et track completions
+- ✅ CronJob crée Jobs selon schedule
+- ✅ DaemonSet maintient 1 pod/node
+- ✅ `kubectl get jobs/cronjobs/daemonsets` fonctionne
+
+---
+
+### Sprint 10 : kubectl Advanced Commands ⭐ HAUTE
+
+**Objectif**: Commandes kubectl critiques pour debugging et ops
+
+#### 10.1 - kubectl rollout (TDD) 🔥 MUST-HAVE
+- [ ] `src/kubectl/commands/handlers/rollout.ts`
+  - `kubectl rollout status deployment/<name>`
+  - `kubectl rollout history deployment/<name>`
+  - `kubectl rollout undo deployment/<name>` (rollback)
+  - `kubectl rollout pause/resume deployment/<name>`
+- [ ] Revision tracking dans Deployment
+- [ ] ~20-25 tests
+
+#### 10.2 - kubectl port-forward (TDD) 🔥 MUST-HAVE
+- [ ] `src/kubectl/commands/handlers/port-forward.ts`
+  - `kubectl port-forward pod/<name> 8080:80`
+  - Simulation message (pas de vrai tunnel, juste pédagogique)
+  - Afficher accès URL (http://localhost:8080)
+- [ ] ~10-12 tests
+
+#### 10.3 - kubectl top (TDD)
+- [ ] `src/kubectl/commands/handlers/top.ts`
+  - `kubectl top pods` - afficher CPU/memory usage
+  - `kubectl top nodes` - stats par node
+  - Fake metrics basées sur resource requests
+- [ ] ~12-15 tests
+
+#### 10.4 - kubectl config (contexts/kubeconfig) (TDD)
+- [ ] `src/cluster/models/KubeConfig.ts` - Contexts, clusters, users
+  - Multiple contexts (dev, staging, prod)
+  - Current context tracking
+- [ ] `src/kubectl/commands/handlers/config.ts`
+  - `kubectl config get-contexts`
+  - `kubectl config use-context <name>`
+  - `kubectl config set-context --current --namespace=<ns>`
+- [ ] Prompt update selon context/namespace
+- [ ] ~15-20 tests
+
+**Définition de Done**:
+- ✅ `kubectl rollout undo` fait rollback
+- ✅ `kubectl port-forward` simule tunneling
+- ✅ `kubectl top` affiche métriques
+- ✅ Switch contexts fonctionne, prompt s'adapte
+
+---
+
+### Sprint 11 : Security & Networking (RBAC, Ingress) 🎯 MOYENNE
+
+**Objectif**: Sécurité et exposition avancée
+
+#### 11.1 - RBAC (Role-Based Access Control) (TDD)
+- [ ] `src/cluster/models/ServiceAccount.ts` - Factory pour ServiceAccounts
+- [ ] `src/cluster/models/Role.ts` - Factory pour Roles (namespace-scoped)
+- [ ] `src/cluster/models/ClusterRole.ts` - Factory pour ClusterRoles (cluster-wide)
+- [ ] `src/cluster/models/RoleBinding.ts` / `ClusterRoleBinding.ts`
+- [ ] Permission checking logic (pure function)
+  - `canPerformAction(subject, verb, resource, namespace): boolean`
+- [ ] `kubectl auth can-i` handler
+  - `kubectl auth can-i create pods`
+  - `kubectl auth can-i delete deployments --as=user`
+- [ ] ~30-35 tests
+
+#### 11.2 - Ingress (TDD)
+- [ ] `src/cluster/models/Ingress.ts` - Factory pour Ingress
+  - Rules: host + path → backend service
+  - TLS configuration
+  - Annotations (nginx.ingress.kubernetes.io/*)
+- [ ] Ingress routing simulation (pure function)
+  - Match request (host/path) → service
+- [ ] `kubectl get/describe/apply ingress`
+- [ ] ~20-25 tests
+
+#### 11.3 - NetworkPolicies (TDD)
+- [ ] `src/cluster/models/NetworkPolicy.ts` - Factory pour NetworkPolicies
+  - podSelector (apply policy to pods matching labels)
+  - Ingress/Egress rules
+  - Allow from specific namespaces/pods
+- [ ] Policy evaluation simulation (pédagogique)
+  - Check if traffic allowed: pod-A → pod-B
+- [ ] `kubectl get/describe networkpolicies`
+- [ ] ~20-25 tests
+
+**Définition de Done**:
+- ✅ RBAC complet (ServiceAccount, Roles, Bindings)
+- ✅ `kubectl auth can-i` valide permissions
+- ✅ Ingress route traffic vers services
+- ✅ NetworkPolicies appliquent isolation
+
+---
+
+### Sprint 12 : Autoscaling & Resource Quotas 🎯 MOYENNE
+
+**Objectif**: Scaling automatique et governance
+
+#### 12.1 - HorizontalPodAutoscaler (TDD)
+- [ ] `src/cluster/models/HorizontalPodAutoscaler.ts` - Factory pour HPA
+  - Target: Deployment/ReplicaSet/StatefulSet
+  - Metrics: CPU, memory utilization
+  - minReplicas, maxReplicas
+- [ ] HPA controller simulation
+  - Calculate desired replicas basé sur metrics
+  - Scale target workload
+- [ ] `kubectl autoscale deployment` handler
+- [ ] ~20-25 tests
+
+#### 12.2 - ResourceQuotas & LimitRanges (TDD)
+- [ ] `src/cluster/models/ResourceQuota.ts` - Factory pour ResourceQuotas
+  - Limits per namespace (pods count, CPU, memory)
+  - Validation on resource creation
+- [ ] `src/cluster/models/LimitRange.ts` - Factory pour LimitRanges
+  - Default requests/limits for containers
+  - Min/max constraints
+- [ ] Quota enforcement (pure function)
+  - Block creation if quota exceeded
+- [ ] ~20-25 tests
+
+**Définition de Done**:
+- ✅ HPA scale automatiquement selon CPU/memory
+- ✅ ResourceQuota bloque création si dépassement
+- ✅ LimitRange applique defaults automatiquement
+- ✅ `kubectl get hpa/quota/limitrange` fonctionne
+
+---
+
+### Sprint 13 : Terminal Enhancements & UX 🎨
+
+**Objectif**: Améliorer expérience utilisateur du terminal
+
+- [ ] **Syntax Highlighting** - Coloration en temps réel pendant frappe
+  - Commandes valides (vert), invalides (rouge)
+  - Arguments/flags colorés
+- [ ] **Enhanced Prompt** - Prompt contextuel
+  - Username@hostname, chemin, context/namespace
+  - Couleurs adaptatives
+- [ ] **Command History** - Historique avec ↑↓
+- [ ] **Tab Autocompletion** - Autocomplétion commandes/resources
+- [ ] **Terminal YAML Editor** - Éditeur nano-like intégré
+  - `kubectl edit pod <name>` ouvre éditeur
+  - Navigation flèches, Ctrl+S save, Ctrl+Q quit
+- [ ] ~25-30 tests
+
+**Définition de Done**:
+- ✅ Coloration syntaxique temps réel
+- ✅ Historique commandes (↑↓) fonctionne
+- ✅ Autocomplétion Tab fonctionne
+- ✅ Éditeur YAML intégré utilisable
+
+---
+
+### Sprint 14 : Real Registry Integration & Chaos Hooks 🔧
+
+**Objectif**: Réalisme et préparation Phase 3
+
+- [ ] **Real Registry Integration**
+  - Toggle "Use real registry data"
+  - Fetch depuis Docker Hub API (dry-run)
+  - Fallback hardcodé si offline
+  - Cache intelligent + rate limiting
+- [ ] **Chaos Hooks Infrastructure**
+  - Enrichir models avec `chaosConfig` optionnel
+  - Events system étendu
+  - Base pour Phase 3 GUI
+- [ ] ~15-20 tests
+
+**Estimé Phase 2**: **8 sprints** (Sprint 7-14) après MVP
 
 ---
 
 ## 🎓 Phase 3 : Learning Platform
 
-**Objectif**: Transformer le simulateur en plateforme d'apprentissage interactive
+**Objectif**: Transformer le simulateur en plateforme d'apprentissage interactive comme KodeKloud/Killer.sh
 
-### Chaos Engineering System (Sprint 7)
-- **GUI Interface** : Panneau dédié pour disaster recovery training
+### Sprint 15 : Chaos Engineering System
+
+**Objectif**: GUI pour disaster recovery training (différenciateur vs autres plateformes)
+
+- [ ] **Chaos Hooks dans models** (si pas fait en Sprint 5)
+  - `chaosConfig?: ChaosConfig` dans Pod/Deployment/StatefulSet
+  - Flags: crashOnStart, failHealthcheck, imagePullError, networkFailure
+- [ ] **GUI Chaos Panel** (hors terminal)
   - Toggle enable/disable chaos mode
-  - Sélection de targets (pods, images, services)
-  - Création de scénarios personnalisés
-  - Execute/Reset buttons
-  - Visualisation temps réel de l'état du chaos
-- **Scenarios prédéfinis** : ImagePullBackOff, CrashLoopBackOff, NetworkFailure
-- **Custom scenarios** : Utilisateur crée ses propres plans de panique
-- **Scheduler** : Exécution automatique de chaos à des moments précis
-- **Integration avec Challenges** : Utiliser chaos dans les exercices
+  - Sélection targets (pods, images, services)
+  - Scenarios prédéfinis: ImagePullBackOff, CrashLoopBackOff, NetworkFailure, OOMKilled
+  - Custom scenarios builder
+  - Scheduler: trigger immédiat ou après délai
+  - Visualisation état actif du chaos
+- [ ] **Chaos Controllers**
+  - Apply chaos config → update pod status
+  - Events tracking
+  - Rollback/reset functionality
+- [ ] ~25-30 tests
 
-### Challenges System (Sprint 8)
-- Seed clusters pré-configurés avec problèmes
-- Validation automatique des solutions
-- Hints progressifs
-- 3+ scenarios (debugging, scaling, networking)
+**Définition de Done**:
+- ✅ GUI chaos panel fonctionnel
+- ✅ 4+ scenarios prédéfinis exécutables
+- ✅ Custom scenarios créables
+- ✅ Chaos scheduler fonctionne
+- ✅ Reset restaure état normal
 
-### Lessons System (Sprint 9)
-- Tutoriels interactifs guidés
-- Split-view: théorie + pratique
-- Exercices validables
-- Progress tracking
+---
 
-### Cluster Visualizer (Sprint 10)
-- Visualisation graphique de l'état du cluster
-- Tree view / Cards grid / Graph view
-- Sync temps réel avec terminal
+### Sprint 16 : Challenges System
 
-### Integration & Polish (Sprint 11-12)
-- Layout manager (modes: terminal, learning, challenge, visual)
-- Gamification & achievements
-- Responsive layouts
-- Accessibility
+**Objectif**: Exercices pratiques avec validation automatique
 
-**Estimé**: 6-7 sprints additionnels après Phase 2
+- [ ] **Challenge Models**
+  - `src/learning/challenges/Challenge.ts` - Types et factory
+  - Difficulty: beginner, intermediate, advanced
+  - Category: debugging, scaling, networking, security, storage
+- [ ] **Challenge Scenarios** (seed clusters pré-configurés)
+  - Scenario 1: "Debug Crashing Pod" - Pod en CrashLoopBackOff à diagnostiquer
+  - Scenario 2: "Scale Deployment" - Scale de 1 à 3 replicas
+  - Scenario 3: "Fix Service" - Service pointe vers mauvais pods (labels)
+  - Scenario 4: "Resource Cleanup" - Supprimer ressources orphelines
+  - Scenario 5: "ConfigMap Injection" - Créer ConfigMap et l'injecter dans pod
+- [ ] **Validator System**
+  - `src/learning/challenges/validator.ts` - Pure functions
+  - Validation automatique des objectifs
+  - Partial completion tracking
+- [ ] **Hints System**
+  - Hints progressifs (3-5 par challenge)
+  - Unlock hint après X tentatives
+- [ ] **Challenge UI**
+  - Split-view: terminal + objectifs panel
+  - Progress indicators
+  - Hint button avec compteur
+  - Reset button
+- [ ] ~30-35 tests
+
+**Définition de Done**:
+- ✅ 5+ challenges fonctionnels
+- ✅ Validation automatique fonctionne
+- ✅ Hints progressifs débloquables
+- ✅ UI challenge claire et responsive
+
+---
+
+### Sprint 17 : Lessons System
+
+**Objectif**: Tutoriels interactifs guidés (théorie + pratique)
+
+- [ ] **Lesson Models**
+  - `src/learning/lessons/Lesson.ts` - Types et factory
+  - Sections: text, example, exercise, quiz
+  - Progress tracking (0-100%)
+  - Duration estimée
+- [ ] **Lesson Content**
+  - Lesson 1: "Introduction to Pods" (basics)
+  - Lesson 2: "Deployments & ReplicaSets" (basics)
+  - Lesson 3: "Services & Networking" (basics)
+  - Lesson 4: "ConfigMaps & Secrets" (intermediate)
+  - Lesson 5: "Storage with PV/PVC" (intermediate)
+  - Lesson 6: "Troubleshooting Pods" (intermediate)
+- [ ] **Exercise Validator**
+  - Validation des commandes exécutées
+  - Vérification état cluster après exercice
+  - Solution reveal si bloqué
+- [ ] **Lesson UI**
+  - Split-view: terminal + lesson panel
+  - Navigation: Previous/Next
+  - Code snippets copiables
+  - Progress bar
+- [ ] ~25-30 tests
+
+**Définition de Done**:
+- ✅ 6+ lessons disponibles
+- ✅ Exercises validés automatiquement
+- ✅ UI lesson intuitive
+- ✅ Progress saved (localStorage)
+
+---
+
+### Sprint 18 : Cluster Visualizer
+
+**Objectif**: Visualisation graphique de l'état du cluster
+
+- [ ] **Visualizer Core**
+  - `src/learning/visualizer/ClusterVisualizer.ts` - Factory
+  - 3 modes: Tree view, Cards grid, Graph view
+- [ ] **Tree View** (priorité 1)
+  - Hiérarchie: Namespace → Workload → Pods
+  - Accordéons daisyUI
+  - Icônes par resource type
+  - Badges pour status (Running, Pending, Failed)
+- [ ] **Cards Grid** (priorité 2)
+  - Cards daisyUI par ressource
+  - Grid responsive
+  - Click pour voir détails
+- [ ] **Graph View** (optionnel)
+  - Nodes visuels avec relations
+  - Service → Pods, Deployment → Pods
+  - Canvas HTML5 ou SVG
+- [ ] **Real-time Sync**
+  - Update visualizer quand cluster change
+  - Highlight changements récents
+- [ ] ~20-25 tests
+
+**Définition de Done**:
+- ✅ Tree view fonctionnel et responsive
+- ✅ Cards grid alternatif disponible
+- ✅ Sync temps réel avec terminal
+- ✅ Switch mode view fonctionne
+
+---
+
+### Sprint 19 : Layout Manager & Integration
+
+**Objectif**: Modes d'affichage et intégration finale Phase 3
+
+- [ ] **Layout Manager**
+  - Mode "Terminal Only" (plein écran)
+  - Mode "Learning" (terminal + lesson panel)
+  - Mode "Challenge" (terminal + objectifs panel)
+  - Mode "Visual" (terminal + cluster visualizer)
+  - Mode switcher dans header
+- [ ] **Responsive Layouts**
+  - Adaptation mobile/tablet
+  - Collapse panels sur petits écrans
+  - Touch-friendly
+- [ ] **Gamification** (optionnel)
+  - Achievements system
+  - Points/XP par challenge complété
+  - Leaderboard (local)
+  - Badges collection
+- [ ] **Accessibility**
+  - Keyboard navigation
+  - ARIA labels
+  - Screen reader support
+- [ ] ~15-20 tests
+
+**Définition de Done**:
+- ✅ 4 modes layout fonctionnels
+- ✅ Responsive mobile/tablet
+- ✅ Switcher mode intuitif
+- ✅ Accessibility basique OK
+
+---
+
+### Sprint 20 : Polish & Documentation Phase 3
+
+**Objectif**: Finalisation et documentation complète
+
+- [ ] **UI Polish**
+  - Animations smooth (transitions)
+  - Loading states partout
+  - Error boundaries
+  - Empty states avec CTAs
+- [ ] **Documentation**
+  - Guide utilisateur complet
+  - Tutoriel onboarding
+  - Documentation API (si extraction en lib)
+  - Contributing guide
+- [ ] **Testing**
+  - Coverage > 85% globale
+  - E2E tests critiques (Playwright?)
+  - Performance testing
+- [ ] **Deployment**
+  - CI/CD pipeline
+  - Production build optimisé
+  - Analytics (optionnel)
+
+**Estimé Phase 3**: **6 sprints** (Sprint 15-20) après Phase 2
+
+---
+
+## 🏗️ Phase 4 : Advanced K8s & Infrastructure (Nice-to-Have)
+
+**Objectif**: Features avancées pour utilisateurs expérimentés et formation CKA/CKS niveau expert
+
+### Sprint 21 : Nodes Management & Scheduling 📚 BASSE
+
+**Objectif**: Simulation multi-node et scheduling avancé
+
+- [ ] **Node Model**
+  - `src/cluster/models/Node.ts` - Factory pour Nodes
+  - Capacity: CPU, memory, pods limit
+  - Status: Ready, NotReady, SchedulingDisabled
+  - Labels et taints
+- [ ] **Multi-Node Simulation**
+  - 3-5 nodes virtuels (master + workers)
+  - Pod placement par node
+  - Resource tracking per node
+- [ ] **Taints & Tolerations**
+  - Node taints (NoSchedule, PreferNoSchedule, NoExecute)
+  - Pod tolerations matching
+  - Eviction simulation
+- [ ] **Node Selectors & Affinity**
+  - nodeSelector simple
+  - Node affinity (required, preferred)
+  - Pod affinity/anti-affinity
+- [ ] **kubectl Commands**
+  - `kubectl get nodes`
+  - `kubectl describe node <name>`
+  - `kubectl drain <node>` - évacuer pods
+  - `kubectl cordon/uncordon <node>` - disable/enable scheduling
+- [ ] ~35-40 tests
+
+**Définition de Done**:
+- ✅ 3+ nodes simulés
+- ✅ Scheduling respecte taints/tolerations
+- ✅ Node affinity fonctionne
+- ✅ `kubectl drain` évacue les pods
+
+---
+
+### Sprint 22 : CoreDNS & Service Discovery 📚 BASSE
+
+**Objectif**: DNS interne et découverte de services
+
+- [ ] **CoreDNS Simulation**
+  - `src/cluster/components/CoreDNS.ts` - DNS resolver
+  - Format: `<service>.<namespace>.svc.cluster.local`
+  - A records pour services (ClusterIP)
+  - SRV records pour ports nommés
+- [ ] **DNS Resolution dans kubectl exec**
+  - Commande `nslookup` dans exec shell
+  - Commande `dig` simulation
+  - Résolution automatique service names
+- [ ] **Service Discovery Testing**
+  - Exemples de debugging DNS
+  - Scenarios avec problèmes DNS (service not found)
+- [ ] ~15-20 tests
+
+**Définition de Done**:
+- ✅ DNS resolution `<service>.<namespace>.svc.cluster.local` fonctionne
+- ✅ `nslookup` dans `kubectl exec` résout services
+- ✅ Scenarios debugging DNS disponibles
+
+---
+
+### Sprint 23 : kubectl debug & Ephemeral Containers 📚 BASSE
+
+**Objectif**: Debugging moderne (K8s 1.23+)
+
+- [ ] **Ephemeral Containers**
+  - Containers temporaires attachés à pod running
+  - Ne redémarrent pas le pod
+  - Utilisés uniquement pour debugging
+- [ ] **kubectl debug**
+  - `kubectl debug <pod> -it --image=busybox` - attach ephemeral container
+  - `kubectl debug <pod> --copy-to=<new-pod>` - copie pod pour debugging
+  - `kubectl debug node/<node>` - debug node via pod
+- [ ] **Debug Scenarios**
+  - Attach debugger à pod sans restart
+  - Debug pod crashlooping sans modifier manifest
+- [ ] ~15-20 tests
+
+**Définition de Done**:
+- ✅ Ephemeral containers attachables
+- ✅ `kubectl debug` fonctionne (attach mode)
+- ✅ Copy-to-debug crée pod copie
+
+---
+
+### Sprint 24 : Control Plane Visualization 📚 BASSE
+
+**Objectif**: Comprendre architecture K8s (pédagogique)
+
+- [ ] **Control Plane Components (read-only)**
+  - kube-apiserver
+  - etcd (key-value store)
+  - kube-scheduler
+  - kube-controller-manager
+  - cloud-controller-manager
+- [ ] **Worker Components**
+  - kubelet
+  - kube-proxy
+  - container runtime
+- [ ] **Visualization Panel**
+  - Diagram architecture K8s
+  - Highlight component lors d'actions
+  - Flow visualization: create pod → scheduler → kubelet → container
+- [ ] **Educational Mode**
+  - Tooltips expliquant rôle de chaque composant
+  - Logs simulés des composants (pedagogical)
+  - Quiz sur architecture
+- [ ] ~10-15 tests
+
+**Définition de Done**:
+- ✅ Diagram control plane visible
+- ✅ Highlight components lors d'actions
+- ✅ Tooltips éducatifs
+- ✅ Mode visualisation toggle
+
+---
+
+### Sprint 25 : Container Basics & Docker Concepts 📚 BASSE (optionnel)
+
+**Objectif**: Enseigner les bases des containers (hors-scope K8s mais pédagogique)
+
+- [ ] **Container Concepts Panel**
+  - Qu'est-ce qu'un container vs VM
+  - Images et layers
+  - Registries (Docker Hub, etc.)
+  - Tags et versioning
+- [ ] **Simulated Docker Commands** (shell context)
+  - `docker ps` - list running containers (affiche pods)
+  - `docker images` - list images (affiche registry)
+  - `docker logs <container>` - alias vers kubectl logs
+  - Message: "In Kubernetes, use kubectl instead"
+- [ ] **Interactive Lesson**
+  - Lesson: "Containers 101"
+  - Comparaison Docker vs Kubernetes
+  - Migration Docker Compose → K8s manifests
+- [ ] ~10-15 tests
+
+**Définition de Done**:
+- ✅ Lesson "Containers 101" disponible
+- ✅ Quelques commandes docker simulées (pédagogiques)
+- ✅ Comparaison Docker/K8s claire
+
+---
+
+### Sprint 26 : Advanced Features & Differentiators 🎯
+
+**Objectif**: Features uniques pour se démarquer
+
+- [ ] **Scenario Recording/Replay**
+  - Enregistrer session utilisateur
+  - Replay automatique avec annotations
+  - Export/import scenarios
+  - Partage via URL (encoded state)
+- [ ] **Time-Travel Debugging**
+  - Historique états cluster (snapshots)
+  - Rewind vers état précédent
+  - Compare states (diff view)
+  - Undo/redo actions
+- [ ] **YAML Diff Viewer**
+  - `kubectl apply -f` montre diff avant apply
+  - Highlight changements (add/remove/modify)
+  - Preview mode avec confirmation
+- [ ] **Collaborative Mode** (ambitieux)
+  - Partage état cluster via URL
+  - Real-time collaboration (optionnel)
+  - Session export/import
+- [ ] **Integrated YAML Generator/Wizard**
+  - UI wizard pour créer manifests
+  - Forms → generate YAML
+  - Templates pré-configurés
+  - Validation temps réel
+- [ ] ~25-30 tests
+
+**Définition de Done**:
+- ✅ Recording/replay fonctionne
+- ✅ Time-travel avec undo/redo
+- ✅ Diff viewer sur kubectl apply
+- ✅ Au moins 1 feature collaborative
+
+**Estimé Phase 4**: **6 sprints** (Sprint 21-26) après Phase 3
+
+---
+
+## 📊 Résumé Global des Phases
+
+| Phase | Sprints | Focus | Estimé | Priorité |
+|-------|---------|-------|---------|----------|
+| **MVP (Phase 1)** | Sprint 1-6 | Core features (Terminal, FileSystem, kubectl basics, Storage) | 6 sprints | 🔥 CRITIQUE |
+| **Phase 2** | Sprint 7-14 | Advanced K8s Resources (PV/PVC, Jobs, RBAC, HPA, etc.) | 8 sprints | ⭐ HAUTE |
+| **Phase 3** | Sprint 15-20 | Learning Platform (Chaos, Challenges, Lessons, Visualizer) | 6 sprints | ⭐ HAUTE |
+| **Phase 4** | Sprint 21-26 | Advanced Infrastructure (Nodes, CoreDNS, Control Plane, Differentiators) | 6 sprints | 📚 BASSE |
+| **TOTAL** | **26 sprints** | Full-featured K8s Learning Platform | **~26 sprints** | - |
+
+### Must-Have pour rivaliser avec KodeKloud/Killer.sh
+- ✅ **Sprint 5**: ConfigMaps, Secrets, kubectl exec, Resource limits, Probes
+- ✅ **Sprint 7-10**: Multi-container, PV/PVC, Jobs, kubectl rollout/port-forward
+- ✅ **Sprint 15-17**: Chaos engineering, Challenges, Lessons
+
+### Nice-to-Have (différenciateurs)
+- ✅ **Sprint 15**: Chaos Engineering GUI (unique!)
+- ✅ **Sprint 26**: Time-travel debugging, Scenario recording, YAML wizard
 
 ---
 

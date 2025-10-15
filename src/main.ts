@@ -3,7 +3,12 @@ import { createTerminalManager } from './terminal/TerminalManager'
 import { createSeedCluster } from './cluster/seedCluster'
 import { createKubectlExecutor } from './kubectl/commands/executor'
 
-// kubectl simulator entry point
+// ╔═══════════════════════════════════════════════════════════════════════╗
+// ║                      KUBECTL SIMULATOR - MAIN                         ║
+// ╚═══════════════════════════════════════════════════════════════════════╝
+// Entry point for the Kube Simulator application.
+// Initializes terminal, cluster state, and command execution.
+
 const terminalContainer = document.getElementById('terminal')
 
 if (!terminalContainer) {

@@ -57,33 +57,67 @@ Application web interactive permettant de s'entraîner aux commandes `kubectl` v
 ### Conventions de commentaires
 
 **Philosophie** : Les commentaires ont deux rôles distincts :
-1. **Structurels** : Organiser le code en sections visuellement identifiables
+1. **Structurels** : Organiser le code en sections logiques significatives
 2. **Explicatifs** : Expliquer le **pourquoi**, les comportements K8s, et les décisions non-évidentes
 
-Les commentaires structurels sont **encouragés** - ils rendent le code plus navigable d'un coup d'œil.
+**Principe** : Aérer sans alourdir - créer des sections logiques, pas annoter chaque fonction.
 
 #### Commentaires structurels (Organisation)
 
-**Hiérarchie à 2 niveaux (+ optionnel niveau 3)** :
+**Format standard** :
 
 ```typescript
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION PRINCIPALE
+// SHELL COMMAND PARSER
 // ═══════════════════════════════════════════════════════════════════════════
+// Parses shell command strings into structured objects with args and flags.
+// Validates commands against allowed list and extracts boolean/value flags.
 
-// ───────────────────────────────────────────────────────────────────────────
-// Sous-section
-// ───────────────────────────────────────────────────────────────────────────
+const VALID_COMMANDS = [...]
 
-// ─── Niveau 3 optionnel (si groupe de 3+ fonctions) ───────────────────────
+export const parseShellCommand = (...) => { ... }
+const extractCommand = (...) => { ... }
+```
+
+**Format avec ASCII art (fichiers centraux uniquement)** :
+
+```typescript
+// ╔═══════════════════════════════════════════════════════════════════════╗
+// ║                      KUBERNETES CLUSTER STATE                         ║
+// ╚═══════════════════════════════════════════════════════════════════════╝
+// Manages virtual K8s cluster with pods, deployments, services.
+// State mutations return discriminated unions for type-safe error handling.
+
+export const createClusterState = (...) => { ... }
+```
+
+**Sous-sections (optionnel, seulement si >8 fonctions)** :
+
+```typescript
+// ═══════════════════════════════════════════════════════════════════════════
+// FILESYSTEM STATE MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════════════
+// Virtual filesystem with tree structure and closure-based state.
+// Supports navigation, file/directory operations with max depth validation.
+
+// ─── Path Operations ─────────────────────────────────────────────────────
+
+export const resolvePath = (...) => { ... }
+export const getDepth = (...) => { ... }
+
+// ─── Tree Traversal ──────────────────────────────────────────────────────
+
+export const findNode = (...) => { ... }
+export const insertNode = (...) => { ... }
 ```
 
 **Règles d'usage** :
-- **Niveau 1** : Grandes sections du fichier (TYPES, PATH OPERATIONS, FACTORY, etc.)
-- **Niveau 2** : Groupes logiques de fonctions (Resolution, Validation, Mutation, etc.)
-- **Niveau 3** : Seulement si nécessaire pour subdiviser un grand groupe (3+ fonctions liées)
-- **Position** : Toujours au niveau root (colonne 0), jamais indentés à l'intérieur des fonctions
-- **Longueur standard** : 79 caractères
+- **1 commentaire principal par fichier** avec contexte (2-3 lignes sous le délimiteur)
+- **Sous-sections sans commentaire** (juste le titre décoratif)
+- **ASCII art** uniquement pour 3-4 fichiers vraiment centraux (ClusterState, FileSystem, main.ts)
+- **Titres descriptifs** : "Path Resolution & Validation" (pas "Helper Functions" ou "Utilities")
+- **Position** : Toujours au niveau root (colonne 0)
+- **Éviter** : Un titre par fonction, titres vides de sens
 
 #### Règles pour les commentaires explicatifs
 

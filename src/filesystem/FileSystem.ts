@@ -7,9 +7,11 @@ import {
 } from './models'
 import { getFileExtension, isValidExtension } from './models/File'
 
-// ═══════════════════════════════════════════════════════════════════════════
-// TYPES & INTERFACES
-// ═══════════════════════════════════════════════════════════════════════════
+// ╔═══════════════════════════════════════════════════════════════════════╗
+// ║                      FILESYSTEM STATE MANAGEMENT                      ║
+// ╚═══════════════════════════════════════════════════════════════════════╝
+// Virtual filesystem with tree structure and closure-based state.
+// Supports navigation, file/directory operations with max depth validation (3 levels).
 
 export interface FileSystemState {
     currentPath: string
@@ -20,13 +22,7 @@ export type Result<T, E> =
     | { type: 'success'; data: T }
     | { type: 'error'; message: E }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// PATH OPERATIONS
-// ═══════════════════════════════════════════════════════════════════════════
-
-// ───────────────────────────────────────────────────────────────────────────
-// Resolution
-// ───────────────────────────────────────────────────────────────────────────
+// ─── Path Operations ─────────────────────────────────────────────────────
 
 /**
  * Resolve relative or absolute paths
@@ -59,10 +55,6 @@ const normalizePath = (path: string): string => {
     return '/' + parts.join('/')
 }
 
-// ───────────────────────────────────────────────────────────────────────────
-// Validation
-// ───────────────────────────────────────────────────────────────────────────
-
 /**
  * Calculate directory depth (0 for root, 1 for /dir, etc.)
  * Max depth is 3 per spec requirement
@@ -84,13 +76,7 @@ export const validateFilename = (name: string): boolean => {
     return !forbidden.test(name)
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// TREE OPERATIONS
-// ═══════════════════════════════════════════════════════════════════════════
-
-// ───────────────────────────────────────────────────────────────────────────
-// Traversal
-// ───────────────────────────────────────────────────────────────────────────
+// ─── Tree Operations ─────────────────────────────────────────────────────
 
 /**
  * Find node in tree by absolute path
@@ -165,10 +151,6 @@ export const removeNode = (
     return tree
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// DIRECTORY CREATION HELPERS
-// ═══════════════════════════════════════════════════════════════════════════
-
 /**
  * Create directories recursively (mkdir -p behavior)
  */
@@ -212,9 +194,7 @@ const createSingleDirectory = (
     return { type: 'success', data: undefined }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// VALIDATION HELPERS
-// ═══════════════════════════════════════════════════════════════════════════
+// ─── Validation Helpers ──────────────────────────────────────────────────
 
 /**
  * Validate directory creation constraints
@@ -308,9 +288,7 @@ const validateIsFile = (
     return { type: 'success', data: node }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// NAVIGATION OPERATIONS
-// ═══════════════════════════════════════════════════════════════════════════
+// ─── Navigation Operations ───────────────────────────────────────────────
 
 const createNavigationOps = (getState: () => FileSystemState, setState: (s: FileSystemState) => void) => ({
     getCurrentPath: (): string => {
@@ -341,9 +319,7 @@ const createNavigationOps = (getState: () => FileSystemState, setState: (s: File
     }
 })
 
-// ═══════════════════════════════════════════════════════════════════════════
-// DIRECTORY OPERATIONS
-// ═══════════════════════════════════════════════════════════════════════════
+// ─── Directory Operations ────────────────────────────────────────────────
 
 const createDirectoryOps = (getState: () => FileSystemState) => ({
     createDirectory: (name: string, recursive = false): Result<string, string> => {
@@ -385,9 +361,7 @@ const createDirectoryOps = (getState: () => FileSystemState) => ({
     }
 })
 
-// ═══════════════════════════════════════════════════════════════════════════
-// FILE OPERATIONS
-// ═══════════════════════════════════════════════════════════════════════════
+// ─── File Operations ─────────────────────────────────────────────────────
 
 const createFileOps = (getState: () => FileSystemState) => ({
     createFile: (name: string, content = ''): Result<FileNode, string> => {
@@ -451,9 +425,7 @@ const createFileOps = (getState: () => FileSystemState) => ({
     }
 })
 
-// ═══════════════════════════════════════════════════════════════════════════
-// STATE MANAGEMENT OPERATIONS
-// ═══════════════════════════════════════════════════════════════════════════
+// ─── State Management ────────────────────────────────────────────────────
 
 const createStateOps = (getState: () => FileSystemState, setState: (s: FileSystemState) => void) => ({
     toJSON: (): FileSystemState => {
@@ -481,10 +453,6 @@ const createStateOps = (getState: () => FileSystemState, setState: (s: FileSyste
         setState(newState)
     }
 })
-
-// ═══════════════════════════════════════════════════════════════════════════
-// FACTORY FUNCTION
-// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Create FileSystem instance with closure-based state management

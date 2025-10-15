@@ -1,6 +1,10 @@
 import type { Pod } from './models/Pod'
 
-// State data structure
+// ╔═══════════════════════════════════════════════════════════════════════╗
+// ║                    KUBERNETES CLUSTER STATE                           ║
+// ╚═══════════════════════════════════════════════════════════════════════╝
+// Manages virtual K8s cluster with pods, deployments, and services.
+
 export interface ClusterStateData {
     pods: Pod[]
 }

@@ -1,6 +1,11 @@
 import type { Action, Resource, ParsedCommand, CommandResult } from './types'
 
-// Valid actions
+// ═══════════════════════════════════════════════════════════════════════════
+// KUBECTL COMMAND PARSER
+// ═══════════════════════════════════════════════════════════════════════════
+// Parses kubectl command strings with resource aliases and namespace flags.
+// Supports all kubectl actions (get, describe, delete, apply, create).
+
 const VALID_ACTIONS: Action[] = ['get', 'describe', 'delete', 'apply', 'create']
 
 // Kubectl resources: canonical name -> list of aliases

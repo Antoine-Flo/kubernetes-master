@@ -1,0 +1,286 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { createShellExecutor, type FileSystem } from '../../../../src/shell/commands/executor'
+import { createFileSystem } from '../../../../src/filesystem/FileSystem'
+
+describe('Shell Executor', () => {
+    let fileSystem: FileSystem
+    let executor: ReturnType<typeof createShellExecutor>
+
+    beforeEach(() => {
+        // Create a fresh filesystem for each test
+        fileSystem = createFileSystem()
+        executor = createShellExecutor(fileSystem)
+    })
+
+    describe('pwd command', () => {
+        it('should return current path at root', () => {
+            const result = executor.execute('pwd')
+
+            expect(result.type).toBe('success')
+            if (result.type === 'success') {
+                expect(result.output).toBe('/')
+            }
+        })
+
+        it('should return current path after cd', () => {
+            fileSystem.createDirectory('test')
+            fileSystem.changeDirectory('test')
+
+            const result = executor.execute('pwd')
+
+            expect(result.type).toBe('success')
+            if (result.type === 'success') {
+                expect(result.output).toBe('/test')
+            }
+        })
+    })
+
+    describe('cd command', () => {
+        it('should change to root when no args', () => {
+            fileSystem.createDirectory('test')
+            fileSystem.changeDirectory('test')
+
+            const result = executor.execute('cd')
+
+            expect(result.type).toBe('success')
+            expect(fileSystem.getCurrentPath()).toBe('/')
+        })
+
+        it('should change directory', () => {
+            fileSystem.createDirectory('manifests')
+
+            const result = executor.execute('cd manifests')
+
+            expect(result.type).toBe('success')
+            expect(fileSystem.getCurrentPath()).toBe('/manifests')
+        })
+
+        it('should return error for non-existent directory', () => {
+            const result = executor.execute('cd nonexistent')
+
+            expect(result.type).toBe('error')
+            if (result.type === 'error') {
+                expect(result.message).toContain('not found')
+            }
+        })
+    })
+
+    describe('ls command', () => {
+        it('should list empty directory', () => {
+            const result = executor.execute('ls')
+
+            expect(result.type).toBe('success')
+            if (result.type === 'success') {
+                expect(result.output).toBe('')
+            }
+        })
+
+        it('should list directory contents', () => {
+            fileSystem.createDirectory('examples')
+            fileSystem.createDirectory('manifests')
+
+            const result = executor.execute('ls')
+
+            expect(result.type).toBe('success')
+            if (result.type === 'success') {
+                expect(result.output).toContain('examples')
+                expect(result.output).toContain('manifests')
+            }
+        })
+
+        it('should list with -l flag', () => {
+            fileSystem.createDirectory('examples')
+            fileSystem.createFile('test.yaml')
+
+            const result = executor.execute('ls -l')
+
+            expect(result.type).toBe('success')
+            if (result.type === 'success') {
+                expect(result.output).toContain('d  examples/')
+                expect(result.output).toContain('-  test.yaml')
+            }
+        })
+
+        it('should list specific path', () => {
+            fileSystem.createDirectory('examples')
+            fileSystem.changeDirectory('examples')
+            fileSystem.createFile('pod.yaml')
+            fileSystem.changeDirectory('/')
+
+            const result = executor.execute('ls examples')
+
+            expect(result.type).toBe('success')
+            if (result.type === 'success') {
+                expect(result.output).toContain('pod.yaml')
+            }
+        })
+    })
+
+    describe('mkdir command', () => {
+        it('should create directory', () => {
+            const result = executor.execute('mkdir test')
+
+            expect(result.type).toBe('success')
+
+            const listResult = fileSystem.listDirectory()
+            if (listResult.type === 'success') {
+                const names = listResult.data.map(n => n.name)
+                expect(names).toContain('test')
+            }
+        })
+
+        it('should return error when name is missing', () => {
+            const result = executor.execute('mkdir')
+
+            expect(result.type).toBe('error')
+            if (result.type === 'error') {
+                expect(result.message).toContain('missing operand')
+            }
+        })
+
+        it('should handle -p flag', () => {
+            const result = executor.execute('mkdir -p newdir')
+
+            expect(result.type).toBe('success')
+
+            const listResult = fileSystem.listDirectory()
+            if (listResult.type === 'success') {
+                const names = listResult.data.map(n => n.name)
+                expect(names).toContain('newdir')
+            }
+        })
+    })
+
+    describe('touch command', () => {
+        it('should create file', () => {
+            const result = executor.execute('touch test.yaml')
+
+            expect(result.type).toBe('success')
+
+            const readResult = fileSystem.readFile('test.yaml')
+            expect(readResult.type).toBe('success')
+        })
+
+        it('should return error when filename is missing', () => {
+            const result = executor.execute('touch')
+
+            expect(result.type).toBe('error')
+            if (result.type === 'error') {
+                expect(result.message).toContain('missing file operand')
+            }
+        })
+    })
+
+    describe('cat command', () => {
+        it('should display file contents', () => {
+            fileSystem.createFile('test.yaml', 'Hello World')
+
+            const result = executor.execute('cat test.yaml')
+
+            expect(result.type).toBe('success')
+            if (result.type === 'success') {
+                expect(result.output).toBe('Hello World')
+            }
+        })
+
+        it('should return error for non-existent file', () => {
+            const result = executor.execute('cat nonexistent.yaml')
+
+            expect(result.type).toBe('error')
+            if (result.type === 'error') {
+                expect(result.message).toContain('not found')
+            }
+        })
+
+        it('should return error when filename is missing', () => {
+            const result = executor.execute('cat')
+
+            expect(result.type).toBe('error')
+            if (result.type === 'error') {
+                expect(result.message).toContain('missing file operand')
+            }
+        })
+    })
+
+    describe('rm command', () => {
+        it('should delete file', () => {
+            fileSystem.createFile('test.yaml')
+
+            const result = executor.execute('rm test.yaml')
+
+            expect(result.type).toBe('success')
+
+            const readResult = fileSystem.readFile('test.yaml')
+            expect(readResult.type).toBe('error')
+        })
+
+        it('should delete directory with -r flag', () => {
+            fileSystem.createDirectory('testdir')
+
+            const result = executor.execute('rm -r testdir')
+
+            expect(result.type).toBe('success')
+
+            const cdResult = fileSystem.changeDirectory('testdir')
+            expect(cdResult.type).toBe('error')
+        })
+
+        it('should return error when operand is missing', () => {
+            const result = executor.execute('rm')
+
+            expect(result.type).toBe('error')
+            if (result.type === 'error') {
+                expect(result.message).toContain('missing operand')
+            }
+        })
+    })
+
+    describe('clear command', () => {
+        it('should return clear signal', () => {
+            const result = executor.execute('clear')
+
+            expect(result.type).toBe('clear')
+        })
+    })
+
+    describe('help command', () => {
+        it('should return help text', () => {
+            const result = executor.execute('help')
+
+            expect(result.type).toBe('success')
+            if (result.type === 'success') {
+                expect(result.output).toContain('Available shell commands')
+                expect(result.output).toContain('cd')
+                expect(result.output).toContain('ls')
+                expect(result.output).toContain('pwd')
+                expect(result.output).toContain('mkdir')
+                expect(result.output).toContain('touch')
+                expect(result.output).toContain('cat')
+                expect(result.output).toContain('rm')
+                expect(result.output).toContain('clear')
+                expect(result.output).toContain('help')
+            }
+        })
+    })
+
+    describe('error handling', () => {
+        it('should handle parser errors', () => {
+            const result = executor.execute('')
+
+            expect(result.type).toBe('error')
+            if (result.type === 'error') {
+                expect(result.message).toContain('empty')
+            }
+        })
+
+        it('should handle unknown commands', () => {
+            const result = executor.execute('invalid')
+
+            expect(result.type).toBe('error')
+            if (result.type === 'error') {
+                expect(result.message).toContain('Unknown command')
+            }
+        })
+    })
+})
+

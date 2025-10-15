@@ -127,27 +127,61 @@ export const createFileSystem = () => {
 
 ## 📝 Conventions de Commentaires
 
-### Commentaires Structurels (Organisation)
-- ✅ Utiliser **3 niveaux de sections** pour organiser visuellement le code
-- ✅ Toujours au **niveau root** (colonne 0), jamais indentés
-- ✅ **Longueur standard : 79 caractères**
+**Format standard** :
 
 ```typescript
 // ═══════════════════════════════════════════════════════════════════════════
-// NIVEAU 1 : SECTION PRINCIPALE
+// SHELL COMMAND PARSER
 // ═══════════════════════════════════════════════════════════════════════════
+// Parses shell command strings into structured objects with args and flags.
+// Validates commands against allowed list and extracts boolean/value flags.
 
-// ───────────────────────────────────────────────────────────────────────────
-// Niveau 2 : Sous-section
-// ───────────────────────────────────────────────────────────────────────────
+const VALID_COMMANDS = [...]
 
-// ─── Niveau 3 : Sous-sous-section (optionnel, si 3+ fonctions liées) ──────
+export const parseShellCommand = (...) => { ... }
+const extractCommand = (...) => { ... }
 ```
 
-**Quand utiliser chaque niveau** :
-- **Niveau 1** : Grandes sections du fichier (TYPES, PATH OPERATIONS, FACTORY, etc.)
-- **Niveau 2** : Groupes logiques de fonctions (Resolution, Validation, Mutation, etc.)
-- **Niveau 3** : Subdivision d'un grand groupe (3+ fonctions liées uniquement)
+**Format avec ASCII art (fichiers centraux uniquement)** :
+
+```typescript
+// ╔═══════════════════════════════════════════════════════════════════════╗
+// ║                      KUBERNETES CLUSTER STATE                         ║
+// ╚═══════════════════════════════════════════════════════════════════════╝
+// Manages virtual K8s cluster with pods, deployments, services.
+// State mutations return discriminated unions for type-safe error handling.
+
+export const createClusterState = (...) => { ... }
+```
+
+**Sous-sections (optionnel, seulement si >8 fonctions)** :
+
+```typescript
+// ═══════════════════════════════════════════════════════════════════════════
+// FILESYSTEM STATE MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════════════
+// Virtual filesystem with tree structure and closure-based state.
+// Supports navigation, file/directory operations with max depth validation.
+
+// ─── Path Operations ─────────────────────────────────────────────────────
+
+export const resolvePath = (...) => { ... }
+export const getDepth = (...) => { ... }
+
+// ─── Tree Traversal ──────────────────────────────────────────────────────
+
+export const findNode = (...) => { ... }
+export const insertNode = (...) => { ... }
+```
+
+**Règles d'usage** :
+- **1 commentaire principal par fichier** avec contexte (2-3 lignes sous le délimiteur)
+- **Sous-sections sans commentaire** (juste le titre décoratif)
+- **ASCII art** uniquement pour 3-4 fichiers vraiment centraux (ClusterState, FileSystem, main.ts)
+- **Titres descriptifs** : "Path Resolution & Validation" (pas "Helper Functions" ou "Utilities")
+- **Position** : Toujours au niveau root (colonne 0)
+- **Éviter** : Un titre par fonction, titres vides de sens
+
 
 ### Commentaires Explicatifs
 
