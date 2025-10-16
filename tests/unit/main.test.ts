@@ -19,8 +19,10 @@ describe('Main Dispatcher', () => {
 
     // Helper to get prompt based on current path
     const getPrompt = (currentPath: string): string => {
-        if (currentPath === '/') return 'kubectl> '
-        return `~${currentPath}> `
+        if (currentPath === '/') {
+            return '☸ /> '
+        }
+        return `☸ ~${currentPath}> `
     }
 
     beforeEach(() => {
@@ -105,21 +107,21 @@ describe('Main Dispatcher', () => {
         expect(outputCalls).toContain('manifests')
     })
 
-    it('prompt at root is kubectl>', () => {
+    it('prompt at root is ☸ />', () => {
         const currentPath = fileSystem.getCurrentPath()
         expect(currentPath).toBe('/')
 
         const prompt = getPrompt(currentPath)
-        expect(prompt).toBe('kubectl> ')
+        expect(prompt).toBe('☸ /> ')
     })
 
-    it('prompt in subdirectories is ~{path}>', () => {
+    it('prompt in subdirectories is ☸ ~{path}>', () => {
         fileSystem.changeDirectory('examples')
         const currentPath = fileSystem.getCurrentPath()
         expect(currentPath).toBe('/examples')
 
         const prompt = getPrompt(currentPath)
-        expect(prompt).toBe('~/examples> ')
+        expect(prompt).toBe('☸ ~/examples> ')
     })
 
     it('updates prompt after changing directories', () => {

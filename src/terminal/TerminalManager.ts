@@ -26,6 +26,9 @@ export const createTerminalManager = (container: HTMLElement): TerminalManager =
     let currentLine = ''
     let commandCallback: CommandCallback | undefined
     let prompt = 'kubectl> '
+    let commandHistory: string[] = []
+    let historyIndex = -1
+    let tempCurrentLine = ''
 
     const showPrompt = (): void => {
         terminal.write(prompt)
@@ -40,10 +43,17 @@ export const createTerminalManager = (container: HTMLElement): TerminalManager =
 
         const command = currentLine.trim()
         if (commandCallback && command) {
+            // Add to history (max 100 commands)
+            commandHistory.push(command)
+            if (commandHistory.length > 100) {
+                commandHistory.shift()
+            }
             commandCallback(command)
         }
 
         currentLine = ''
+        historyIndex = -1
+        tempCurrentLine = ''
         showPrompt()
     }
 
@@ -56,7 +66,59 @@ export const createTerminalManager = (container: HTMLElement): TerminalManager =
         terminal.write('\b \b')
     }
 
+    const clearLine = (): void => {
+        // Move cursor to start of line and clear
+        for (let i = 0; i < currentLine.length; i++) {
+            terminal.write('\b \b')
+        }
+        currentLine = ''
+    }
+
+    const navigateHistory = (direction: 'up' | 'down'): void => {
+        if (commandHistory.length === 0) return
+
+        // Save current line when first entering history
+        if (historyIndex === -1 && direction === 'up') {
+            tempCurrentLine = currentLine
+        }
+
+        // Calculate new index
+        if (direction === 'up') {
+            if (historyIndex < commandHistory.length - 1) {
+                historyIndex++
+            }
+        } else {
+            if (historyIndex > -1) {
+                historyIndex--
+            }
+        }
+
+        // Clear current line
+        clearLine()
+
+        // Show command from history or temp line
+        if (historyIndex === -1) {
+            currentLine = tempCurrentLine
+        } else {
+            const historyPosition = commandHistory.length - 1 - historyIndex
+            currentLine = commandHistory[historyPosition]
+        }
+
+        terminal.write(currentLine)
+    }
+
     const handleInput = (data: string): void => {
+        // Handle arrow keys (ANSI escape sequences)
+        if (data === '\x1b[A') {
+            navigateHistory('up')
+            return
+        }
+
+        if (data === '\x1b[B') {
+            navigateHistory('down')
+            return
+        }
+
         const charCode = data.charCodeAt(0)
 
         if (charCode === 13) {
@@ -71,6 +133,13 @@ export const createTerminalManager = (container: HTMLElement): TerminalManager =
 
         if (charCode < 32) {
             return
+        }
+
+        // Reset history navigation when typing
+        if (historyIndex !== -1) {
+            clearLine()
+            historyIndex = -1
+            tempCurrentLine = ''
         }
 
         currentLine += data

@@ -685,6 +685,13 @@ Logs cleared.
 | `debug clear` | Vide les logs | ⭐ |
 | `debug export` | Exporte logs (clipboard) | ⭐ (Phase 2) |
 
+### Terminal Features (Phase 1 - MVP)
+
+| Feature | Description | Priorité |
+|---------|-------------|----------|
+| Command history | Navigation avec ↑↓ (max 100 commandes) | ⭐⭐⭐ |
+| Enhanced prompt | Format `☸ ~/path>` avec chemin dynamique | ⭐⭐⭐ |
+
 ### Intégration kubectl + filesystem
 
 Les commandes kubectl peuvent référencer des fichiers du filesystem virtuel :
@@ -772,31 +779,34 @@ L'utilisateur peut :
 
 ### Prompt Terminal Dynamique (Phase 1 - MVP)
 
-Le prompt du terminal s'adapte selon le contexte :
+Le prompt du terminal s'adapte selon le contexte avec une icône Kubernetes:
 
 ```bash
 # À la racine
-kubectl> ls
+☸ /> ls
 
 # Dans un dossier
-~/manifests> pwd
+☸ ~/manifests> pwd
 /manifests
 
-# Dans un sous-dossier (affiche chemin relatif)
-~/manifests/dev> ls
+# Dans un sous-dossier
+☸ ~/manifests/dev> ls
 ```
 
 **Format du prompt MVP** :
-- Racine `/` → `kubectl> `
-- Autres dossiers → `~{chemin}> ` (ex: `~/manifests/dev> `)
+- Icône: `☸ ` (symbole Kubernetes + espace)
+- Racine `/` → `☸ /> `
+- Autres dossiers → `☸ ~{chemin}> ` (ex: `☸ ~/manifests/dev> `)
 - Couleur : vert (success) pour cohérence avec terminaux Unix
 - Après erreur : reste vert (pas de changement de couleur)
 
 **Implémentation** :
 ```typescript
 const getPrompt = (currentPath: string): string => {
-  if (currentPath === '/') return 'kubectl> '
-  return `~${currentPath}> `
+  if (currentPath === '/') {
+    return '☸ /> '
+  }
+  return `☸ ~${currentPath}> `
 }
 ```
 
@@ -959,6 +969,8 @@ Voir le code source pour les détails :
 ## 🎯 Critères de succès MVP
 
 - Terminal fonctionnel et esthétique (centré, thème dark)
+- Historique de commandes fonctionnel (↑↓ pour naviguer, max 100)
+- Prompt amélioré avec icône ☸ et chemin dynamique
 - Au moins 9 commandes kubectl supportées (get, describe, delete, apply, create, logs)
 - Commandes shell basiques (cd, ls, pwd, mkdir, touch, cat, rm, debug)
 - Virtual filesystem fonctionnel (max 3 niveaux, persistance)

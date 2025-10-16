@@ -45,8 +45,10 @@ terminal.write('\r\n')
 
 // Helper: Generate dynamic prompt based on current path
 const getPrompt = (currentPath: string): string => {
-    if (currentPath === '/') return 'kubectl> '
-    return `~${currentPath}> `
+    if (currentPath === '/') {
+        return '☸ /> '
+    }
+    return `☸ ~${currentPath}> `
 }
 
 // Update prompt initially

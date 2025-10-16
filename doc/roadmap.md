@@ -2,7 +2,7 @@
 
 ## 📊 État actuel du projet
 
-**371 tests passent** | **Coverage: 92.17%** | **Architecture: Functional (Factory + Pure functions + Event Sourcing + Observer Pattern)**
+**~383 tests passent** | **Coverage: 92.17%** | **Architecture: Functional (Factory + Pure functions + Event Sourcing + Observer Pattern)**
 
 ### ✅ Completé
 - **Sprint 1**: Terminal xterm.js fonctionnel (9 tests)
@@ -16,6 +16,7 @@
 - **Sprint 4.6**: Shell Handlers (47 tests) - cd, ls, pwd, mkdir, touch, cat, rm
 - **Sprint 4.7**: Application Logger (21 tests) - Event Sourcing + Observer Pattern + Console mirroring
 - **Sprint 4.8**: Command Dispatcher (8 tests) - Routing kubectl vs shell + Dynamic prompt
+- **Sprint 4.9**: Terminal UX Enhancements (12 tests) - Command history + Enhanced prompt
 
 ### 🎯 Prochaine étape
 **Sprint 5.1** - Table Formatter (formatage ASCII pour kubectl get)
@@ -42,45 +43,6 @@
 
 **Objectif**: Système de fichiers virtuel et commandes shell de base
 
-### 4.5 - Image Registry + Pull Simulation (TDD)
-- [x] `src/containers/registry/ImageRegistry.ts`
-  - 7-10 images de base (nginx, redis, postgres, mysql, busybox, broken-app, private-image)
-  - Parser format image: `[registry/]name[:tag]`
-  - Validation stricte (reject images inconnues avec message clair)
-  - ImageManifest: comportement, ports, logGenerator par image
-- [x] `src/containers/ImagePuller.ts`
-  - Pure function `simulateImagePull(imageString): PullResult`
-  - Events de pull (Pulling, Pulled, Created, Started)
-  - Support ImagePullBackOff pour images invalides
-  - Support CrashLoopBackOff pour broken-app
-- [x] Handler `debug images` - Liste images disponibles dans le registry
-- [x] ~20-25 tests
-
-### 4.6 - Shell Handlers (TDD)
-- [x] Shell handlers implemented in `src/shell/commands/executor.ts`
-- [x] All handlers: cd, ls, pwd, mkdir, touch, cat, rm
-- [x] ~30-35 tests (47 tests passing in executor.test.ts)
-
-### 4.7 - Application Logger (TDD)
-- [x] `src/logger/types.ts` - Type definitions (Event Sourcing pattern)
-- [x] `src/logger/Logger.ts` - Factory `createLogger()` with Observer Pattern
-  - Log levels: info, warn, error, debug
-  - Categories: COMMAND, EXECUTOR, FILESYSTEM, CLUSTER
-  - Event Sourcing: Immutable append-only log
-  - Observer Pattern: Subscribe/notify for real-time updates
-  - In-memory rotation (max 500 entries)
-  - Mirror to console en dev mode
-- [x] Intégration dans shell executor, kubectl executor
-- [x] Shell command handler `debug logs` et `debug clear`
-- [x] ~5-8 tests
-
-### 4.8 - Command Dispatcher (TDD)
-- [x] `src/main.ts` - Dispatcher qui route kubectl vs shell
-  - Si commence par "kubectl" → kubectlExecutor
-  - Sinon → shellExecutor
-- [x] Prompt dynamique: `kubectl>` à la racine, `~/path>` ailleurs
-- [x] 8 tests
-
 ### Définition de Done
 - FileSystem fonctionne (création/navigation/lecture)
 - Image Registry avec 7-10 images disponibles
@@ -91,6 +53,33 @@
 - Prompt s'adapte selon le chemin
 - Max depth (3 niveaux) respecté
 - Tests > 80% coverage
+
+---
+
+## 🎯 Sprint 4.9 : Terminal UX Enhancements
+
+**Objectif**: Améliorer l'expérience utilisateur du terminal avec historique et prompt
+
+### 4.9.1 - Command History (TDD)
+- [ ] Enrichir `src/terminal/TerminalManager.ts`
+  - Array pour stocker historique (max 100 commandes)
+  - Index de navigation dans l'historique
+  - Handler pour arrow keys (↑ = previous, ↓ = next)
+  - Restore currentLine quand on quitte l'historique
+- [ ] ~8-10 tests
+
+### 4.9.2 - Enhanced Prompt (TDD)
+- [ ] Modifier `src/main.ts` - fonction `getPrompt()`
+  - Format: `☸ />` à la racine
+  - Format: `☸ ~/manifests/dev>` ailleurs
+  - Conserver logique actuelle (~ pour chemins non-root)
+- [ ] ~2-4 tests
+
+### Définition de Done
+- ✅ ↑↓ navigue dans l'historique (max 100 commandes)
+- ✅ Prompt affiche ☸ + chemin simple
+- ✅ Tests > 80% coverage
+- ✅ ~10-12 tests total pour Sprint 4.9
 
 ---
 
