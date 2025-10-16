@@ -2,19 +2,22 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createTerminalManager } from '../../../src/terminal/TerminalManager'
 import { createSeedCluster } from '../../../src/cluster/seedCluster'
 import { createKubectlExecutor } from '../../../src/kubectl/commands/executor'
+import { createLogger } from '../../../src/logger/Logger'
 
 describe('Terminal-Kubectl Integration', () => {
     let container: HTMLElement
     let terminal: ReturnType<typeof createTerminalManager>
     let clusterState: ReturnType<typeof createSeedCluster>
     let kubectlExecutor: ReturnType<typeof createKubectlExecutor>
+    let logger: ReturnType<typeof createLogger>
     let writeSpy: ReturnType<typeof vi.fn>
 
     beforeEach(() => {
         container = document.createElement('div')
         terminal = createTerminalManager(container)
         clusterState = createSeedCluster()
-        kubectlExecutor = createKubectlExecutor(clusterState)
+        logger = createLogger()
+        kubectlExecutor = createKubectlExecutor(clusterState, logger)
 
         // Spy on terminal.write to capture output
         writeSpy = vi.fn()

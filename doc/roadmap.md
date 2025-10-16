@@ -2,7 +2,7 @@
 
 ## 📊 État actuel du projet
 
-**265 tests passent** | **Coverage: 90.35%** | **Architecture: Functional (Factory + Pure functions)**
+**364 tests passent** | **Coverage: 92.17%** | **Architecture: Functional (Factory + Pure functions + Event Sourcing + Observer Pattern)**
 
 ### ✅ Completé
 - **Sprint 1**: Terminal xterm.js fonctionnel (9 tests)
@@ -12,9 +12,12 @@
 - **Sprint 3.3**: Terminal Integration (8 tests)
 - **Sprint 4.1-4.3**: FileSystem Foundation (103 tests) - Library-ready design
 - **Sprint 4.4**: Shell Parser + Executor (47 tests) - Pure functions + Factory pattern + Result centralization
+- **Sprint 4.5**: Image Registry + Pull Simulation (25 tests) - Validation stricte + Pull events
+- **Sprint 4.6**: Shell Handlers (47 tests) - cd, ls, pwd, mkdir, touch, cat, rm
+- **Sprint 4.7**: Application Logger (21 tests) - Event Sourcing + Observer Pattern + Console mirroring
 
 ### 🎯 Prochaine étape
-**Sprint 4.5-4.8** - Image Registry, Shell Handlers, Logger, Dispatcher
+**Sprint 4.8** - Command Dispatcher (routing kubectl vs shell)
 
 ### 📋 À venir (Roadmap complète enrichie - 26 sprints)
 - **Sprint 4-6**: MVP (FileSystem, Shell, kubectl + Core K8s Resources, Storage)
@@ -50,28 +53,25 @@
   - Support ImagePullBackOff pour images invalides
   - Support CrashLoopBackOff pour broken-app
 - [x] Handler `debug images` - Liste images disponibles dans le registry
-- [ ] UI: Registry panel (liste images + tags disponibles)
 - [x] ~20-25 tests
 
 ### 4.6 - Shell Handlers (TDD)
-- [ ] `src/shell/commands/handlers/cd.ts` - Change directory
-- [ ] `src/shell/commands/handlers/ls.ts` - List directory (+ formatter)
-- [ ] `src/shell/commands/handlers/pwd.ts` - Print working directory
-- [ ] `src/shell/commands/handlers/mkdir.ts` - Create directory
-- [ ] `src/shell/commands/handlers/touch.ts` - Create file
-- [ ] `src/shell/commands/handlers/cat.ts` - Read file
-- [ ] `src/shell/commands/handlers/rm.ts` - Remove file/directory
-- [ ] ~30-35 tests
+- [x] Shell handlers implemented in `src/shell/commands/executor.ts`
+- [x] All handlers: cd, ls, pwd, mkdir, touch, cat, rm
+- [x] ~30-35 tests (47 tests passing in executor.test.ts)
 
 ### 4.7 - Application Logger (TDD)
-- [ ] `src/logger/Logger.ts` - Factory `createLogger()`
+- [x] `src/logger/types.ts` - Type definitions (Event Sourcing pattern)
+- [x] `src/logger/Logger.ts` - Factory `createLogger()` with Observer Pattern
   - Log levels: info, warn, error, debug
   - Categories: COMMAND, EXECUTOR, FILESYSTEM, CLUSTER
+  - Event Sourcing: Immutable append-only log
+  - Observer Pattern: Subscribe/notify for real-time updates
   - In-memory rotation (max 500 entries)
   - Mirror to console en dev mode
-- [ ] Intégration dans dispatcher, executor, filesystem
-- [ ] Shell command handler `debug` pour afficher/clear logs
-- [ ] ~5-8 tests
+- [x] Intégration dans shell executor, kubectl executor
+- [x] Shell command handler `debug logs` et `debug clear`
+- [x] ~5-8 tests
 
 ### 4.8 - Command Dispatcher (TDD)
 - [ ] `src/main.ts` - Dispatcher qui route kubectl vs shell
@@ -214,6 +214,7 @@
 - [ ] Gestion erreurs graceful (no crashes)
 
 ### 6.4 - UI Polish
+- [ ] UI: Registry panel (liste images + tags disponibles)
 - [ ] Responsive design (mobile/tablet)
 - [ ] ANSI colors (green=success, red=error, yellow=warning)
 - [ ] Favicon + title

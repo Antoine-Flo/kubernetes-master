@@ -1,15 +1,18 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createShellExecutor, type FileSystem } from '../../../../src/shell/commands/executor'
 import { createFileSystem } from '../../../../src/filesystem/FileSystem'
+import { createLogger, type Logger } from '../../../../src/logger/Logger'
 
 describe('Shell Executor', () => {
     let fileSystem: FileSystem
+    let logger: Logger
     let executor: ReturnType<typeof createShellExecutor>
 
     beforeEach(() => {
-        // Create a fresh filesystem for each test
+        // Create a fresh filesystem and logger for each test
         fileSystem = createFileSystem()
-        executor = createShellExecutor(fileSystem)
+        logger = createLogger()
+        executor = createShellExecutor(fileSystem, logger)
     })
 
     describe('pwd command', () => {
@@ -316,17 +319,81 @@ describe('Shell Executor', () => {
             expect(result.type).toBe('success')
             if (result.type === 'success') {
                 expect(result.data).toContain('debug images')
+                expect(result.data).toContain('debug logs')
+                expect(result.data).toContain('debug clear')
             }
         })
 
-        it('should show usage message for unknown debug subcommand', () => {
-            const result = executor.execute('debug unknown')
+        it('should show application logs with debug logs', () => {
+            // Execute some commands to generate logs
+            executor.execute('pwd')
+            executor.execute('ls')
+
+            const result = executor.execute('debug logs')
 
             expect(result.type).toBe('success')
             if (result.type === 'success') {
-                expect(result.data).toContain('debug images')
+                expect(result.data).toContain('Application Logs')
+                expect(result.data).toContain('Shell: pwd')
+                expect(result.data).toContain('Shell: ls')
+            }
+        })
+
+        it('should clear application logs with debug clear', () => {
+            // Generate some logs
+            executor.execute('pwd')
+
+            // Verify logs exist
+            let entries = logger.getEntries()
+            expect(entries.length).toBeGreaterThan(0)
+
+            // Clear logs
+            const result = executor.execute('debug clear')
+
+            expect(result.type).toBe('success')
+            if (result.type === 'success') {
+                expect(result.data).toContain('cleared')
+            }
+
+            // Verify logs were cleared
+            entries = logger.getEntries()
+            expect(entries.length).toBe(0)
+        })
+
+        it('should return error for unknown debug subcommand', () => {
+            const result = executor.execute('debug unknown')
+
+            expect(result.type).toBe('error')
+            if (result.type === 'error') {
+                expect(result.message).toContain('Unknown debug subcommand')
             }
         })
     })
+
+    describe('logger integration', () => {
+        it('should log command execution', () => {
+            executor.execute('pwd')
+
+            const entries = logger.getEntries({ category: 'COMMAND' })
+            expect(entries.length).toBeGreaterThan(0)
+            expect(entries.some(e => e.message.includes('Shell: pwd'))).toBe(true)
+        })
+
+        it('should log filesystem operations', () => {
+            executor.execute('mkdir testdir')
+
+            const entries = logger.getEntries({ category: 'FILESYSTEM' })
+            expect(entries.length).toBeGreaterThan(0)
+            expect(entries.some(e => e.message.includes('Creating directory'))).toBe(true)
+        })
+
+        it('should log errors', () => {
+            executor.execute('cd nonexistent')
+
+            const entries = logger.getEntries({ level: 'error' })
+            expect(entries.length).toBeGreaterThan(0)
+        })
+    })
 })
+
 

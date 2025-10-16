@@ -8,6 +8,7 @@ import { handleApply } from './handlers/apply'
 import { handleCreate } from './handlers/create'
 import type { ExecutionResult } from '../../shared/result'
 import { error, success } from '../../shared/result'
+import type { Logger } from '../../logger/Logger'
 
 /**
  * Kubectl executor interface
@@ -16,63 +17,116 @@ export interface KubectlExecutor {
     execute: (input: string) => ExecutionResult
 }
 
+// Action handler signature (dependencies captured in closure)
+type ActionHandler = (parsed: ParsedCommand) => ExecutionResult
+
 /**
- * Create a kubectl executor
- * Factory function that encapsulates ClusterState in a closure
- * 
- * @param clusterState - The cluster state to operate on
- * @returns Executor with execute method
+ * Create action handlers Map with dependencies captured in closures
  */
-export const createKubectlExecutor = (clusterState: ClusterState): KubectlExecutor => {
-    const execute = (input: string): ExecutionResult => {
-        // Parse the command
-        const parseResult = parseCommand(input)
+const createHandlers = (clusterState: ClusterState, logger: Logger): Map<string, ActionHandler> => {
+    // Currying helper: pre-applies logger and clusterState
+    const withDeps = <TArgs extends any[]>(
+        handler: (logger: Logger, cluster: ClusterState, ...args: TArgs) => ExecutionResult
+    ) => (...args: TArgs) => handler(logger, clusterState, ...args)
 
-        // Handle parser errors
-        if (parseResult.type === 'error') {
-            return error(parseResult.message)
-        }
+    const handlers = new Map<string, ActionHandler>()
 
-        const parsed = parseResult.data
+    // Ultra-concis: une ligne par handler, avec logging intégré
+    handlers.set('get', withDeps(handleGetWrapper))
+    handlers.set('describe', withDeps(handleDescribeWrapper))
+    handlers.set('delete', withDeps(handleDeleteWrapper))
+    handlers.set('apply', withDeps(handleApplyWrapper))
+    handlers.set('create', withDeps(handleCreateWrapper))
 
-        // Route to appropriate handler based on action
-        return routeCommand(clusterState, parsed)
+    return handlers
+}
+
+// ─── Handler Wrappers (with logging) ────────────────────────────────────
+
+const handleGetWrapper = (logger: Logger, cluster: ClusterState, parsed: ParsedCommand): ExecutionResult => {
+    logger.debug('CLUSTER', `Getting ${parsed.resource} in namespace ${parsed.namespace || 'default'}`)
+    const output = handleGet(cluster.toJSON(), parsed)
+    return success(output)
+}
+
+const handleDescribeWrapper = (logger: Logger, cluster: ClusterState, parsed: ParsedCommand): ExecutionResult => {
+    logger.debug('CLUSTER', `Describing ${parsed.resource}: ${parsed.name || 'all'}`)
+    return handleDescribe(cluster.toJSON(), parsed)
+}
+
+const handleDeleteWrapper = (logger: Logger, cluster: ClusterState, parsed: ParsedCommand): ExecutionResult => {
+    logger.debug('CLUSTER', `Deleting ${parsed.resource}: ${parsed.name}`)
+    const result = handleDelete(cluster, parsed)
+    if (result.type === 'success') {
+        logger.info('CLUSTER', `Deleted ${parsed.resource}: ${parsed.name}`)
     }
+    return result
+}
 
-    return { execute }
+const handleApplyWrapper = (logger: Logger, _cluster: ClusterState, parsed: ParsedCommand): ExecutionResult => {
+    const file = parsed.flags.f || parsed.flags.filename
+    logger.debug('CLUSTER', `Applying resource from file: ${file}`)
+    const output = handleApply(parsed)
+    logger.info('CLUSTER', 'Resource applied successfully')
+    return success(output)
+}
+
+const handleCreateWrapper = (logger: Logger, _cluster: ClusterState, parsed: ParsedCommand): ExecutionResult => {
+    const file = parsed.flags.f || parsed.flags.filename
+    logger.debug('CLUSTER', `Creating resource from file: ${file}`)
+    const output = handleCreate(parsed)
+    logger.info('CLUSTER', 'Resource created successfully')
+    return success(output)
 }
 
 /**
- * Route parsed command to appropriate handler
- * Pure function that determines which handler to call
+ * Route parsed command to handler from Map
  */
-const routeCommand = (clusterState: ClusterState, parsed: ParsedCommand): ExecutionResult => {
-    const action = parsed.action
+const routeCommand = (
+    handlers: Map<string, ActionHandler>,
+    parsed: ParsedCommand,
+    logger: Logger
+): ExecutionResult => {
+    const handler = handlers.get(parsed.action)
 
-    if (action === 'get') {
-        const output = handleGet(clusterState.toJSON(), parsed)
-        return success(output)
+    if (!handler) {
+        logger.error('EXECUTOR', `Unknown action: ${parsed.action}`)
+        return error(`Unknown action: ${parsed.action}`)
     }
 
-    if (action === 'describe') {
-        return handleDescribe(clusterState.toJSON(), parsed)
+    const result = handler(parsed)
+
+    // Log errors (success already logged in wrappers)
+    if (result.type === 'error') {
+        logger.error('CLUSTER', `${parsed.action} failed: ${result.message}`)
     }
 
-    if (action === 'delete') {
-        return handleDelete(clusterState, parsed)
+    return result
+}
+
+/**
+ * Create a kubectl executor
+ * Factory function that encapsulates ClusterState and Logger in closures
+ * 
+ * @param clusterState - The cluster state to operate on
+ * @param logger - Application logger for tracking commands
+ * @returns Executor with execute method
+ */
+export const createKubectlExecutor = (clusterState: ClusterState, logger: Logger): KubectlExecutor => {
+    const handlers = createHandlers(clusterState, logger)
+
+    const execute = (input: string): ExecutionResult => {
+        logger.info('COMMAND', `Kubectl: ${input}`)
+
+        const parseResult = parseCommand(input)
+        if (parseResult.type === 'error') {
+            logger.error('EXECUTOR', `Parse error: ${parseResult.message}`)
+            return error(parseResult.message)
+        }
+
+        return routeCommand(handlers, parseResult.data, logger)
     }
 
-    if (action === 'apply') {
-        const output = handleApply(parsed)
-        return success(output)
-    }
-
-    if (action === 'create') {
-        const output = handleCreate(parsed)
-        return success(output)
-    }
-
-    // This should never happen due to parser validation, but TypeScript needs exhaustiveness
-    return error(`Unknown action: ${action}`)
+    return { execute }
 }
 

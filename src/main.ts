@@ -2,6 +2,7 @@ import './style.css'
 import { createTerminalManager } from './terminal/TerminalManager'
 import { createSeedCluster } from './cluster/seedCluster'
 import { createKubectlExecutor } from './kubectl/commands/executor'
+import { createLogger } from './logger/Logger'
 
 // ╔═══════════════════════════════════════════════════════════════════════╗
 // ║                      KUBECTL SIMULATOR - MAIN                         ║
@@ -18,8 +19,11 @@ if (!terminalContainer) {
 // Initialize cluster state with seed data
 const clusterState = createSeedCluster()
 
+// Create logger
+const logger = createLogger({ mirrorToConsole: true })
+
 // Create kubectl executor
-const kubectlExecutor = createKubectlExecutor(clusterState)
+const kubectlExecutor = createKubectlExecutor(clusterState, logger)
 
 // Initialize terminal
 const terminal = createTerminalManager(terminalContainer)

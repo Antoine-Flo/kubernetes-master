@@ -48,10 +48,12 @@ npm run coverage   # Coverage report
 ### Principes architecturaux
 - **KISS** : Keep It Simple, Stupid
 - **DRY** : Don't Repeat Yourself
-- **Functional Programming** : Factory functions + Pure functions (pas de classes)
+- **Functional Programming** :  Pure functions (pas de classes)
+- **Design patterns** : Factory functions, Result Pattern, Discriminated Unions, Event Sourcing, Command pattern, Observer Pattern - Logs asynchrones, Pipe - Composition
 - **Indentation max** : 3 niveaux
 - **Pas de switch** : Utiliser object lookup ou if/else
 - **Library-First Design** : Modules génériques réutilisables
+- **Testable** : Depenency injection, inversion de contrôle
 
 ### Patterns techniques essentiels
 
