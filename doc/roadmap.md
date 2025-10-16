@@ -2,7 +2,7 @@
 
 ## 📊 État actuel du projet
 
-**~383 tests passent** | **Coverage: 92.17%** | **Architecture: Functional (Factory + Pure functions + Event Sourcing + Observer Pattern)**
+**~439 tests passent** | **Coverage: 91.65%** | **Architecture: Functional (Factory + Pure functions + Event Sourcing + Observer Pattern)**
 
 ### ✅ Completé
 - **Sprint 1**: Terminal xterm.js fonctionnel (9 tests)
@@ -17,6 +17,9 @@
 - **Sprint 4.7**: Application Logger (21 tests) - Event Sourcing + Observer Pattern + Console mirroring
 - **Sprint 4.8**: Command Dispatcher (8 tests) - Routing kubectl vs shell + Dynamic prompt
 - **Sprint 4.9**: Terminal UX Enhancements (12 tests) - Command history + Enhanced prompt
+- **Sprint 4.10**: Tab Autocompletion (61 tests) - Bash-like autocomplete for commands, resources, files, and flags
+- **UI Enhancement**: Titre ASCII "KubeSimulator" + description - Landing page améliorée avec theming daisyUI
+- **UX Enhancement**: Welcome message enrichi avec commandes clés (help, kubectl get pods, debug images)
 
 ### 🎯 Prochaine étape
 **Sprint 5.1** - Table Formatter (formatage ASCII pour kubectl get)
@@ -56,30 +59,71 @@
 
 ---
 
-## 🎯 Sprint 4.9 : Terminal UX Enhancements
+## 🎯 Sprint 4.9 : Terminal UX Enhancements ✅
 
 **Objectif**: Améliorer l'expérience utilisateur du terminal avec historique et prompt
 
-### 4.9.1 - Command History (TDD)
-- [ ] Enrichir `src/terminal/TerminalManager.ts`
+### 4.9.1 - Command History (TDD) ✅
+- ✅ Enrichir `src/terminal/TerminalManager.ts`
   - Array pour stocker historique (max 100 commandes)
   - Index de navigation dans l'historique
   - Handler pour arrow keys (↑ = previous, ↓ = next)
   - Restore currentLine quand on quitte l'historique
-- [ ] ~8-10 tests
+- ✅ ~8-10 tests
 
-### 4.9.2 - Enhanced Prompt (TDD)
-- [ ] Modifier `src/main.ts` - fonction `getPrompt()`
+### 4.9.2 - Enhanced Prompt (TDD) ✅
+- ✅ Modifier `src/main.ts` - fonction `getPrompt()`
   - Format: `☸ />` à la racine
   - Format: `☸ ~/manifests/dev>` ailleurs
   - Conserver logique actuelle (~ pour chemins non-root)
-- [ ] ~2-4 tests
+- ✅ ~2-4 tests
 
 ### Définition de Done
 - ✅ ↑↓ navigue dans l'historique (max 100 commandes)
 - ✅ Prompt affiche ☸ + chemin simple
 - ✅ Tests > 80% coverage
 - ✅ ~10-12 tests total pour Sprint 4.9
+
+---
+
+## 🎯 Sprint 4.10 : Tab Autocompletion ✅
+
+**Objectif**: Autocomplétion bash-like pour commandes, ressources, fichiers et flags
+
+### 4.10.1 - Autocomplete Module (TDD) ✅
+- ✅ `src/terminal/autocomplete.ts`
+  - Pure functions pour logique d'autocomplétion
+  - `getCompletions()` - Suggestions contextuelles
+  - `getCommonPrefix()` - Calcul préfixe commun
+  - `formatSuggestions()` - Format colonnes (bash-like)
+- ✅ ~47 tests
+
+### 4.10.2 - Terminal Integration (TDD) ✅
+- ✅ Update `src/terminal/TerminalManager.ts`
+  - Détection Tab key (charCode 9)
+  - Double-tab detection (< 500ms)
+  - Single Tab = complete common prefix
+  - Double Tab = show all options
+- ✅ Update `src/main.ts`
+  - Pass autocomplete context (clusterState + fileSystem)
+- ✅ ~14 tests
+
+### Fonctionnalités ✅
+- ✅ Autocomplétion commandes (kubectl, cd, ls, pwd, etc.)
+- ✅ Autocomplétion kubectl actions (get, describe, delete, etc.)
+- ✅ Autocomplétion resource types (pods, deployments, services, etc.)
+- ✅ Autocomplétion resource names depuis cluster
+- ✅ Autocomplétion chemins fichiers/dossiers
+- ✅ Autocomplétion flags (-n, --namespace, -f, etc.)
+- ✅ Comportement bash: Tab = prefix, Tab Tab = show all
+
+### Définition de Done
+- ✅ Tab complète common prefix ou full word si unique
+- ✅ Double Tab affiche toutes les options (< 500ms)
+- ✅ Autocomplétion contextuelle (commands → actions → resources → names)
+- ✅ Autocomplétion chemins (absolute et relative)
+- ✅ Tests > 80% coverage
+- ✅ ~61 tests total pour Sprint 4.10
 
 ---
 
@@ -469,21 +513,19 @@
 - [ ] **Syntax Highlighting** - Coloration en temps réel pendant frappe
   - Commandes valides (vert), invalides (rouge)
   - Arguments/flags colorés
-- [ ] **Enhanced Prompt** - Prompt contextuel
+- [ ] **Enhanced Prompt** - Prompt contextuel avancé
   - Username@hostname, chemin, context/namespace
   - Couleurs adaptatives
-- [ ] **Command History** - Historique avec ↑↓
-- [ ] **Tab Autocompletion** - Autocomplétion commandes/resources
 - [ ] **Terminal YAML Editor** - Éditeur nano-like intégré
   - `kubectl edit pod <name>` ouvre éditeur
   - Navigation flèches, Ctrl+S save, Ctrl+Q quit
-- [ ] ~25-30 tests
+- [ ] ~20-25 tests
 
 **Définition de Done**:
 - ✅ Coloration syntaxique temps réel
-- ✅ Historique commandes (↑↓) fonctionne
-- ✅ Autocomplétion Tab fonctionne
 - ✅ Éditeur YAML intégré utilisable
+
+**Note**: Command history et Tab autocompletion déjà complétés en Sprint 4.9 et 4.10
 
 ---
 

@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
+    "tsc": "tsc --noEmit",
     "prune": "ts-prune"
   },
   "devDependencies": {

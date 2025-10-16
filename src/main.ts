@@ -35,12 +35,20 @@ const kubectlExecutor = createKubectlExecutor(clusterState, logger)
 // Create shell executor
 const shellExecutor = createShellExecutor(fileSystem, logger)
 
-// Initialize terminal
-const terminal = createTerminalManager(terminalContainer)
+// Initialize terminal with autocomplete context
+const terminal = createTerminalManager(terminalContainer, {
+    clusterState,
+    fileSystem
+})
 
 // Welcome message
 terminal.write('Welcome to Kube Simulator\r\n')
 terminal.write('Type kubectl or shell commands to interact with the virtual cluster\r\n')
+terminal.write('\r\n')
+terminal.write('Quick start:\r\n')
+terminal.write('  help              - Show all available commands\r\n')
+terminal.write('  kubectl get pods  - List pods in the cluster\r\n')
+terminal.write('  debug images      - List available container images\r\n')
 terminal.write('\r\n')
 
 // Helper: Generate dynamic prompt based on current path

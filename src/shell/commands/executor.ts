@@ -62,8 +62,9 @@ const routeCommand = (
     const handler = handlers.get(command)
 
     if (!handler) {
-        logger.error('EXECUTOR', `Unknown command: ${command}`)
-        return error(`Unknown command: ${command}`)
+        // This should never happen since parser validates commands
+        logger.error('EXECUTOR', `Handler not found for command: ${command}`)
+        return error(`Handler not found for command: ${command}`)
     }
 
     return handler(args, flags)
@@ -85,8 +86,12 @@ export const createShellExecutor = (fileSystem: FileSystem, logger: Logger): She
 
         const parseResult = parseShellCommand(input)
         if (parseResult.type === 'error') {
-            logger.error('EXECUTOR', `Parse error: ${parseResult.message}`)
-            return error(parseResult.message)
+            // Enrich error message with full input for "Unknown command" errors
+            const errorMessage = parseResult.message.startsWith('Unknown command')
+                ? `Unknown command: ${input}`
+                : parseResult.message
+            logger.error('EXECUTOR', `Parse error: ${errorMessage}`)
+            return error(errorMessage)
         }
 
         logger.debug('EXECUTOR', `Routing to handler: ${parseResult.data.command}`)

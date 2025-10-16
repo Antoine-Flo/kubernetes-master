@@ -287,6 +287,15 @@ describe('Shell Executor', () => {
                 expect(result.message).toContain('Unknown command')
             }
         })
+
+        it('should display full command in error message for unknown commands', () => {
+            const result = executor.execute('qsdfjmql ksjfl mqks')
+
+            expect(result.type).toBe('error')
+            if (result.type === 'error') {
+                expect(result.message).toBe('Unknown command: qsdfjmql ksjfl mqks')
+            }
+        })
     })
 
     describe('debug command', () => {

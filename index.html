@@ -8,8 +8,22 @@
 </head>
 
 <body class="min-h-screen bg-base-300">
-    <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="flex flex-col items-center justify-center min-h-screen p-4">
         <div class="w-full max-w-5xl">
+            <!-- ASCII Title and Description -->
+            <div class="text-center mb-8">
+                <pre
+                    class="text-primary font-mono text-[0.4rem] sm:text-[0.5rem] md:text-xs lg:text-sm leading-tight overflow-x-auto">
+ _     _ _     _ ______  _______      _______ _____ _______ _     _        _______ _______  _____   ______
+ |____/  |     | |_____] |______      |______   |   |  |  | |     | |      |_____|    |    |     | |_____/
+ |    \_ |_____| |_____] |______      ______| __|__ |  |  | |_____| |_____ |     |    |    |_____| |    \_
+                                                                                                                                   
+                </pre>
+                <p class="text-base-content/80 mt-4 text-xs sm:text-sm md:text-base">
+                    Learn kubectl interactively in a simulated Kubernetes environment
+                </p>
+            </div>
+
             <div id="terminal"></div>
         </div>
     </div>
