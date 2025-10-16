@@ -53,7 +53,7 @@ const FLAGS_REQUIRING_VALUES = ['n', 'namespace', 'o', 'output', 'f', 'filename'
 
 // Output formats for kubectl commands
 type OutputFormat = 'table' | 'yaml' | 'json'
-const VALID_OUTPUT_FORMATS: OutputFormat[] = ['table', 'yaml', 'json']
+const VALID_OUTPUT_FORMATS = new Set<OutputFormat>(['table', 'yaml', 'json'])
 
 // Kubectl resources: canonical name -> list of aliases
 const KUBECTL_RESOURCES = {
@@ -231,7 +231,7 @@ const getNamespaceFromFlags = (flags: Record<string, string | boolean>): string 
 const getOutputFromFlags = (flags: Record<string, string | boolean>): OutputFormat => {
     const output = flags['output']
 
-    if (typeof output === 'string' && VALID_OUTPUT_FORMATS.includes(output as OutputFormat)) {
+    if (typeof output === 'string' && VALID_OUTPUT_FORMATS.has(output as OutputFormat)) {
         return output as OutputFormat
     }
 

@@ -51,36 +51,36 @@ describe('Seed Cluster', () => {
 
             const validPhases: PodPhase[] = ['Pending', 'Running', 'Succeeded', 'Failed', 'Unknown']
 
-            allPods.forEach((pod) => {
+            for (const pod of allPods) {
                 expect(validPhases).toContain(pod.status.phase)
-            })
+            }
         })
 
         it('should have pods with valid metadata', () => {
             const clusterState = createSeedCluster()
             const allPods = clusterState.getPods()
 
-            allPods.forEach((pod) => {
+            for (const pod of allPods) {
                 expect(pod.metadata.name).toBeDefined()
                 expect(pod.metadata.name.length).toBeGreaterThan(0)
                 expect(pod.metadata.namespace).toBeDefined()
                 expect(pod.metadata.creationTimestamp).toBeDefined()
                 expect(pod.apiVersion).toBe('v1')
                 expect(pod.kind).toBe('Pod')
-            })
+            }
         })
 
         it('should have pods with containers', () => {
             const clusterState = createSeedCluster()
             const allPods = clusterState.getPods()
 
-            allPods.forEach((pod) => {
+            for (const pod of allPods) {
                 expect(pod.spec.containers.length).toBeGreaterThan(0)
-                pod.spec.containers.forEach((container) => {
+                for (const container of pod.spec.containers) {
                     expect(container.name).toBeDefined()
                     expect(container.image).toBeDefined()
-                })
-            })
+                }
+            }
         })
 
         it('should create pods with realistic names', () => {
