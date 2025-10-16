@@ -7,10 +7,9 @@ interface TerminalManager {
     onCommand: (callback: CommandCallback) => void
     simulateInput: (data: string) => void
     showPrompt: () => void
+    setPrompt: (newPrompt: string) => void
     focus: () => void
 }
-
-const PROMPT = 'kubectl> '
 
 export const createTerminalManager = (container: HTMLElement): TerminalManager => {
     const terminal = new Terminal({
@@ -26,9 +25,14 @@ export const createTerminalManager = (container: HTMLElement): TerminalManager =
 
     let currentLine = ''
     let commandCallback: CommandCallback | undefined
+    let prompt = 'kubectl> '
 
     const showPrompt = (): void => {
-        terminal.write(PROMPT)
+        terminal.write(prompt)
+    }
+
+    const setPrompt = (newPrompt: string): void => {
+        prompt = newPrompt
     }
 
     const handleEnter = (): void => {
@@ -91,6 +95,7 @@ export const createTerminalManager = (container: HTMLElement): TerminalManager =
         },
         simulateInput: (data: string) => handleInput(data),
         showPrompt,
+        setPrompt,
         focus: () => terminal.focus(),
     }
 }

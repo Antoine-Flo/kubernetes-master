@@ -3,6 +3,9 @@ import { createTerminalManager } from './terminal/TerminalManager'
 import { createSeedCluster } from './cluster/seedCluster'
 import { createKubectlExecutor } from './kubectl/commands/executor'
 import { createLogger } from './logger/Logger'
+import { createShellExecutor } from './shell/commands/executor'
+import { createSeedFileSystem } from './filesystem/seedFileSystem'
+import { createFileSystem } from './filesystem/FileSystem'
 
 // ╔═══════════════════════════════════════════════════════════════════════╗
 // ║                      KUBECTL SIMULATOR - MAIN                         ║
@@ -19,25 +22,41 @@ if (!terminalContainer) {
 // Initialize cluster state with seed data
 const clusterState = createSeedCluster()
 
+// Initialize filesystem with seed data
+const fileSystemState = createSeedFileSystem()
+const fileSystem = createFileSystem(fileSystemState)
+
 // Create logger
 const logger = createLogger({ mirrorToConsole: true })
 
 // Create kubectl executor
 const kubectlExecutor = createKubectlExecutor(clusterState, logger)
 
+// Create shell executor
+const shellExecutor = createShellExecutor(fileSystem, logger)
+
 // Initialize terminal
 const terminal = createTerminalManager(terminalContainer)
 
 // Welcome message
 terminal.write('Welcome to Kube Simulator\r\n')
-terminal.write('Type kubectl commands to interact with the virtual cluster\r\n')
+terminal.write('Type kubectl or shell commands to interact with the virtual cluster\r\n')
 terminal.write('\r\n')
+
+// Helper: Generate dynamic prompt based on current path
+const getPrompt = (currentPath: string): string => {
+    if (currentPath === '/') return 'kubectl> '
+    return `~${currentPath}> `
+}
+
+// Update prompt initially
+terminal.setPrompt(getPrompt(fileSystem.getCurrentPath()))
 
 // Show prompt and focus terminal
 terminal.showPrompt()
 terminal.focus()
 
-// Handle commands
+// Handle commands with dispatcher
 terminal.onCommand((command) => {
     const trimmed = command.trim()
 
@@ -46,21 +65,26 @@ terminal.onCommand((command) => {
         return
     }
 
-    // Check if command starts with kubectl
-    if (!trimmed.startsWith('kubectl')) {
-        terminal.write(`Error: Command must start with 'kubectl'\r\n`)
-        return
-    }
+    let result
 
-    // Execute kubectl command
-    const result = kubectlExecutor.execute(trimmed)
+    // Route to appropriate executor
+    if (trimmed.startsWith('kubectl')) {
+        result = kubectlExecutor.execute(trimmed)
+    } else {
+        result = shellExecutor.execute(trimmed)
+    }
 
     // Display result (stdout/stderr)
     if (result.type === 'success') {
-        // Format output with proper line endings
-        const formattedOutput = result.data.split('\n').join('\r\n')
-        terminal.write(`${formattedOutput}\r\n`)
+        // Only write output if there's actual data
+        if (result.data) {
+            const formattedOutput = result.data.split('\n').join('\r\n')
+            terminal.write(`${formattedOutput}\r\n`)
+        }
     } else {
         terminal.write(`Error: ${result.message}\r\n`)
     }
+
+    // Update prompt after command execution (path might have changed)
+    terminal.setPrompt(getPrompt(fileSystem.getCurrentPath()))
 })

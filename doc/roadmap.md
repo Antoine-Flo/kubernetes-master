@@ -2,7 +2,7 @@
 
 ## 📊 État actuel du projet
 
-**364 tests passent** | **Coverage: 92.17%** | **Architecture: Functional (Factory + Pure functions + Event Sourcing + Observer Pattern)**
+**371 tests passent** | **Coverage: 92.17%** | **Architecture: Functional (Factory + Pure functions + Event Sourcing + Observer Pattern)**
 
 ### ✅ Completé
 - **Sprint 1**: Terminal xterm.js fonctionnel (9 tests)
@@ -15,9 +15,10 @@
 - **Sprint 4.5**: Image Registry + Pull Simulation (25 tests) - Validation stricte + Pull events
 - **Sprint 4.6**: Shell Handlers (47 tests) - cd, ls, pwd, mkdir, touch, cat, rm
 - **Sprint 4.7**: Application Logger (21 tests) - Event Sourcing + Observer Pattern + Console mirroring
+- **Sprint 4.8**: Command Dispatcher (8 tests) - Routing kubectl vs shell + Dynamic prompt
 
 ### 🎯 Prochaine étape
-**Sprint 4.8** - Command Dispatcher (routing kubectl vs shell)
+**Sprint 5.1** - Table Formatter (formatage ASCII pour kubectl get)
 
 ### 📋 À venir (Roadmap complète enrichie - 26 sprints)
 - **Sprint 4-6**: MVP (FileSystem, Shell, kubectl + Core K8s Resources, Storage)
@@ -74,11 +75,11 @@
 - [x] ~5-8 tests
 
 ### 4.8 - Command Dispatcher (TDD)
-- [ ] `src/main.ts` - Dispatcher qui route kubectl vs shell
+- [x] `src/main.ts` - Dispatcher qui route kubectl vs shell
   - Si commence par "kubectl" → kubectlExecutor
   - Sinon → shellExecutor
-- [ ] Prompt dynamique: `kubectl>` à la racine, `~/path>` ailleurs
-- [ ] ~5-8 tests
+- [x] Prompt dynamique: `kubectl>` à la racine, `~/path>` ailleurs
+- [x] 8 tests
 
 ### Définition de Done
 - FileSystem fonctionne (création/navigation/lecture)

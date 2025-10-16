@@ -121,4 +121,3 @@ export const createClusterState = (initialState?: ClusterStateData): ClusterStat
     }
 }
 
-
