@@ -75,23 +75,27 @@ export const parseFlags = <Ctx extends { tokens?: string[] }>(
  */
 export const parseFlagsRaw = (tokens: string[], startIndex = 0): ParsedFlags => {
     const flags: ParsedFlags = {}
+    let i = startIndex
 
-    for (let i = startIndex; i < tokens.length; i++) {
+    while (i < tokens.length) {
         const token = tokens[i]
 
-        // Check if token is a flag
-        if (token.startsWith('-')) {
-            const flagName = token.replace(/^-+/, '') // Remove leading dashes
-            const nextToken = tokens[i + 1]
+        // Skip non-flag tokens
+        if (!token.startsWith('-')) {
+            i += 1
+            continue
+        }
 
-            // If there's a next token and it's not a flag, it's the value
-            if (nextToken && !nextToken.startsWith('-')) {
-                flags[flagName] = nextToken
-                i++ // Skip the value token
-            } else {
-                // Boolean flag (no value)
-                flags[flagName] = true
-            }
+        const flagName = token.replace(/^-+/, '')
+        const nextToken = tokens[i + 1]
+        const nextIsValue = nextToken && !nextToken.startsWith('-')
+
+        if (nextIsValue) {
+            flags[flagName] = nextToken
+            i += 2 // Skip both flag and value
+        } else {
+            flags[flagName] = true
+            i += 1 // Skip just the flag
         }
     }
 
@@ -266,19 +270,21 @@ export const extractArgs = <Ctx extends { tokens?: string[] }>(
  */
 export const extractArgsRaw = (tokens: string[], startIndex = 0): string[] => {
     const args: string[] = []
+    let i = startIndex
 
-    for (let i = startIndex; i < tokens.length; i++) {
+    while (i < tokens.length) {
         const token = tokens[i]
 
+        // Skip flags and their values
         if (token.startsWith('-')) {
-            // Skip flag and its potential value
             const nextToken = tokens[i + 1]
-            if (nextToken && !nextToken.startsWith('-')) {
-                i++ // Skip value
-            }
-        } else {
-            args.push(token)
+            const nextIsValue = nextToken && !nextToken.startsWith('-')
+            i += nextIsValue ? 2 : 1
+            continue
         }
+
+        args.push(token)
+        i += 1
     }
 
     return args
