@@ -2,7 +2,7 @@
 
 ## 📊 État actuel du projet
 
-**594 tests passent** | **Coverage: ~94%** | **Architecture: Functional (Factory + Pure functions + ADT + Event Sourcing + Observer Pattern)**
+**617 tests passent** | **Coverage: ~94%** | **Architecture: Functional (Factory + Pure functions + ADT + Event Sourcing + Observer Pattern)**
 
 ### ✅ Completé
 - **Sprint 1**: Terminal xterm.js fonctionnel (9 tests)
@@ -21,9 +21,10 @@
 - **Sprint 5.1**: Generic Formatter Module (54 tests) - Shell-like formatters (formatTable, formatColumns, formatLongListing, formatKeyValue)
 - **Sprint 5.2**: Core Resource Models (72 tests) - ConfigMaps, Secrets, Pod enrichment (resources, probes, env, volumes), Probe simulator with ADT patterns
 - **Sprint 5.3**: Get Handlers (21 tests) - kubectl get for configmaps/secrets with namespace/label filters
+- **Sprint 5.4**: Describe Handlers (23 tests) - kubectl describe for pods, configmaps, secrets with detailed output, annotations support
 
 ### 🎯 Prochaine étape
-**Sprint 5.4** - Describe Handler (kubectl describe with detailed output)
+**Sprint 5.5** - Apply/Create Handlers (kubectl apply/create with YAML parsing)
 
 ### 📋 À venir (Roadmap complète enrichie - 26 sprints)
 - **Sprint 4-6**: MVP (FileSystem, Shell, kubectl + Core K8s Resources, Storage)
@@ -56,13 +57,15 @@
   - Calcul AGE (fonction utilitaire)
   - Logger les requêtes (application logger)
 
-### 5.4 - Describe Handler (TDD)
-- [ ] Améliorer `src/kubectl/commands/handlers/describe.ts`
+### 5.4 - Describe Handler (TDD) ✅
+- [x] Améliorer `src/kubectl/commands/handlers/describe.ts`
   - Format multi-lignes détaillé
   - Affichage complet des métadonnées, labels, annotations
   - Environment variables (avec masquage secrets)
   - Volume mounts
   - Probes configuration
+  - Support: pods, configmaps, secrets
+  - 23 tests
 
 ### 5.5 - Apply/Create Handlers (TDD)
 - [ ] Install `js-yaml` dependency
@@ -113,7 +116,6 @@
   - Initialize executors (kubectl + shell)
   - Auto-save on state changes
 - [ ] Tests end-to-end
-- [ ] ~8-10 tests
 
 ### 6.3 - Error Handling & UX
 - [ ] Messages d'erreur clairs et pédagogiques
@@ -148,7 +150,7 @@
 
 **Objectif**: Ressources K8s avancées pour reproduction complète de l'expérience CKA/CKAD
 
-### Sprint 7 : Multi-Container Pods & Init Containers ⭐ HAUTE
+### Sprint 7 : Multi-Container Pods & Init Containers
 
 **Objectif**: Patterns architecturaux courants (sidecar, adapter, ambassador)
 
@@ -173,7 +175,7 @@
 
 ---
 
-### Sprint 8 : Storage (PV/PVC) & StatefulSets ⭐ HAUTE
+### Sprint 8 : Storage (PV/PVC) & StatefulSets
 
 **Objectif**: Storage persistent et workloads stateful
 
@@ -210,7 +212,7 @@
 
 ---
 
-### Sprint 9 : Workloads - Jobs, CronJobs, DaemonSets ⭐ HAUTE
+### Sprint 9 : Workloads - Jobs, CronJobs, DaemonSets
 
 **Objectif**: Workloads spécialisés pour batch et infrastructure
 
@@ -252,7 +254,7 @@
 
 ---
 
-### Sprint 10 : kubectl Advanced Commands ⭐ HAUTE
+### Sprint 10 : kubectl Advanced Commands
 
 **Objectif**: Commandes kubectl critiques pour debugging et ops
 
@@ -797,8 +799,8 @@
 | Phase | Sprints | Focus | Estimé | Priorité |
 |-------|---------|-------|---------|----------|
 | **MVP (Phase 1)** | Sprint 1-6 | Core features (Terminal, FileSystem, kubectl basics, Storage) | 6 sprints | |
-| **Phase 2** | Sprint 7-14 | Advanced K8s Resources (PV/PVC, Jobs, RBAC, HPA, etc.) | 8 sprints | ⭐ HAUTE |
-| **Phase 3** | Sprint 15-20 | Learning Platform (Chaos, Challenges, Lessons, Visualizer) | 6 sprints | ⭐ HAUTE |
+| **Phase 2** | Sprint 7-14 | Advanced K8s Resources (PV/PVC, Jobs, RBAC, HPA, etc.) | 8 sprints | |
+| **Phase 3** | Sprint 15-20 | Learning Platform (Chaos, Challenges, Lessons, Visualizer) | 6 sprints | |
 | **Phase 4** | Sprint 21-26 | Advanced Infrastructure (Nodes, CoreDNS, Control Plane, Differentiators) | 6 sprints | 📚 BASSE |
 | **TOTAL** | **26 sprints** | Full-featured K8s Learning Platform | **~26 sprints** | - |
 

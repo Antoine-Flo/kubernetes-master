@@ -99,6 +99,7 @@ export interface PodMetadata {
     name: string
     namespace: string
     labels?: Record<string, string>
+    annotations?: Record<string, string>
     creationTimestamp: string
 }
 
@@ -126,6 +127,7 @@ export interface PodConfig {
     containers: Container[]
     volumes?: Volume[]
     labels?: Record<string, string>
+    annotations?: Record<string, string>
     creationTimestamp?: string
     phase?: PodPhase
     restartCount?: number
@@ -140,6 +142,7 @@ export const createPod = (config: PodConfig): Pod => {
             namespace: config.namespace,
             creationTimestamp: config.creationTimestamp || new Date().toISOString(),
             ...(config.labels && { labels: config.labels }),
+            ...(config.annotations && { annotations: config.annotations }),
         },
         spec: {
             containers: config.containers,

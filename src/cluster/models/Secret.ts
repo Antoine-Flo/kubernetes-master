@@ -16,6 +16,7 @@ export interface SecretMetadata {
     name: string
     namespace: string
     labels?: Record<string, string>
+    annotations?: Record<string, string>
     creationTimestamp: string
 }
 
@@ -33,6 +34,7 @@ export interface SecretConfig {
     secretType: SecretType
     data: Record<string, string>
     labels?: Record<string, string>
+    annotations?: Record<string, string>
     creationTimestamp?: string
 }
 
@@ -63,6 +65,7 @@ export const createSecret = (config: SecretConfig): Secret => {
             namespace: config.namespace,
             creationTimestamp: config.creationTimestamp || new Date().toISOString(),
             ...(config.labels && { labels: config.labels }),
+            ...(config.annotations && { annotations: config.annotations }),
         },
         type: config.secretType,
         data: config.data,

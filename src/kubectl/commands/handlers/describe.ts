@@ -2,10 +2,11 @@ import type { ClusterStateData } from '../../../cluster/ClusterState'
 import type { ParsedCommand } from '../types'
 import type { ExecutionResult } from '../../../shared/result'
 import { success, error } from '../../../shared/result'
+import { describePod, describeConfigMap, describeSecret } from '../../formatters/describeFormatters'
 
 /**
  * Handle kubectl describe command
- * Placeholder implementation - real formatting will be added in Sprint 5
+ * Provides detailed multi-line output for pods, configmaps, and secrets
  */
 export const handleDescribe = (
     state: ClusterStateData,
@@ -17,29 +18,51 @@ export const handleDescribe = (
         return error(`Resource name is required for describe command`)
     }
 
-    if (parsed.resource === 'pods') {
-        const pod = state.pods.items.find(
-            p => p.metadata.name === parsed.name && p.metadata.namespace === namespace
-        )
+    // Route to appropriate resource handler
+    const handlers: Record<string, () => ExecutionResult> = {
+        pods: () => {
+            const pod = state.pods.items.find(
+                p => p.metadata.name === parsed.name && p.metadata.namespace === namespace
+            )
 
-        if (!pod) {
-            return error(`Pod "${parsed.name}" not found in namespace "${namespace}"`)
+            if (!pod) {
+                return error(`Pod "${parsed.name}" not found in namespace "${namespace}"`)
+            }
+
+            return success(describePod(pod))
+        },
+
+        configmaps: () => {
+            const configMap = state.configMaps.items.find(
+                cm => cm.metadata.name === parsed.name && cm.metadata.namespace === namespace
+            )
+
+            if (!configMap) {
+                return error(`ConfigMap "${parsed.name}" not found in namespace "${namespace}"`)
+            }
+
+            return success(describeConfigMap(configMap))
+        },
+
+        secrets: () => {
+            const secret = state.secrets.items.find(
+                s => s.metadata.name === parsed.name && s.metadata.namespace === namespace
+            )
+
+            if (!secret) {
+                return error(`Secret "${parsed.name}" not found in namespace "${namespace}"`)
+            }
+
+            return success(describeSecret(secret))
         }
-
-        // Placeholder detailed format - will be replaced with proper formatter in Sprint 5
-        const lines = [
-            `Name:         ${pod.metadata.name}`,
-            `Namespace:    ${pod.metadata.namespace}`,
-            `Status:       ${pod.status.phase}`,
-            `IP:           172.17.0.${Math.floor(Math.random() * 255)}`,
-            `Containers:`,
-            ...pod.spec.containers.map(c => `  ${c.name}:`),
-            ...pod.spec.containers.map(c => `    Image: ${c.image}`)
-        ]
-
-        return success(lines.join('\n'))
     }
 
-    return success(`Placeholder: describe ${parsed.resource} ${parsed.name}`)
+    const handler = handlers[parsed.resource]
+
+    if (!handler) {
+        return error(`Resource type "${parsed.resource}" is not supported by describe command`)
+    }
+
+    return handler()
 }
 

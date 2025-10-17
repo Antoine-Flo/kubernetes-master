@@ -5,6 +5,7 @@ export interface ConfigMapMetadata {
     name: string
     namespace: string
     labels?: Record<string, string>
+    annotations?: Record<string, string>
     creationTimestamp: string
 }
 
@@ -22,6 +23,7 @@ export interface ConfigMapConfig {
     data?: Record<string, string>
     binaryData?: Record<string, string>
     labels?: Record<string, string>
+    annotations?: Record<string, string>
     creationTimestamp?: string
 }
 
@@ -34,6 +36,7 @@ export const createConfigMap = (config: ConfigMapConfig): ConfigMap => {
             namespace: config.namespace,
             creationTimestamp: config.creationTimestamp || new Date().toISOString(),
             ...(config.labels && { labels: config.labels }),
+            ...(config.annotations && { annotations: config.annotations }),
         },
         ...(config.data && { data: config.data }),
         ...(config.binaryData && { binaryData: config.binaryData }),
