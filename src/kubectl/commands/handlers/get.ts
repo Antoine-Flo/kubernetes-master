@@ -10,7 +10,7 @@ export const handleGet = (state: ClusterStateData, parsed: ParsedCommand): strin
     const namespace = parsed.namespace || 'default'
 
     if (parsed.resource === 'pods') {
-        const pods = state.pods.filter(p => p.metadata.namespace === namespace)
+        const pods = state.pods.items.filter(p => p.metadata.namespace === namespace)
 
         if (pods.length === 0) {
             return 'No resources found'

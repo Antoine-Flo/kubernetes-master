@@ -1,11 +1,21 @@
 import { describe, it, expect } from 'vitest'
 import { createPod } from '../../../src/cluster/models/Pod'
+import { createConfigMap } from '../../../src/cluster/models/ConfigMap'
+import { createSecret } from '../../../src/cluster/models/Secret'
 import {
     createEmptyState,
     addPod,
     getPods,
     findPod,
     deletePod,
+    addConfigMap,
+    getConfigMaps,
+    findConfigMap,
+    deleteConfigMap,
+    addSecret,
+    getSecrets,
+    findSecret,
+    deleteSecret,
     createClusterState,
     type ClusterStateData,
 } from '../../../src/cluster/ClusterState'
@@ -16,8 +26,10 @@ describe('ClusterState Pure Functions', () => {
             const state = createEmptyState()
 
             expect(state).toBeDefined()
-            expect(state.pods).toEqual([])
-            expect(Array.isArray(state.pods)).toBe(true)
+            expect(state.pods).toEqual({ items: [] })
+            expect(state.configMaps).toEqual({ items: [] })
+            expect(state.secrets).toEqual({ items: [] })
+            expect(Array.isArray(state.pods.items)).toBe(true)
         })
     })
 
@@ -32,8 +44,8 @@ describe('ClusterState Pure Functions', () => {
 
             const newState = addPod(state, pod)
 
-            expect(newState.pods).toHaveLength(1)
-            expect(newState.pods[0]).toEqual(pod)
+            expect(newState.pods.items).toHaveLength(1)
+            expect(newState.pods.items[0]).toEqual(pod)
         })
 
         it('should not mutate original state (immutability)', () => {
@@ -46,8 +58,8 @@ describe('ClusterState Pure Functions', () => {
 
             const newState = addPod(state, pod)
 
-            expect(state.pods).toHaveLength(0)
-            expect(newState.pods).toHaveLength(1)
+            expect(state.pods.items).toHaveLength(0)
+            expect(newState.pods.items).toHaveLength(1)
             expect(state).not.toBe(newState)
         })
 
@@ -67,9 +79,9 @@ describe('ClusterState Pure Functions', () => {
             state = addPod(state, pod1)
             state = addPod(state, pod2)
 
-            expect(state.pods).toHaveLength(2)
-            expect(state.pods[0].metadata.name).toBe('nginx')
-            expect(state.pods[1].metadata.name).toBe('redis')
+            expect(state.pods.items).toHaveLength(2)
+            expect(state.pods.items[0].metadata.name).toBe('nginx')
+            expect(state.pods.items[1].metadata.name).toBe('redis')
         })
     })
 
@@ -214,9 +226,9 @@ describe('ClusterState Pure Functions', () => {
             const result = deletePod(state, 'nginx', 'default')
 
             expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.state.pods).toHaveLength(1)
-                expect(result.state.pods[0].metadata.name).toBe('redis')
+            if (result.type === 'success' && result.state) {
+                expect(result.state.pods.items).toHaveLength(1)
+                expect(result.state.pods.items[0].metadata.name).toBe('redis')
             }
         })
 
@@ -229,11 +241,11 @@ describe('ClusterState Pure Functions', () => {
             })
 
             state = addPod(state, pod)
-            const originalLength = state.pods.length
+            const originalLength = state.pods.items.length
 
             deletePod(state, 'nginx', 'default')
 
-            expect(state.pods).toHaveLength(originalLength)
+            expect(state.pods.items).toHaveLength(originalLength)
         })
 
         it('should return error when pod not found', () => {
@@ -283,7 +295,9 @@ describe('ClusterState Facade', () => {
                 containers: [{ name: 'nginx', image: 'nginx:latest' }],
             })
             const initialState: ClusterStateData = {
-                pods: [pod],
+                pods: { items: [pod] },
+                configMaps: { items: [] },
+                secrets: { items: [] },
             }
 
             const clusterState = createClusterState(initialState)
@@ -398,8 +412,8 @@ describe('ClusterState Facade', () => {
             const json = clusterState.toJSON()
 
             expect(json).toBeDefined()
-            expect(json.pods).toHaveLength(1)
-            expect(json.pods[0].metadata.name).toBe('nginx')
+            expect(json.pods.items).toHaveLength(1)
+            expect(json.pods.items[0].metadata.name).toBe('nginx')
         })
 
         it('should load state from JSON', () => {
@@ -411,7 +425,9 @@ describe('ClusterState Facade', () => {
             })
 
             const stateData: ClusterStateData = {
-                pods: [pod],
+                pods: { items: [pod] },
+                configMaps: { items: [] },
+                secrets: { items: [] },
             }
 
             clusterState.loadState(stateData)
@@ -437,13 +453,200 @@ describe('ClusterState Facade', () => {
             expect(clusterState.getPods()).toHaveLength(1)
 
             const newState: ClusterStateData = {
-                pods: [pod2],
+                pods: { items: [pod2] },
+                configMaps: { items: [] },
+                secrets: { items: [] },
             }
 
             clusterState.loadState(newState)
 
             expect(clusterState.getPods()).toHaveLength(1)
             expect(clusterState.getPods()[0].metadata.name).toBe('redis')
+        })
+    })
+
+    describe('ConfigMap Operations', () => {
+        it('should add configmap to state', () => {
+            const clusterState = createClusterState()
+            const configMap = createConfigMap({
+                name: 'app-config',
+                namespace: 'default',
+                data: { key: 'value' },
+            })
+
+            clusterState.addConfigMap(configMap)
+
+            expect(clusterState.getConfigMaps()).toHaveLength(1)
+            expect(clusterState.getConfigMaps()[0].metadata.name).toBe('app-config')
+        })
+
+        it('should get configmaps by namespace', () => {
+            const clusterState = createClusterState()
+            const cm1 = createConfigMap({
+                name: 'cm1',
+                namespace: 'default',
+                data: {},
+            })
+            const cm2 = createConfigMap({
+                name: 'cm2',
+                namespace: 'kube-system',
+                data: {},
+            })
+
+            clusterState.addConfigMap(cm1)
+            clusterState.addConfigMap(cm2)
+
+            expect(clusterState.getConfigMaps('default')).toHaveLength(1)
+            expect(clusterState.getConfigMaps('kube-system')).toHaveLength(1)
+        })
+
+        it('should find configmap by name and namespace', () => {
+            const clusterState = createClusterState()
+            const configMap = createConfigMap({
+                name: 'app-config',
+                namespace: 'default',
+                data: { key: 'value' },
+            })
+
+            clusterState.addConfigMap(configMap)
+
+            const result = clusterState.findConfigMap('app-config', 'default')
+
+            expect(result.type).toBe('success')
+            if (result.type === 'success') {
+                expect(result.data.metadata.name).toBe('app-config')
+            }
+        })
+
+        it('should return error when configmap not found', () => {
+            const clusterState = createClusterState()
+
+            const result = clusterState.findConfigMap('missing', 'default')
+
+            expect(result.type).toBe('error')
+            if (result.type === 'error') {
+                expect(result.message).toContain('not found')
+            }
+        })
+
+        it('should delete configmap by name and namespace', () => {
+            const clusterState = createClusterState()
+            const configMap = createConfigMap({
+                name: 'app-config',
+                namespace: 'default',
+                data: { key: 'value' },
+            })
+
+            clusterState.addConfigMap(configMap)
+            expect(clusterState.getConfigMaps()).toHaveLength(1)
+
+            const result = clusterState.deleteConfigMap('app-config', 'default')
+
+            expect(result.type).toBe('success')
+            expect(clusterState.getConfigMaps()).toHaveLength(0)
+        })
+
+        it('should return error when deleting non-existent configmap', () => {
+            const clusterState = createClusterState()
+
+            const result = clusterState.deleteConfigMap('missing', 'default')
+
+            expect(result.type).toBe('error')
+        })
+    })
+
+    describe('Secret Operations', () => {
+        it('should add secret to state', () => {
+            const clusterState = createClusterState()
+            const secret = createSecret({
+                name: 'db-secret',
+                namespace: 'default',
+                secretType: { type: 'Opaque' },
+                data: { password: 'cGFzc3dvcmQ=' },
+            })
+
+            clusterState.addSecret(secret)
+
+            expect(clusterState.getSecrets()).toHaveLength(1)
+            expect(clusterState.getSecrets()[0].metadata.name).toBe('db-secret')
+        })
+
+        it('should get secrets by namespace', () => {
+            const clusterState = createClusterState()
+            const secret1 = createSecret({
+                name: 'secret1',
+                namespace: 'default',
+                secretType: { type: 'Opaque' },
+                data: {},
+            })
+            const secret2 = createSecret({
+                name: 'secret2',
+                namespace: 'kube-system',
+                secretType: { type: 'Opaque' },
+                data: {},
+            })
+
+            clusterState.addSecret(secret1)
+            clusterState.addSecret(secret2)
+
+            expect(clusterState.getSecrets('default')).toHaveLength(1)
+            expect(clusterState.getSecrets('kube-system')).toHaveLength(1)
+        })
+
+        it('should find secret by name and namespace', () => {
+            const clusterState = createClusterState()
+            const secret = createSecret({
+                name: 'db-secret',
+                namespace: 'default',
+                secretType: { type: 'Opaque' },
+                data: { password: 'cGFzc3dvcmQ=' },
+            })
+
+            clusterState.addSecret(secret)
+
+            const result = clusterState.findSecret('db-secret', 'default')
+
+            expect(result.type).toBe('success')
+            if (result.type === 'success') {
+                expect(result.data.metadata.name).toBe('db-secret')
+            }
+        })
+
+        it('should return error when secret not found', () => {
+            const clusterState = createClusterState()
+
+            const result = clusterState.findSecret('missing', 'default')
+
+            expect(result.type).toBe('error')
+            if (result.type === 'error') {
+                expect(result.message).toContain('not found')
+            }
+        })
+
+        it('should delete secret by name and namespace', () => {
+            const clusterState = createClusterState()
+            const secret = createSecret({
+                name: 'db-secret',
+                namespace: 'default',
+                secretType: { type: 'Opaque' },
+                data: { password: 'cGFzc3dvcmQ=' },
+            })
+
+            clusterState.addSecret(secret)
+            expect(clusterState.getSecrets()).toHaveLength(1)
+
+            const result = clusterState.deleteSecret('db-secret', 'default')
+
+            expect(result.type).toBe('success')
+            expect(clusterState.getSecrets()).toHaveLength(0)
+        })
+
+        it('should return error when deleting non-existent secret', () => {
+            const clusterState = createClusterState()
+
+            const result = clusterState.deleteSecret('missing', 'default')
+
+            expect(result.type).toBe('error')
         })
     })
 })

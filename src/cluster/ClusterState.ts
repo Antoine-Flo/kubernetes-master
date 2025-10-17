@@ -1,84 +1,131 @@
 import type { Pod } from './models/Pod'
+import type { ConfigMap } from './models/ConfigMap'
+import type { Secret } from './models/Secret'
 import type { Result } from '../shared/result'
+import { createResourceRepository } from './repositories/resourceRepository'
+import type { ResourceCollection } from './repositories/types'
 
 // ╔═══════════════════════════════════════════════════════════════════════╗
 // ║                    KUBERNETES CLUSTER STATE                           ║
 // ╚═══════════════════════════════════════════════════════════════════════╝
-// Manages virtual K8s cluster with pods, deployments, and services.
+// Manages virtual K8s cluster with pods, configmaps, secrets, and more.
+// Uses Generic Repository Pattern for DRY CRUD operations.
 
 export interface ClusterStateData {
-    pods: Pod[]
+    pods: ResourceCollection<Pod>
+    configMaps: ResourceCollection<ConfigMap>
+    secrets: ResourceCollection<Secret>
 }
 
-// Result types for operations
-export type DeleteResult =
-    | { type: 'success'; data: Pod; state: ClusterStateData }
-    | { type: 'error'; message: string }
+// ─── Resource Repositories ───────────────────────────────────────────
 
-// Pure functions for state operations
+// Create resource-specific repositories (singletons)
+const podRepo = createResourceRepository<Pod>('Pod')
+const configMapRepo = createResourceRepository<ConfigMap>('ConfigMap')
+const secretRepo = createResourceRepository<Secret>('Secret')
+
+// ─── State Operations ────────────────────────────────────────────────
 
 export const createEmptyState = (): ClusterStateData => ({
-    pods: [],
+    pods: podRepo.createEmpty(),
+    configMaps: configMapRepo.createEmpty(),
+    secrets: secretRepo.createEmpty(),
 })
+
+// ─── Pod Operations ──────────────────────────────────────────────────
 
 export const addPod = (state: ClusterStateData, pod: Pod): ClusterStateData => ({
     ...state,
-    pods: [...state.pods, pod],
+    pods: podRepo.add(state.pods, pod),
 })
 
-export const getPods = (state: ClusterStateData, namespace?: string): Pod[] => {
-    if (!namespace) {
-        return [...state.pods]
-    }
-    return state.pods.filter((pod) => pod.metadata.namespace === namespace)
-}
+export const getPods = (state: ClusterStateData, namespace?: string): Pod[] =>
+    podRepo.getAll(state.pods, namespace)
 
 export const findPod = (
     state: ClusterStateData,
     name: string,
     namespace: string
-): Result<Pod> => {
-    const pod = state.pods.find(
-        (p) => p.metadata.name === name && p.metadata.namespace === namespace
-    )
-
-    if (!pod) {
-        return {
-            type: 'error',
-            message: `Pod "${name}" not found in namespace "${namespace}"`,
-        }
-    }
-
-    return { type: 'success', data: pod }
-}
+): Result<Pod> => podRepo.find(state.pods, name, namespace)
 
 export const deletePod = (
     state: ClusterStateData,
     name: string,
     namespace: string
-): DeleteResult => {
-    const podIndex = state.pods.findIndex(
-        (p) => p.metadata.name === name && p.metadata.namespace === namespace
-    )
-
-    if (podIndex === -1) {
+): Result<Pod> & { state?: ClusterStateData } => {
+    const result = podRepo.remove(state.pods, name, namespace)
+    if (result.type === 'success' && result.collection) {
         return {
-            type: 'error',
-            message: `Pod "${name}" not found in namespace "${namespace}"`,
+            type: 'success',
+            data: result.data,
+            state: { ...state, pods: result.collection },
         }
     }
+    return result
+}
 
-    const deletedPod = state.pods[podIndex]
-    const newPods = [...state.pods.slice(0, podIndex), ...state.pods.slice(podIndex + 1)]
+// ─── ConfigMap Operations ────────────────────────────────────────────
 
-    return {
-        type: 'success',
-        data: deletedPod,
-        state: {
-            ...state,
-            pods: newPods,
-        },
+export const addConfigMap = (state: ClusterStateData, configMap: ConfigMap): ClusterStateData => ({
+    ...state,
+    configMaps: configMapRepo.add(state.configMaps, configMap),
+})
+
+export const getConfigMaps = (state: ClusterStateData, namespace?: string): ConfigMap[] =>
+    configMapRepo.getAll(state.configMaps, namespace)
+
+export const findConfigMap = (
+    state: ClusterStateData,
+    name: string,
+    namespace: string
+): Result<ConfigMap> => configMapRepo.find(state.configMaps, name, namespace)
+
+export const deleteConfigMap = (
+    state: ClusterStateData,
+    name: string,
+    namespace: string
+): Result<ConfigMap> & { state?: ClusterStateData } => {
+    const result = configMapRepo.remove(state.configMaps, name, namespace)
+    if (result.type === 'success' && result.collection) {
+        return {
+            type: 'success',
+            data: result.data,
+            state: { ...state, configMaps: result.collection },
+        }
     }
+    return result
+}
+
+// ─── Secret Operations ───────────────────────────────────────────────
+
+export const addSecret = (state: ClusterStateData, secret: Secret): ClusterStateData => ({
+    ...state,
+    secrets: secretRepo.add(state.secrets, secret),
+})
+
+export const getSecrets = (state: ClusterStateData, namespace?: string): Secret[] =>
+    secretRepo.getAll(state.secrets, namespace)
+
+export const findSecret = (
+    state: ClusterStateData,
+    name: string,
+    namespace: string
+): Result<Secret> => secretRepo.find(state.secrets, name, namespace)
+
+export const deleteSecret = (
+    state: ClusterStateData,
+    name: string,
+    namespace: string
+): Result<Secret> & { state?: ClusterStateData } => {
+    const result = secretRepo.remove(state.secrets, name, namespace)
+    if (result.type === 'success' && result.collection) {
+        return {
+            type: 'success',
+            data: result.data,
+            state: { ...state, secrets: result.collection },
+        }
+    }
+    return result
 }
 
 // Facade interface
@@ -87,6 +134,14 @@ export interface ClusterState {
     addPod: (pod: Pod) => void
     findPod: (name: string, namespace: string) => Result<Pod>
     deletePod: (name: string, namespace: string) => Result<Pod>
+    getConfigMaps: (namespace?: string) => ConfigMap[]
+    addConfigMap: (configMap: ConfigMap) => void
+    findConfigMap: (name: string, namespace: string) => Result<ConfigMap>
+    deleteConfigMap: (name: string, namespace: string) => Result<ConfigMap>
+    getSecrets: (namespace?: string) => Secret[]
+    addSecret: (secret: Secret) => void
+    findSecret: (name: string, namespace: string) => Result<Secret>
+    deleteSecret: (name: string, namespace: string) => Result<Secret>
     toJSON: () => ClusterStateData
     loadState: (state: ClusterStateData) => void
 }
@@ -106,14 +161,61 @@ export const createClusterState = (initialState?: ClusterStateData): ClusterStat
 
         deletePod: (name: string, namespace: string) => {
             const result = deletePod(state, name, namespace)
-            if (result.type === 'success') {
+            if (result.type === 'success' && result.state) {
                 state = result.state
                 return { type: 'success', data: result.data }
             }
-            return result
+            if (result.type === 'error') {
+                return result
+            }
+            return { type: 'error', message: 'Unknown error' }
         },
 
-        toJSON: () => ({ ...state, pods: [...state.pods] }),
+        getConfigMaps: (namespace?: string) => getConfigMaps(state, namespace),
+
+        addConfigMap: (configMap: ConfigMap) => {
+            state = addConfigMap(state, configMap)
+        },
+
+        findConfigMap: (name: string, namespace: string) => findConfigMap(state, name, namespace),
+
+        deleteConfigMap: (name: string, namespace: string) => {
+            const result = deleteConfigMap(state, name, namespace)
+            if (result.type === 'success' && result.state) {
+                state = result.state
+                return { type: 'success', data: result.data }
+            }
+            if (result.type === 'error') {
+                return result
+            }
+            return { type: 'error', message: 'Unknown error' }
+        },
+
+        getSecrets: (namespace?: string) => getSecrets(state, namespace),
+
+        addSecret: (secret: Secret) => {
+            state = addSecret(state, secret)
+        },
+
+        findSecret: (name: string, namespace: string) => findSecret(state, name, namespace),
+
+        deleteSecret: (name: string, namespace: string) => {
+            const result = deleteSecret(state, name, namespace)
+            if (result.type === 'success' && result.state) {
+                state = result.state
+                return { type: 'success', data: result.data }
+            }
+            if (result.type === 'error') {
+                return result
+            }
+            return { type: 'error', message: 'Unknown error' }
+        },
+
+        toJSON: () => ({
+            pods: { items: [...state.pods.items] },
+            configMaps: { items: [...state.configMaps.items] },
+            secrets: { items: [...state.secrets.items] },
+        }),
 
         loadState: (newState: ClusterStateData) => {
             state = newState

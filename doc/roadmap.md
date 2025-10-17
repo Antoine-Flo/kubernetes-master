@@ -2,7 +2,7 @@
 
 ## 📊 État actuel du projet
 
-**~501 tests passent** | **Coverage: ~92%** | **Architecture: Functional (Factory + Pure functions + Event Sourcing + Observer Pattern)**
+**~573 tests passent** | **Coverage: ~94%** | **Architecture: Functional (Factory + Pure functions + ADT + Event Sourcing + Observer Pattern)**
 
 ### ✅ Completé
 - **Sprint 1**: Terminal xterm.js fonctionnel (9 tests)
@@ -19,11 +19,12 @@
 - **Sprint 4.9**: Terminal UX Enhancements (12 tests) - Command history + Enhanced prompt
 - **Sprint 4.10**: Tab Autocompletion (61 tests) - Bash-like autocomplete for commands, resources, files, and flags
 - **Sprint 5.1**: Generic Formatter Module (54 tests) - Shell-like formatters (formatTable, formatColumns, formatLongListing, formatKeyValue)
+- **Sprint 5.2**: Core Resource Models (72 tests) - ConfigMaps, Secrets, Pod enrichment (resources, probes, env, volumes), Probe simulator with ADT patterns
 - **UI Enhancement**: Titre ASCII "KubeSimulator" + description - Landing page améliorée avec theming daisyUI
 - **UX Enhancement**: Welcome message enrichi avec commandes clés (help, kubectl get pods, debug images)
 
 ### 🎯 Prochaine étape
-**Sprint 5.2** - Core Resource Models (ConfigMaps, Secrets, Resource Limits, Probes)
+**Sprint 5.3** - Get Handlers (kubectl get for configmaps/secrets with filters)
 
 ### 📋 À venir (Roadmap complète enrichie - 26 sprints)
 - **Sprint 4-6**: MVP (FileSystem, Shell, kubectl + Core K8s Resources, Storage)
@@ -43,122 +44,9 @@
 
 ---
 
-## 🎯 Sprint 4 : FileSystem + Shell Commands
-
-**Objectif**: Système de fichiers virtuel et commandes shell de base
-
-### Définition de Done
-- FileSystem fonctionne (création/navigation/lecture)
-- Image Registry avec 7-10 images disponibles
-- Pull simulation avec events (ImagePullBackOff si image inconnue)
-- Commandes shell de base implémentées
-- Logger applicatif intégré (commande `debug`)
-- UI Registry panel visible (liste images disponibles)
-- Prompt s'adapte selon le chemin
-- Max depth (3 niveaux) respecté
-- Tests > 80% coverage
-
----
-
-## 🎯 Sprint 4.9 : Terminal UX Enhancements ✅
-
-**Objectif**: Améliorer l'expérience utilisateur du terminal avec historique et prompt
-
-### 4.9.1 - Command History (TDD) ✅
-- ✅ Enrichir `src/terminal/TerminalManager.ts`
-  - Array pour stocker historique (max 100 commandes)
-  - Index de navigation dans l'historique
-  - Handler pour arrow keys (↑ = previous, ↓ = next)
-  - Restore currentLine quand on quitte l'historique
-- ✅ ~8-10 tests
-
-### 4.9.2 - Enhanced Prompt (TDD) ✅
-- ✅ Modifier `src/main.ts` - fonction `getPrompt()`
-  - Format: `☸ />` à la racine
-  - Format: `☸ ~/manifests/dev>` ailleurs
-  - Conserver logique actuelle (~ pour chemins non-root)
-- ✅ ~2-4 tests
-
-### Définition de Done
-- ✅ ↑↓ navigue dans l'historique (max 100 commandes)
-- ✅ Prompt affiche ☸ + chemin simple
-- ✅ Tests > 80% coverage
-- ✅ ~10-12 tests total pour Sprint 4.9
-
----
-
-## 🎯 Sprint 4.10 : Tab Autocompletion ✅
-
-**Objectif**: Autocomplétion bash-like pour commandes, ressources, fichiers et flags
-
-### 4.10.1 - Autocomplete Module (TDD) ✅
-- ✅ `src/terminal/autocomplete.ts`
-  - Pure functions pour logique d'autocomplétion
-  - `getCompletions()` - Suggestions contextuelles
-  - `getCommonPrefix()` - Calcul préfixe commun
-  - `formatSuggestions()` - Format colonnes (bash-like)
-- ✅ ~47 tests
-
-### 4.10.2 - Terminal Integration (TDD) ✅
-- ✅ Update `src/terminal/TerminalManager.ts`
-  - Détection Tab key (charCode 9)
-  - Double-tab detection (< 500ms)
-  - Single Tab = complete common prefix
-  - Double Tab = show all options
-- ✅ Update `src/main.ts`
-  - Pass autocomplete context (clusterState + fileSystem)
-- ✅ ~14 tests
-
-### Fonctionnalités ✅
-- ✅ Autocomplétion commandes (kubectl, cd, ls, pwd, etc.)
-- ✅ Autocomplétion kubectl actions (get, describe, delete, etc.)
-- ✅ Autocomplétion resource types (pods, deployments, services, etc.)
-- ✅ Autocomplétion resource names depuis cluster
-- ✅ Autocomplétion chemins fichiers/dossiers
-- ✅ Autocomplétion flags (-n, --namespace, -f, etc.)
-- ✅ Comportement bash: Tab = prefix, Tab Tab = show all
-
-### Définition de Done
-- ✅ Tab complète common prefix ou full word si unique
-- ✅ Double Tab affiche toutes les options (< 500ms)
-- ✅ Autocomplétion contextuelle (commands → actions → resources → names)
-- ✅ Autocomplétion chemins (absolute et relative)
-- ✅ Tests > 80% coverage
-- ✅ ~61 tests total pour Sprint 4.10
-
----
-
 ## 🎯 Sprint 5 : kubectl Handlers + Core Resources (MVP)
 
 **Objectif**: Implémenter les commandes kubectl essentielles + ressources K8s critiques
-
-### 5.1 - Generic Formatter Module (TDD) ✅
-- ✅ `src/shared/formatter.ts` - Module générique shell-like
-  - `formatTable()` - Style kubectl avec auto-width et alignement intelligent
-  - `formatColumns()` - Style ls multi-colonnes avec tri alphabétique
-  - `formatLongListing()` - Style ls -l avec permissions, taille, date
-  - `formatKeyValue()` - Style kubectl describe avec indentation
-  - Helpers Unix-like: formatAge, formatDate, formatSize, formatPermissions
-- ✅ Refactoring kubectl/commands/handlers/get.ts (utilise formatTable + formatAge)
-- ✅ Refactoring shell handlers ls et debug (utilisent les formatters)
-- ✅ ~54 tests (100% passing)
-
-### 5.2 - Core Resource Models (TDD)
-- [ ] `src/cluster/models/ConfigMap.ts` - Factory pour ConfigMaps
-  - Store configuration data (key-value pairs)
-  - Support `data` et `binaryData` fields
-- [ ] `src/cluster/models/Secret.ts` - Factory pour Secrets
-  - Store sensitive data (base64 encoded)
-  - Types: Opaque, kubernetes.io/service-account-token, etc.
-- [ ] Enrichir Pod model avec:
-  - Resource requests/limits (CPU, memory) dans container spec
-  - Liveness/Readiness/Startup probes (httpGet, exec, tcpSocket)
-  - Environment variables (valueFrom: configMapKeyRef, secretKeyRef)
-  - Volume mounts (configMap, secret, emptyDir)
-- [ ] `src/cluster/models/probeSimulator.ts` - Pure functions
-  - `evaluateLivenessProbe()`, `evaluateReadinessProbe()`
-  - Simulation health checks → restart pod si liveness fail
-- [ ] ~25-30 tests
 
 ### 5.3 - Get Handlers (TDD)
 - [ ] Améliorer `src/kubectl/commands/handlers/get.ts`
@@ -168,7 +56,6 @@
   - Filtre par labels (`-l` flag)
   - Calcul AGE (fonction utilitaire)
   - Logger les requêtes (application logger)
-- [ ] ~20-25 tests
 
 ### 5.4 - Describe Handler (TDD)
 - [ ] Améliorer `src/kubectl/commands/handlers/describe.ts`
@@ -177,7 +64,6 @@
   - Environment variables (avec masquage secrets)
   - Volume mounts
   - Probes configuration
-- [ ] ~12-15 tests
 
 ### 5.5 - Apply/Create Handlers (TDD)
 - [ ] Install `js-yaml` dependency
@@ -186,7 +72,6 @@
   - Parse YAML (`js-yaml`)
   - Create/update: Pod, ConfigMap, Secret, Deployment, Service
   - Validation schema basique
-- [ ] ~20-25 tests
 
 ### 5.6 - kubectl logs + exec (TDD)
 - [ ] Améliorer Pod model: `status.logs: LogEntry[]`
@@ -201,7 +86,6 @@
 - [ ] `src/cluster/models/logGenerator.ts` - Pure functions
   - Logs dynamiques par container type + phase
   - Rotation automatique (max 200 lignes/pod)
-- [ ] ~25-30 tests
 
 ### 5.7 - kubectl label & annotate (TDD)
 - [ ] `src/kubectl/commands/handlers/label.ts`
@@ -210,19 +94,6 @@
   - Support `--overwrite` flag
 - [ ] `src/kubectl/commands/handlers/annotate.ts`
   - Même logique que label mais pour annotations
-- [ ] ~15-20 tests
-
-### Définition de Done
-- ✅ ConfigMaps & Secrets créables et injectables dans pods
-- ✅ Resource requests/limits supportés dans Pod spec
-- ✅ Probes (liveness/readiness) fonctionnels avec simulation restart
-- ✅ `kubectl get pods -l app=nginx` filtre par labels
-- ✅ `kubectl exec -it pod -- /bin/sh` fonctionne (shell simulé)
-- ✅ `kubectl label/annotate` pour manipuler metadata
-- ✅ `kubectl describe` affiche toutes les infos (env, volumes, probes)
-- ✅ `kubectl apply -f` crée ConfigMaps/Secrets depuis YAML
-- ✅ Tests > 85% coverage
-- ✅ **~130-160 tests total pour Sprint 5**
 
 ---
 
@@ -235,7 +106,6 @@
   - Factory `createStorageAdapter(storageType: 'localStorage')`
   - Operations: `save(key, data)`, `load(key)`, `clear()`
   - Support ClusterState + FileSystem
-- [ ] ~10-15 tests
 
 ### 6.2 - Integration (TDD)
 - [ ] `src/main.ts` - Orchestration complète
@@ -332,7 +202,6 @@
   - Maintain stable naming
   - Auto-create PVCs from templates
 - [ ] `kubectl scale statefulset` handler
-- [ ] ~25-30 tests
 
 **Définition de Done**:
 - ✅ PV/PVC lifecycle complet (Available → Bound)
@@ -356,7 +225,6 @@
   - Track completions
   - Cleanup policy (TTL after finished)
 - [ ] `kubectl create job`, `kubectl delete job`
-- [ ] ~15-20 tests
 
 #### 9.2 - CronJobs (TDD)
 - [ ] `src/cluster/models/CronJob.ts` - Factory pour CronJobs
@@ -368,7 +236,6 @@
   - Parse cron schedule
   - Create Jobs selon schedule
   - History cleanup
-- [ ] ~15-20 tests
 
 #### 9.3 - DaemonSets (TDD)
 - [ ] `src/cluster/models/DaemonSet.ts` - Factory pour DaemonSets
@@ -377,7 +244,6 @@
 - [ ] DaemonSet controller
   - Ensure 1 pod per node
   - Node selector support
-- [ ] ~15-20 tests
 
 **Définition de Done**:
 - ✅ Job exécute task et track completions
@@ -398,21 +264,18 @@
   - `kubectl rollout undo deployment/<name>` (rollback)
   - `kubectl rollout pause/resume deployment/<name>`
 - [ ] Revision tracking dans Deployment
-- [ ] ~20-25 tests
 
 #### 10.2 - kubectl port-forward (TDD) 🔥 MUST-HAVE
 - [ ] `src/kubectl/commands/handlers/port-forward.ts`
   - `kubectl port-forward pod/<name> 8080:80`
   - Simulation message (pas de vrai tunnel, juste pédagogique)
   - Afficher accès URL (http://localhost:8080)
-- [ ] ~10-12 tests
 
 #### 10.3 - kubectl top (TDD)
 - [ ] `src/kubectl/commands/handlers/top.ts`
   - `kubectl top pods` - afficher CPU/memory usage
   - `kubectl top nodes` - stats par node
   - Fake metrics basées sur resource requests
-- [ ] ~12-15 tests
 
 #### 10.4 - kubectl config (contexts/kubeconfig) (TDD)
 - [ ] `src/cluster/models/KubeConfig.ts` - Contexts, clusters, users
@@ -423,7 +286,6 @@
   - `kubectl config use-context <name>`
   - `kubectl config set-context --current --namespace=<ns>`
 - [ ] Prompt update selon context/namespace
-- [ ] ~15-20 tests
 
 **Définition de Done**:
 - ✅ `kubectl rollout undo` fait rollback
@@ -447,7 +309,6 @@
 - [ ] `kubectl auth can-i` handler
   - `kubectl auth can-i create pods`
   - `kubectl auth can-i delete deployments --as=user`
-- [ ] ~30-35 tests
 
 #### 11.2 - Ingress (TDD)
 - [ ] `src/cluster/models/Ingress.ts` - Factory pour Ingress
@@ -457,7 +318,6 @@
 - [ ] Ingress routing simulation (pure function)
   - Match request (host/path) → service
 - [ ] `kubectl get/describe/apply ingress`
-- [ ] ~20-25 tests
 
 #### 11.3 - NetworkPolicies (TDD)
 - [ ] `src/cluster/models/NetworkPolicy.ts` - Factory pour NetworkPolicies
@@ -467,7 +327,6 @@
 - [ ] Policy evaluation simulation (pédagogique)
   - Check if traffic allowed: pod-A → pod-B
 - [ ] `kubectl get/describe networkpolicies`
-- [ ] ~20-25 tests
 
 **Définition de Done**:
 - ✅ RBAC complet (ServiceAccount, Roles, Bindings)
@@ -490,7 +349,6 @@
   - Calculate desired replicas basé sur metrics
   - Scale target workload
 - [ ] `kubectl autoscale deployment` handler
-- [ ] ~20-25 tests
 
 #### 12.2 - ResourceQuotas & LimitRanges (TDD)
 - [ ] `src/cluster/models/ResourceQuota.ts` - Factory pour ResourceQuotas
@@ -501,7 +359,6 @@
   - Min/max constraints
 - [ ] Quota enforcement (pure function)
   - Block creation if quota exceeded
-- [ ] ~20-25 tests
 
 **Définition de Done**:
 - ✅ HPA scale automatiquement selon CPU/memory
@@ -524,7 +381,6 @@
 - [ ] **Terminal YAML Editor** - Éditeur nano-like intégré
   - `kubectl edit pod <name>` ouvre éditeur
   - Navigation flèches, Ctrl+S save, Ctrl+Q quit
-- [ ] ~20-25 tests
 
 **Définition de Done**:
 - ✅ Coloration syntaxique temps réel
@@ -992,31 +848,3 @@ npm run build      # Build production
 
 **À appliquer pour tous les nouveaux modules**.
 
----
-
-## 🔧 Refactorings Complétés
-
-### Centralisation des Result Types (Octobre 2025)
-
-**Problème identifié** : 5 types Result dupliqués + ~100 lignes de boilerplate manuel
-
-**Solution** : Fichier central `src/shared/result.ts`
-
-**Impact** :
-- Types centralisés : `Result<T>`, `ExecutionResult = Result<string>`
-- Helpers : `success()`, `error()` (2 fonctions au lieu de 5+)
-- Pattern Unix-like : success = stdout, error = stderr
-- Supprimé type spécial `'clear'` → traité comme commande normale
-- Unifié `output` → `data` partout
-
-**Fichiers refactorisés** (8 fichiers) :
-- `src/filesystem/FileSystem.ts`
-- `src/cluster/ClusterState.ts`
-- `src/kubectl/commands/parser.ts`
-- `src/kubectl/commands/executor.ts`
-- `src/kubectl/commands/handlers/*.ts`
-- `src/shell/commands/parser.ts`
-- `src/shell/commands/executor.ts`
-- `src/main.ts`
-
-**Tests** : ✅ 265/265 passent (100% compatibility)

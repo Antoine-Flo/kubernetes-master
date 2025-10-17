@@ -18,7 +18,7 @@ export const handleDescribe = (
     }
 
     if (parsed.resource === 'pods') {
-        const pod = state.pods.find(
+        const pod = state.pods.items.find(
             p => p.metadata.name === parsed.name && p.metadata.namespace === namespace
         )
 
