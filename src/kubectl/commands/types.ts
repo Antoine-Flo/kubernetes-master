@@ -2,7 +2,7 @@
 export type Action = 'get' | 'describe' | 'delete' | 'apply' | 'create'
 
 // Resource types (canonical names only)
-export type Resource = 'pods' | 'deployments' | 'services' | 'namespaces'
+export type Resource = 'pods' | 'deployments' | 'services' | 'namespaces' | 'configmaps' | 'secrets'
 
 // Output formats
 export type OutputFormat = 'table' | 'yaml' | 'json'

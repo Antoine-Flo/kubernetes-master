@@ -2,7 +2,7 @@
 
 ## 📊 État actuel du projet
 
-**~573 tests passent** | **Coverage: ~94%** | **Architecture: Functional (Factory + Pure functions + ADT + Event Sourcing + Observer Pattern)**
+**594 tests passent** | **Coverage: ~94%** | **Architecture: Functional (Factory + Pure functions + ADT + Event Sourcing + Observer Pattern)**
 
 ### ✅ Completé
 - **Sprint 1**: Terminal xterm.js fonctionnel (9 tests)
@@ -20,11 +20,12 @@
 - **Sprint 4.10**: Tab Autocompletion (61 tests) - Bash-like autocomplete for commands, resources, files, and flags
 - **Sprint 5.1**: Generic Formatter Module (54 tests) - Shell-like formatters (formatTable, formatColumns, formatLongListing, formatKeyValue)
 - **Sprint 5.2**: Core Resource Models (72 tests) - ConfigMaps, Secrets, Pod enrichment (resources, probes, env, volumes), Probe simulator with ADT patterns
+- **Sprint 5.3**: Get Handlers (21 tests) - kubectl get for configmaps/secrets with namespace/label filters
 - **UI Enhancement**: Titre ASCII "KubeSimulator" + description - Landing page améliorée avec theming daisyUI
 - **UX Enhancement**: Welcome message enrichi avec commandes clés (help, kubectl get pods, debug images)
 
 ### 🎯 Prochaine étape
-**Sprint 5.3** - Get Handlers (kubectl get for configmaps/secrets with filters)
+**Sprint 5.4** - Describe Handler (kubectl describe with detailed output)
 
 ### 📋 À venir (Roadmap complète enrichie - 26 sprints)
 - **Sprint 4-6**: MVP (FileSystem, Shell, kubectl + Core K8s Resources, Storage)
@@ -48,8 +49,8 @@
 
 **Objectif**: Implémenter les commandes kubectl essentielles + ressources K8s critiques
 
-### 5.3 - Get Handlers (TDD)
-- [ ] Améliorer `src/kubectl/commands/handlers/get.ts`
+### 5.3 - Get Handlers (TDD) ✅
+- [x] Améliorer `src/kubectl/commands/handlers/get.ts`
   - Utiliser table formatter
   - Support: pods, deployments, services, configmaps, secrets, namespaces
   - Filtre par namespace (`-n` flag)

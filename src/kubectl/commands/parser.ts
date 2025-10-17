@@ -61,6 +61,8 @@ const KUBECTL_RESOURCES = {
     deployments: ['deployments', 'deployment', 'deploy'],
     services: ['services', 'service', 'svc'],
     namespaces: ['namespaces', 'namespace', 'ns'],
+    configmaps: ['configmaps', 'configmap', 'cm'],
+    secrets: ['secrets', 'secret'],
 } as const
 
 // Build reverse lookup: alias -> canonical resource (O(1) access)
