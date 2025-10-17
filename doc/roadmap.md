@@ -2,7 +2,7 @@
 
 ## 📊 État actuel du projet
 
-**~439 tests passent** | **Coverage: 91.65%** | **Architecture: Functional (Factory + Pure functions + Event Sourcing + Observer Pattern)**
+**~501 tests passent** | **Coverage: ~92%** | **Architecture: Functional (Factory + Pure functions + Event Sourcing + Observer Pattern)**
 
 ### ✅ Completé
 - **Sprint 1**: Terminal xterm.js fonctionnel (9 tests)
@@ -18,11 +18,12 @@
 - **Sprint 4.8**: Command Dispatcher (8 tests) - Routing kubectl vs shell + Dynamic prompt
 - **Sprint 4.9**: Terminal UX Enhancements (12 tests) - Command history + Enhanced prompt
 - **Sprint 4.10**: Tab Autocompletion (61 tests) - Bash-like autocomplete for commands, resources, files, and flags
+- **Sprint 5.1**: Generic Formatter Module (54 tests) - Shell-like formatters (formatTable, formatColumns, formatLongListing, formatKeyValue)
 - **UI Enhancement**: Titre ASCII "KubeSimulator" + description - Landing page améliorée avec theming daisyUI
 - **UX Enhancement**: Welcome message enrichi avec commandes clés (help, kubectl get pods, debug images)
 
 ### 🎯 Prochaine étape
-**Sprint 5.1** - Table Formatter (formatage ASCII pour kubectl get)
+**Sprint 5.2** - Core Resource Models (ConfigMaps, Secrets, Resource Limits, Probes)
 
 ### 📋 À venir (Roadmap complète enrichie - 26 sprints)
 - **Sprint 4-6**: MVP (FileSystem, Shell, kubectl + Core K8s Resources, Storage)
@@ -131,14 +132,18 @@
 
 **Objectif**: Implémenter les commandes kubectl essentielles + ressources K8s critiques
 
-### 5.1 - Table Formatter (TDD)
-- [ ] `src/kubectl/formatters/table-formatter.ts`
-  - Fonction pure `formatTable(headers, rows): string`
-  - Calcul largeur colonnes, alignement, padding
-  - Format ASCII (comme kubectl)
-- [ ] ~10-12 tests
+### 5.1 - Generic Formatter Module (TDD) ✅
+- ✅ `src/shared/formatter.ts` - Module générique shell-like
+  - `formatTable()` - Style kubectl avec auto-width et alignement intelligent
+  - `formatColumns()` - Style ls multi-colonnes avec tri alphabétique
+  - `formatLongListing()` - Style ls -l avec permissions, taille, date
+  - `formatKeyValue()` - Style kubectl describe avec indentation
+  - Helpers Unix-like: formatAge, formatDate, formatSize, formatPermissions
+- ✅ Refactoring kubectl/commands/handlers/get.ts (utilise formatTable + formatAge)
+- ✅ Refactoring shell handlers ls et debug (utilisent les formatters)
+- ✅ ~54 tests (100% passing)
 
-### 5.2 - Core Resource Models (TDD) 🔥 CRITIQUE
+### 5.2 - Core Resource Models (TDD)
 - [ ] `src/cluster/models/ConfigMap.ts` - Factory pour ConfigMaps
   - Store configuration data (key-value pairs)
   - Support `data` et `binaryData` fields
@@ -160,7 +165,7 @@
   - Utiliser table formatter
   - Support: pods, deployments, services, configmaps, secrets, namespaces
   - Filtre par namespace (`-n` flag)
-  - Filtre par labels (`-l` flag) 🔥 CRITIQUE
+  - Filtre par labels (`-l` flag)
   - Calcul AGE (fonction utilitaire)
   - Logger les requêtes (application logger)
 - [ ] ~20-25 tests
@@ -183,7 +188,7 @@
   - Validation schema basique
 - [ ] ~20-25 tests
 
-### 5.6 - kubectl logs + exec (TDD) 🔥 CRITIQUE
+### 5.6 - kubectl logs + exec (TDD)
 - [ ] Améliorer Pod model: `status.logs: LogEntry[]`
 - [ ] **Préparer Chaos Hooks** : Ajouter `chaosConfig?: ChaosConfig` dans Pod/Deployment models
 - [ ] `src/kubectl/commands/handlers/logs.ts`
@@ -198,7 +203,7 @@
   - Rotation automatique (max 200 lignes/pod)
 - [ ] ~25-30 tests
 
-### 5.7 - kubectl label & annotate (TDD) 🔥 CRITIQUE
+### 5.7 - kubectl label & annotate (TDD)
 - [ ] `src/kubectl/commands/handlers/label.ts`
   - `kubectl label pods <name> <key>=<value>`
   - `kubectl label pods <name> <key>-` (remove label)
@@ -936,7 +941,7 @@
 
 | Phase | Sprints | Focus | Estimé | Priorité |
 |-------|---------|-------|---------|----------|
-| **MVP (Phase 1)** | Sprint 1-6 | Core features (Terminal, FileSystem, kubectl basics, Storage) | 6 sprints | 🔥 CRITIQUE |
+| **MVP (Phase 1)** | Sprint 1-6 | Core features (Terminal, FileSystem, kubectl basics, Storage) | 6 sprints | |
 | **Phase 2** | Sprint 7-14 | Advanced K8s Resources (PV/PVC, Jobs, RBAC, HPA, etc.) | 8 sprints | ⭐ HAUTE |
 | **Phase 3** | Sprint 15-20 | Learning Platform (Chaos, Challenges, Lessons, Visualizer) | 6 sprints | ⭐ HAUTE |
 | **Phase 4** | Sprint 21-26 | Advanced Infrastructure (Nodes, CoreDNS, Control Plane, Differentiators) | 6 sprints | 📚 BASSE |

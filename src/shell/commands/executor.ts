@@ -5,6 +5,7 @@ import type { ExecutionResult } from '../../shared/result'
 import { error, success } from '../../shared/result'
 import { createImageRegistry } from '../../containers/registry/ImageRegistry'
 import type { Logger } from '../../logger/Logger'
+import { formatColumns, formatLongListing, formatTable, type FileEntry } from '../../shared/formatter'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SHELL COMMAND EXECUTOR
@@ -151,23 +152,22 @@ const handleLs = (logger: Logger, fileSystem: FileSystem, args: string[], flags:
 
     const nodes = result.data
 
-    // Simple listing (just names)
+    // Simple listing (just names) - use formatColumns
     if (!flags.l) {
-        const names = nodes.map((node) => node.name).join('  ')
-        return success(names)
+        const names = nodes.map((node) => node.name)
+        return success(formatColumns(names))
     }
 
-    // Detailed listing (-l flag)
-    const lines = nodes.map((node) => {
-        const type = node.type === 'directory' ? 'd' : '-'
-        const name = node.name
-        if (node.type === 'directory') {
-            return `${type}  ${name}/`
-        }
-        return `${type}  ${name}`
-    })
+    // Detailed listing (-l flag) - use formatLongListing
+    const now = new Date().toISOString()
+    const entries: FileEntry[] = nodes.map((node) => ({
+        type: node.type,
+        name: node.name,
+        size: node.type === 'file' ? (node.content?.length || 0) : 512,
+        modified: node.type === 'file' ? node.modifiedAt : now
+    }))
 
-    return success(lines.join('\n'))
+    return success(formatLongListing(entries))
 }
 
 const handleMkdir = (logger: Logger, fileSystem: FileSystem, args: string[], flags: Record<string, boolean | string>): ExecutionResult => {
@@ -323,18 +323,19 @@ Usage: debug <subcommand>`
             return success('No application logs available.')
         }
 
-        // Show last 50 entries
+        // Show last 50 entries - use formatTable for clean output
         const displayEntries = entries.slice(-50)
-        const lines = ['=== Application Logs (last 50 entries) ===', '']
 
-        displayEntries.forEach((entry) => {
-            const timestamp = new Date(entry.timestamp).toLocaleTimeString()
-            const level = entry.level.toUpperCase().padEnd(5)
-            const category = entry.category.padEnd(10)
-            lines.push(`[${timestamp}] [${level}] [${category}] ${entry.message}`)
-        })
+        const headers = ['timestamp', 'level', 'category', 'message']
+        const rows = displayEntries.map((entry) => [
+            new Date(entry.timestamp).toLocaleTimeString(),
+            entry.level.toUpperCase(),
+            entry.category,
+            entry.message
+        ])
 
-        return success(lines.join('\n'))
+        const table = formatTable(headers, rows)
+        return success(`=== Application Logs (last 50 entries) ===\n\n${table}`)
     }
 
     // Handle 'clear' subcommand

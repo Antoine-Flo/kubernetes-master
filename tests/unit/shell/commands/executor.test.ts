@@ -99,8 +99,11 @@ describe('Shell Executor', () => {
 
             expect(result.type).toBe('success')
             if (result.type === 'success') {
-                expect(result.data).toContain('d  examples/')
-                expect(result.data).toContain('-  test.yaml')
+                // New format uses formatLongListing: permissions, size, date, name
+                expect(result.data).toContain('d---')  // directory permission
+                expect(result.data).toContain('examples')  // directory name
+                expect(result.data).toContain('----')  // file permission
+                expect(result.data).toContain('test.yaml')  // file name
             }
         })
 
