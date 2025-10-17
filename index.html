@@ -25,6 +25,88 @@
             </div>
 
             <div id="terminal"></div>
+
+            <!-- Command Reference -->
+            <div class="mt-8 mb-8">
+                <h2 class="text-lg font-medium text-base-content mb-4 text-center">📋 Available Commands</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- kubectl Commands -->
+                    <div class="card bg-base-100 shadow-sm">
+                        <div class="card-body p-4">
+                            <h3 class="card-title text-sm text-primary mb-2">☸️ kubectl</h3>
+                            <div class="text-xs space-y-1 font-mono">
+                                <div><span class="text-accent">get</span> <span class="text-base-content/60">pods |
+                                        deployments | services | configmaps | secrets | namespaces</span></div>
+                                <div><span class="text-accent">get</span> <span
+                                        class="text-base-content/60">&lt;resource&gt; -n &lt;namespace&gt; -l
+                                        &lt;labels&gt;</span></div>
+                                <div><span class="text-accent">describe</span> <span
+                                        class="text-base-content/60">&lt;resource&gt; &lt;name&gt;</span></div>
+                                <div><span class="text-accent">delete</span> <span
+                                        class="text-base-content/60">&lt;resource&gt; &lt;name&gt;</span></div>
+                                <div><span class="text-accent">apply</span> <span class="text-base-content/60">-f
+                                        &lt;file&gt;</span></div>
+                                <div><span class="text-accent">create</span> <span class="text-base-content/60">-f
+                                        &lt;file&gt;</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shell Commands -->
+                    <div class="card bg-base-100 shadow-sm">
+                        <div class="card-body p-4">
+                            <h3 class="card-title text-sm text-secondary mb-2">💻 Shell</h3>
+                            <div class="text-xs space-y-1 font-mono">
+                                <div><span class="text-accent">ls</span> <span class="text-base-content/60">[-l]
+                                        [path]</span></div>
+                                <div><span class="text-accent">cd</span> <span
+                                        class="text-base-content/60">&lt;path&gt;</span></div>
+                                <div><span class="text-accent">pwd</span></div>
+                                <div><span class="text-accent">mkdir</span> <span class="text-base-content/60">[-p]
+                                        &lt;path&gt;</span></div>
+                                <div><span class="text-accent">touch</span> <span
+                                        class="text-base-content/60">&lt;file&gt;</span></div>
+                                <div><span class="text-accent">cat</span> <span
+                                        class="text-base-content/60">&lt;file&gt;</span></div>
+                                <div><span class="text-accent">rm</span> <span class="text-base-content/60">[-r]
+                                        &lt;path&gt;</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Utilities -->
+                    <div class="card bg-base-100 shadow-sm">
+                        <div class="card-body p-4">
+                            <h3 class="card-title text-sm text-info mb-2">🛠️ Utilities</h3>
+                            <div class="text-xs space-y-1 font-mono">
+                                <div><span class="text-accent">help</span></div>
+                                <div><span class="text-accent">clear</span></div>
+                                <div><span class="text-accent">debug</span> <span class="text-base-content/60">[clear |
+                                        images]</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Features -->
+                    <div class="card bg-base-100 shadow-sm">
+                        <div class="card-body p-4">
+                            <h3 class="card-title text-sm text-success mb-2">✨ Features</h3>
+                            <div class="text-xs space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <kbd class="kbd kbd-xs">↑</kbd>
+                                    <kbd class="kbd kbd-xs">↓</kbd>
+                                    <span class="text-base-content/60">Command history</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <kbd class="kbd kbd-xs">Tab</kbd>
+                                    <span class="text-base-content/60">Autocomplete</span>
+                                </div>
+                                <div class="text-base-content/60">💾 Auto-save state</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

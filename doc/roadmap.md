@@ -21,8 +21,6 @@
 - **Sprint 5.1**: Generic Formatter Module (54 tests) - Shell-like formatters (formatTable, formatColumns, formatLongListing, formatKeyValue)
 - **Sprint 5.2**: Core Resource Models (72 tests) - ConfigMaps, Secrets, Pod enrichment (resources, probes, env, volumes), Probe simulator with ADT patterns
 - **Sprint 5.3**: Get Handlers (21 tests) - kubectl get for configmaps/secrets with namespace/label filters
-- **UI Enhancement**: Titre ASCII "KubeSimulator" + description - Landing page améliorée avec theming daisyUI
-- **UX Enhancement**: Welcome message enrichi avec commandes clés (help, kubectl get pods, debug images)
 
 ### 🎯 Prochaine étape
 **Sprint 5.4** - Describe Handler (kubectl describe with detailed output)
