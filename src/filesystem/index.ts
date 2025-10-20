@@ -13,6 +13,7 @@ export {
     findNode,
     insertNode,
     removeNode,
+    type FileSystem,
     type FileSystemState,
 } from './FileSystem'
 

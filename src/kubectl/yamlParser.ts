@@ -1,0 +1,89 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// YAML PARSER & VALIDATOR
+// ═══════════════════════════════════════════════════════════════════════════
+// Parse and validate YAML manifests for Kubernetes resources.
+// Uses Zod schemas defined in resource models for validation.
+
+import { parse } from 'yaml'
+import type { Pod } from '../cluster/models/Pod'
+import { parsePodManifest } from '../cluster/models/Pod'
+import type { ConfigMap } from '../cluster/models/ConfigMap'
+import { parseConfigMapManifest } from '../cluster/models/ConfigMap'
+import type { Secret } from '../cluster/models/Secret'
+import { parseSecretManifest } from '../cluster/models/Secret'
+import type { Result } from '../shared/result'
+import { success, error } from '../shared/result'
+
+// ─── Types ───────────────────────────────────────────────────────────────
+
+export type ParsedResource = Pod | ConfigMap | Secret
+
+export type ResourceKind = 'Pod' | 'ConfigMap' | 'Secret'
+
+// ─── YAML Parsing ────────────────────────────────────────────────────────
+
+/**
+ * Parse YAML string with error handling
+ */
+const parseYaml = (yamlContent: string): Result<unknown> => {
+    try {
+        const parsed = parse(yamlContent)
+        if (!parsed || typeof parsed !== 'object') {
+            return error('YAML content is empty or invalid')
+        }
+        return success(parsed)
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown YAML parse error'
+        return error(`YAML parse error: ${message}`)
+    }
+}
+
+/**
+ * Check if kind is supported
+ */
+const isSupportedKind = (kind: string): kind is ResourceKind => {
+    return kind === 'Pod' || kind === 'ConfigMap' || kind === 'Secret'
+}
+
+/**
+ * Route validation to resource-specific parser
+ */
+const validateResource = (obj: any): Result<ParsedResource> => {
+    // Basic structure validation
+    if (!obj.kind || typeof obj.kind !== 'string') {
+        return error('Missing or invalid kind')
+    }
+
+    if (!isSupportedKind(obj.kind)) {
+        return error(`Unsupported resource kind: ${obj.kind} (supported: Pod, ConfigMap, Secret)`)
+    }
+
+    switch (obj.kind) {
+        case 'Pod':
+            return parsePodManifest(obj)
+        case 'ConfigMap':
+            return parseConfigMapManifest(obj)
+        case 'Secret':
+            return parseSecretManifest(obj)
+        default:
+            // This should never happen due to isSupportedKind check above
+            return error(`Unsupported resource kind: ${obj.kind}`)
+    }
+}
+
+// ─── Public API ──────────────────────────────────────────────────────────
+
+/**
+ * Parse and validate YAML manifest
+ * 
+ * @param yamlContent - YAML string to parse
+ * @returns Result with validated resource or error message
+ */
+export const parseKubernetesYaml = (yamlContent: string): Result<ParsedResource> => {
+    const parseResult = parseYaml(yamlContent)
+    if (!parseResult.ok) {
+        return parseResult
+    }
+
+    return validateResource(parseResult.value)
+}

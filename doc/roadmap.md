@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**617 tests passing** | **~94% coverage** | **Architecture: Functional (Factory + Pure functions + ADT + Event Sourcing)**
+**680 tests passing** | **~94% coverage** | **Architecture: Functional (Factory + Pure functions + ADT + Event Sourcing)**
 
 ## Completed Sprints
 
@@ -33,27 +33,19 @@
 
 ### Code Quality & Refactoring
 - ✅ **Result Pattern Migration** - `{type, data/message}` → `{ok, value/error}` (Fetch API style)
-  - Migrated 17 source files, 12 test files
-  - All 617 tests passing
+- ✅ **Sprint 5.5**: Apply/Create Handlers - YAML parser + kubectl apply/create (63 tests)
 
 ## Next Sprint
 
-**Sprint 5.5** - Apply/Create Handlers
-- Install js-yaml dependency
-- kubectl apply/create with YAML parsing
-- Schema validation
-- File system integration
+**Sprint 5.6** - kubectl logs + exec
+- Pod logs with rotation (max 200 lines)
+- kubectl logs with -n, --tail, -f flags
+- kubectl exec -it for interactive shell
+- Dynamic log generation per container type
 
 ## Upcoming (Phase 1 - MVP)
 
 ### Sprint 5: kubectl Handlers + Core Resources
-
-**5.6 - kubectl logs + exec**
-- Pod logs with rotation (max 200 lines)
-- kubectl logs with -n, --tail, -f flags
-- kubectl exec -it for interactive shell
-- Chaos hooks preparation (chaosConfig in models)
-- Dynamic log generation per container type
 
 **5.7 - kubectl label & annotate**
 - Add/remove labels and annotations
@@ -86,7 +78,7 @@
 **6.5 - Documentation**
 - README with examples
 - Coverage >80%
-- ~200+ tests total
+- ~700+ tests total
 
 ## Phase 2: Advanced Kubernetes (Sprints 7-14)
 

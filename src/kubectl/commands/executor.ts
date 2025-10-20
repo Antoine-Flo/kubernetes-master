@@ -1,4 +1,5 @@
 import type { ClusterState } from '../../cluster/ClusterState'
+import type { FileSystem } from '../../filesystem/FileSystem'
 import { parseCommand } from './parser'
 import type { ParsedCommand } from './types'
 import { handleGet } from './handlers/get'
@@ -23,11 +24,11 @@ type ActionHandler = (parsed: ParsedCommand) => ExecutionResult
 /**
  * Create action handlers Map with dependencies captured in closures
  */
-const createHandlers = (clusterState: ClusterState, logger: Logger): Map<string, ActionHandler> => {
-    // Currying helper: pre-applies logger and clusterState
+const createHandlers = (clusterState: ClusterState, fileSystem: FileSystem, logger: Logger): Map<string, ActionHandler> => {
+    // Currying helper: pre-applies logger, clusterState, and fileSystem
     const withDeps = <TArgs extends any[]>(
-        handler: (logger: Logger, cluster: ClusterState, ...args: TArgs) => ExecutionResult
-    ) => (...args: TArgs) => handler(logger, clusterState, ...args)
+        handler: (logger: Logger, cluster: ClusterState, fs: FileSystem, ...args: TArgs) => ExecutionResult
+    ) => (...args: TArgs) => handler(logger, clusterState, fileSystem, ...args)
 
     const handlers = new Map<string, ActionHandler>()
 
@@ -43,18 +44,18 @@ const createHandlers = (clusterState: ClusterState, logger: Logger): Map<string,
 
 // ─── Handler Wrappers (with logging) ────────────────────────────────────
 
-const handleGetWrapper = (logger: Logger, cluster: ClusterState, parsed: ParsedCommand): ExecutionResult => {
+const handleGetWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, parsed: ParsedCommand): ExecutionResult => {
     logger.debug('CLUSTER', `Getting ${parsed.resource} in namespace ${parsed.namespace || 'default'}`)
     const output = handleGet(cluster.toJSON(), parsed)
     return success(output)
 }
 
-const handleDescribeWrapper = (logger: Logger, cluster: ClusterState, parsed: ParsedCommand): ExecutionResult => {
+const handleDescribeWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, parsed: ParsedCommand): ExecutionResult => {
     logger.debug('CLUSTER', `Describing ${parsed.resource}: ${parsed.name || 'all'}`)
     return handleDescribe(cluster.toJSON(), parsed)
 }
 
-const handleDeleteWrapper = (logger: Logger, cluster: ClusterState, parsed: ParsedCommand): ExecutionResult => {
+const handleDeleteWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, parsed: ParsedCommand): ExecutionResult => {
     logger.debug('CLUSTER', `Deleting ${parsed.resource}: ${parsed.name}`)
     const result = handleDelete(cluster, parsed)
     if (result.ok) {
@@ -63,20 +64,24 @@ const handleDeleteWrapper = (logger: Logger, cluster: ClusterState, parsed: Pars
     return result
 }
 
-const handleApplyWrapper = (logger: Logger, _cluster: ClusterState, parsed: ParsedCommand): ExecutionResult => {
+const handleApplyWrapper = (logger: Logger, cluster: ClusterState, fs: FileSystem, parsed: ParsedCommand): ExecutionResult => {
     const file = parsed.flags.f || parsed.flags.filename
     logger.debug('CLUSTER', `Applying resource from file: ${file}`)
-    const output = handleApply(parsed)
-    logger.info('CLUSTER', 'Resource applied successfully')
-    return success(output)
+    const result = handleApply(fs, cluster, parsed)
+    if (result.ok) {
+        logger.info('CLUSTER', 'Resource applied successfully')
+    }
+    return result
 }
 
-const handleCreateWrapper = (logger: Logger, _cluster: ClusterState, parsed: ParsedCommand): ExecutionResult => {
+const handleCreateWrapper = (logger: Logger, cluster: ClusterState, fs: FileSystem, parsed: ParsedCommand): ExecutionResult => {
     const file = parsed.flags.f || parsed.flags.filename
     logger.debug('CLUSTER', `Creating resource from file: ${file}`)
-    const output = handleCreate(parsed)
-    logger.info('CLUSTER', 'Resource created successfully')
-    return success(output)
+    const result = handleCreate(fs, cluster, parsed)
+    if (result.ok) {
+        logger.info('CLUSTER', 'Resource created successfully')
+    }
+    return result
 }
 
 /**
@@ -106,14 +111,15 @@ const routeCommand = (
 
 /**
  * Create a kubectl executor
- * Factory function that encapsulates ClusterState and Logger in closures
+ * Factory function that encapsulates ClusterState, FileSystem, and Logger in closures
  * 
  * @param clusterState - The cluster state to operate on
+ * @param fileSystem - The filesystem to read YAML files from
  * @param logger - Application logger for tracking commands
  * @returns Executor with execute method
  */
-export const createKubectlExecutor = (clusterState: ClusterState, logger: Logger): KubectlExecutor => {
-    const handlers = createHandlers(clusterState, logger)
+export const createKubectlExecutor = (clusterState: ClusterState, fileSystem: FileSystem, logger: Logger): KubectlExecutor => {
+    const handlers = createHandlers(clusterState, fileSystem, logger)
 
     const execute = (input: string): ExecutionResult => {
         logger.info('COMMAND', `Kubectl: ${input}`)

@@ -13,14 +13,15 @@
             <!-- ASCII Title and Description -->
             <div class="text-center mb-8">
                 <pre
-                    class="text-primary font-mono text-[0.4rem] sm:text-[0.5rem] md:text-xs lg:text-sm leading-tight overflow-x-auto">
+                    class="text-primary py-3 font-mono text-[0.4rem] sm:text-[0.5rem] md:text-xs lg:text-sm leading-tight overflow-x-auto">
  _     _ _     _ ______  _______      _______ _____ _______ _     _        _______ _______  _____   ______
  |____/  |     | |_____] |______      |______   |   |  |  | |     | |      |_____|    |    |     | |_____/
  |    \_ |_____| |_____] |______      ______| __|__ |  |  | |_____| |_____ |     |    |    |_____| |    \_
 </pre>
-                <p class="text-base-content/80 mt-4 text-xs sm:text-sm md:text-base">
+                <p class="text-base-content/80 mt-6 text-xs sm:text-sm md:text-base">
                     Learn kubectl interactively in a simulated Kubernetes environment
                 </p>
+                <div class="badge badge-success badge-sm mt-2">✨ New: Create resources from YAML files!</div>
             </div>
 
             <div id="terminal"></div>
@@ -44,9 +45,11 @@
                                 <div><span class="text-accent">delete</span> <span
                                         class="text-base-content/60">&lt;resource&gt; &lt;name&gt;</span></div>
                                 <div><span class="text-accent">apply</span> <span class="text-base-content/60">-f
-                                        &lt;file&gt;</span></div>
+                                        &lt;file.yaml&gt;</span> <span
+                                        class="badge badge-success badge-xs ml-1">New</span></div>
                                 <div><span class="text-accent">create</span> <span class="text-base-content/60">-f
-                                        &lt;file&gt;</span></div>
+                                        &lt;file.yaml&gt;</span> <span
+                                        class="badge badge-success badge-xs ml-1">New</span></div>
                             </div>
                         </div>
                     </div>
@@ -64,7 +67,7 @@
                                 <div><span class="text-accent">mkdir</span> <span class="text-base-content/60">[-p]
                                         &lt;path&gt;</span></div>
                                 <div><span class="text-accent">touch</span> <span
-                                        class="text-base-content/60">&lt;file&gt;</span></div>
+                                        class="text-base-content/60">&lt;file.yaml&gt;</span></div>
                                 <div><span class="text-accent">cat</span> <span
                                         class="text-base-content/60">&lt;file&gt;</span></div>
                                 <div><span class="text-accent">rm</span> <span class="text-base-content/60">[-r]
@@ -101,6 +104,35 @@
                                     <span class="text-base-content/60">Autocomplete</span>
                                 </div>
                                 <div class="text-base-content/60">💾 Auto-save state</div>
+                                <div class="text-base-content/60">📝 Create YAML files</div>
+                                <div class="text-base-content/60">🚀 Apply resources</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Start Guide -->
+                <div class="card bg-base-200 shadow-sm mt-6">
+                    <div class="card-body p-4">
+                        <h3 class="card-title text-sm text-warning mb-3">🚀 Quick Start: Create Your First Pod</h3>
+                        <div class="text-xs space-y-2 font-mono">
+                            <div class="text-base-content/80">1. Create a YAML file:</div>
+                            <div class="pl-4 text-accent">touch my-pod.yaml</div>
+
+                            <div class="text-base-content/80 mt-2">2. View example files:</div>
+                            <div class="pl-4 text-accent">ls examples/</div>
+                            <div class="pl-4 text-accent">cat examples/pod-example.yaml</div>
+
+                            <div class="text-base-content/80 mt-2">3. Apply a resource:</div>
+                            <div class="pl-4 text-accent">kubectl apply -f examples/pod-example.yaml</div>
+
+                            <div class="text-base-content/80 mt-2">4. Check it was created:</div>
+                            <div class="pl-4 text-accent">kubectl get pods</div>
+
+                            <div class="text-base-content/60 mt-3 italic">
+                                💡 Tip: Use <span class="text-accent">kubectl apply</span> to create or update
+                                resources,
+                                or <span class="text-accent">kubectl create</span> to create new resources only.
                             </div>
                         </div>
                     </div>

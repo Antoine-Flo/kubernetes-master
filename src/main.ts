@@ -30,7 +30,7 @@ const fileSystem = createFileSystem(fileSystemState)
 const logger = createLogger({ mirrorToConsole: true })
 
 // Create kubectl executor
-const kubectlExecutor = createKubectlExecutor(clusterState, logger)
+const kubectlExecutor = createKubectlExecutor(clusterState, fileSystem, logger)
 
 // Create shell executor
 const shellExecutor = createShellExecutor(fileSystem, logger)

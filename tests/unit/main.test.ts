@@ -32,7 +32,7 @@ describe('Main Dispatcher', () => {
         const fileSystemState = createSeedFileSystem()
         fileSystem = createFileSystem(fileSystemState)
         logger = createLogger()
-        kubectlExecutor = createKubectlExecutor(clusterState, logger)
+        kubectlExecutor = createKubectlExecutor(clusterState, fileSystem, logger)
         shellExecutor = createShellExecutor(fileSystem, logger)
 
         // Spy on terminal.write to capture output

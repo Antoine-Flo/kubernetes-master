@@ -487,3 +487,8 @@ export const createFileSystem = (initialState?: FileSystemState) => {
         ...createStateOps(getState, setState)
     }
 }
+
+/**
+ * FileSystem type (inferred from factory return)
+ */
+export type FileSystem = ReturnType<typeof createFileSystem>
