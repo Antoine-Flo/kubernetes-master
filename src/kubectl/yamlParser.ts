@@ -16,9 +16,9 @@ import { success, error } from '../shared/result'
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
-export type ParsedResource = Pod | ConfigMap | Secret
+type ParsedResource = Pod | ConfigMap | Secret
 
-export type ResourceKind = 'Pod' | 'ConfigMap' | 'Secret'
+type ResourceKind = 'Pod' | 'ConfigMap' | 'Secret'
 
 // ─── YAML Parsing ────────────────────────────────────────────────────────
 

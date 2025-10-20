@@ -1,5 +1,6 @@
 import type { ClusterState } from '../cluster/ClusterState'
 import type { createFileSystem } from '../filesystem/FileSystem'
+import { compareStrings } from '../shared/formatter'
 
 type FileSystem = ReturnType<typeof createFileSystem>
 
@@ -71,7 +72,7 @@ export const getCommonPrefix = (suggestions: string[]): string => {
     if (suggestions.length === 0) return ''
     if (suggestions.length === 1) return suggestions[0]
 
-    const sorted = suggestions.slice().sort()
+    const sorted = suggestions.slice().sort(compareStrings)
     const first = sorted[0]
     const last = sorted[sorted.length - 1]
     let i = 0

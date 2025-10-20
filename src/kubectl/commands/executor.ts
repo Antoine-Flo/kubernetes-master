@@ -11,13 +11,6 @@ import type { ExecutionResult } from '../../shared/result'
 import { error, success } from '../../shared/result'
 import type { Logger } from '../../logger/Logger'
 
-/**
- * Kubectl executor interface
- */
-export interface KubectlExecutor {
-    execute: (input: string) => ExecutionResult
-}
-
 // Action handler signature (dependencies captured in closure)
 type ActionHandler = (parsed: ParsedCommand) => ExecutionResult
 
@@ -118,7 +111,7 @@ const routeCommand = (
  * @param logger - Application logger for tracking commands
  * @returns Executor with execute method
  */
-export const createKubectlExecutor = (clusterState: ClusterState, fileSystem: FileSystem, logger: Logger): KubectlExecutor => {
+export const createKubectlExecutor = (clusterState: ClusterState, fileSystem: FileSystem, logger: Logger) => {
     const handlers = createHandlers(clusterState, fileSystem, logger)
 
     const execute = (input: string): ExecutionResult => {

@@ -16,7 +16,7 @@ export type SecretType =
     | { type: 'kubernetes.io/service-account-token'; serviceAccountName: string }
     | { type: 'kubernetes.io/dockerconfigjson'; dockerConfigJson: string }
 
-export interface SecretMetadata {
+interface SecretMetadata {
     name: string
     namespace: string
     labels?: Record<string, string>
@@ -32,7 +32,7 @@ export interface Secret extends KubernetesResource {
     data: Record<string, string>
 }
 
-export interface SecretConfig {
+interface SecretConfig {
     name: string
     namespace: string
     secretType: SecretType
@@ -78,9 +78,9 @@ export const createSecret = (config: SecretConfig): Secret => {
     return deepFreeze(secret)
 }
 
-// ─── Zod Schema for YAML Validation ──────────────────────────────────────
+// ─── Zod Schema for YAML Validation (internal use only) ──────────────────
 
-export const SecretManifestSchema = z.object({
+const SecretManifestSchema = z.object({
     apiVersion: z.literal('v1'),
     kind: z.literal('Secret'),
     metadata: z.object({

@@ -4,16 +4,13 @@ export type Action = 'get' | 'describe' | 'delete' | 'apply' | 'create'
 // Resource types (canonical names only)
 export type Resource = 'pods' | 'deployments' | 'services' | 'namespaces' | 'configmaps' | 'secrets'
 
-// Output formats
-export type OutputFormat = 'table' | 'yaml' | 'json'
-
 // Parsed command structure
 export interface ParsedCommand {
   action: Action
   resource: Resource
   name?: string
   namespace?: string
-  output?: OutputFormat
+  output?: 'table' | 'yaml' | 'json'
   selector?: Record<string, string> // Parsed label selector (e.g., -l app=nginx,env=prod)
   flags: Record<string, string | boolean> // Raw flags for backward compatibility
 }

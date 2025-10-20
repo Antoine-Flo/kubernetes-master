@@ -1,9 +1,6 @@
 // Public API for filesystem models
 export {
     createFile,
-    getFileExtension,
-    getSupportedExtensions,
-    isValidExtension,
     type FileNode
 } from './File'
 

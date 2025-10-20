@@ -6,7 +6,7 @@
 import type { Pod, Probe, PodPhase } from './Pod'
 
 // ADT for probe results
-export type ProbeResult = { success: true } | { success: false; reason: string }
+type ProbeResult = { success: true } | { success: false; reason: string }
 
 // ─── Helper Functions ────────────────────────────────────────────────────
 

@@ -6,21 +6,21 @@
 import { success, error, type Result } from '../../shared/result'
 import type { KubernetesResource, ResourceCollection } from './types'
 
-// Create empty collection
-export const createEmptyCollection = <T extends KubernetesResource>(): ResourceCollection<T> => ({
+// Create empty collection (internal use only)
+const createEmptyCollection = <T extends KubernetesResource>(): ResourceCollection<T> => ({
     items: [],
 })
 
-// Add resource to collection
-export const add = <T extends KubernetesResource>(
+// Add resource to collection (internal use only)
+const add = <T extends KubernetesResource>(
     collection: ResourceCollection<T>,
     resource: T
 ): ResourceCollection<T> => ({
     items: [...collection.items, resource],
 })
 
-// Get all resources (optionally filtered by namespace)
-export const getAll = <T extends KubernetesResource>(
+// Get all resources (optionally filtered by namespace) (internal use only)
+const getAll = <T extends KubernetesResource>(
     collection: ResourceCollection<T>,
     namespace?: string
 ): T[] => {
@@ -30,8 +30,8 @@ export const getAll = <T extends KubernetesResource>(
     return collection.items.filter((item) => item.metadata.namespace === namespace)
 }
 
-// Find single resource by name and namespace
-export const find = <T extends KubernetesResource>(
+// Find single resource by name and namespace (internal use only)
+const find = <T extends KubernetesResource>(
     collection: ResourceCollection<T>,
     name: string,
     namespace: string,
@@ -48,8 +48,8 @@ export const find = <T extends KubernetesResource>(
     return success(item)
 }
 
-// Remove resource by name and namespace
-export const remove = <T extends KubernetesResource>(
+// Remove resource by name and namespace (internal use only)
+const remove = <T extends KubernetesResource>(
     collection: ResourceCollection<T>,
     name: string,
     namespace: string,

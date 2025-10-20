@@ -110,7 +110,7 @@ export const findNode = (
  * Note: Currently mutates tree (not fully immutable)
  * TODO(Phase 2): Make truly immutable with structural sharing
  */
-export const insertNode = (
+const insertNode = (
     tree: DirectoryNode,
     path: string,
     node: FileSystemNode
@@ -132,7 +132,7 @@ export const insertNode = (
 /**
  * Remove node from tree at path
  */
-export const removeNode = (
+const removeNode = (
     tree: DirectoryNode,
     path: string
 ): DirectoryNode => {

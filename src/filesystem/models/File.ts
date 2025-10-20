@@ -12,12 +12,7 @@ export interface FileNode {
     readonly modifiedAt: string
 }
 
-// Pure function: Get supported extensions
-export const getSupportedExtensions = (): readonly string[] => {
-    return SUPPORTED_EXTENSIONS
-}
-
-// Pure function: Extract file extension from filename
+// Pure function: Extract file extension from filename (internal use only)
 export const getFileExtension = (filename: string): string => {
     // Handle paths - get just the filename
     const parts = filename.split('/')
@@ -29,7 +24,7 @@ export const getFileExtension = (filename: string): string => {
     return name.substring(lastDot)
 }
 
-// Pure function: Validate extension
+// Pure function: Validate extension (internal use only)
 export const isValidExtension = (extension: string): boolean => {
     return SUPPORTED_EXTENSIONS.includes(extension)
 }

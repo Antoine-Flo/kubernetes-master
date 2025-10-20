@@ -4,7 +4,7 @@ import type { KubernetesResource } from '../repositories/types'
 import type { Result } from '../../shared/result'
 import { success, error } from '../../shared/result'
 
-export interface ConfigMapMetadata {
+interface ConfigMapMetadata {
     name: string
     namespace: string
     labels?: Record<string, string>
@@ -20,7 +20,7 @@ export interface ConfigMap extends KubernetesResource {
     binaryData?: Record<string, string>
 }
 
-export interface ConfigMapConfig {
+interface ConfigMapConfig {
     name: string
     namespace: string
     data?: Record<string, string>
@@ -48,9 +48,9 @@ export const createConfigMap = (config: ConfigMapConfig): ConfigMap => {
     return deepFreeze(configMap)
 }
 
-// ─── Zod Schema for YAML Validation ──────────────────────────────────────
+// ─── Zod Schema for YAML Validation (internal use only) ──────────────────
 
-export const ConfigMapManifestSchema = z.object({
+const ConfigMapManifestSchema = z.object({
     apiVersion: z.literal('v1'),
     kind: z.literal('ConfigMap'),
     metadata: z.object({

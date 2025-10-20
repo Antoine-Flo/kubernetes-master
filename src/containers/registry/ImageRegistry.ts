@@ -6,7 +6,7 @@ import { SEED_IMAGES, type ImageManifest } from './seedRegistry'
 // ═══════════════════════════════════════════════════════════════════════════
 // Manages available container images with validation and parsing.
 
-export interface ParsedImage {
+interface ParsedImage {
     name: string
     registry: string
     tag: string

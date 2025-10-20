@@ -9,9 +9,9 @@ import { error, success } from '../../../shared/result'
 import type { Result } from '../../../shared/result'
 
 /**
- * Resource operations interface for generic handling
+ * Resource operations interface for generic handling (internal use only)
  */
-export interface ResourceOperations<T> {
+interface ResourceOperations<T> {
     find: (name: string, namespace: string) => Result<T>
     add: (resource: T) => void
     delete: (name: string, namespace: string) => Result<T>

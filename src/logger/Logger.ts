@@ -23,7 +23,7 @@ export interface Logger {
     subscribe(observer: LogObserver): () => void
 }
 
-export interface LoggerOptions {
+interface LoggerOptions {
     maxEntries?: number
     mirrorToConsole?: boolean
 }

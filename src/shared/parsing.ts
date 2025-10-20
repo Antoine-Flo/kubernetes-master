@@ -8,7 +8,7 @@ import { success, error, type Result } from './result'
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
-export type ParsedFlags = Record<string, string | boolean>
+type ParsedFlags = Record<string, string | boolean>
 
 // ─── Pipeline Step Helpers ──────────────────────────────────────────────
 // Generic helpers for parser pipeline steps

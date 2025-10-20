@@ -227,16 +227,25 @@ For each feature:
 1. **RED**: Write failing test
 2. **GREEN**: Implement minimum to pass
 3. **REFACTOR**: Clean up code
-4. **COMMIT**: Clear commit message
-5. **REPEAT**: Next feature
+4. **VERIFY**: Run tests + knip to ensure no dead code
+5. **COMMIT**: Clear commit message
+6. **REPEAT**: Next feature
+
+Code quality checks (automated in `npm test`):
+- Unit tests (vitest)
+- Dead code detection (knip)
+- Type checking (tsc)
 
 ## Commands
 
 ```bash
 npm run dev        # Dev server
-npm test           # Run tests
+npm test           # Run tests (includes knip check)
+npm run test:unit  # Run unit tests only
 npm run coverage   # Coverage report
+npm run knip       # Check for unused code
 npm run build      # Production build
+npm run tsc        # Type check
 ```
 
 ## References

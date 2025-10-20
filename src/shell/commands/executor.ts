@@ -16,10 +16,6 @@ import { formatColumns, formatLongListing, formatTable, type FileEntry } from '.
 
 export type FileSystem = ReturnType<typeof createFileSystem>
 
-export interface ShellExecutor {
-    execute: (input: string) => ExecutionResult
-}
-
 // Handler signature: only args and flags (dependencies captured in closure)
 type CommandHandler = (args: string[], flags: Record<string, boolean | string>) => ExecutionResult
 
@@ -79,7 +75,7 @@ const routeCommand = (
  * @param logger - Application logger for tracking commands
  * @returns Executor with execute method
  */
-export const createShellExecutor = (fileSystem: FileSystem, logger: Logger): ShellExecutor => {
+export const createShellExecutor = (fileSystem: FileSystem, logger: Logger) => {
     const handlers = createHandlers(fileSystem, logger)
 
     const execute = (input: string): ExecutionResult => {

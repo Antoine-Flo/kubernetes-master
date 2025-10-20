@@ -37,7 +37,7 @@ export type Probe =
 
 // ─── Environment Variables ─────────────────────────────────────────
 
-export type EnvVarSource =
+type EnvVarSource =
     | { type: 'value'; value: string }
     | { type: 'configMapKeyRef'; name: string; key: string }
     | { type: 'secretKeyRef'; name: string; key: string }
@@ -49,7 +49,7 @@ export interface EnvVar {
 
 // ─── Volumes ───────────────────────────────────────────────────────
 
-export type VolumeSource =
+type VolumeSource =
     | { type: 'emptyDir' }
     | { type: 'configMap'; name: string }
     | { type: 'secret'; secretName: string }
@@ -67,7 +67,7 @@ export interface VolumeMount {
 
 // ─── Resource Requirements ───────────────────────────────────────────────
 
-export interface ResourceRequirements {
+interface ResourceRequirements {
     requests?: {
         cpu?: string
         memory?: string
@@ -80,7 +80,7 @@ export interface ResourceRequirements {
 
 // ─── Container ───────────────────────────────────────────────────────────
 
-export interface ContainerPort {
+interface ContainerPort {
     containerPort: number
     protocol?: 'TCP' | 'UDP'
 }
@@ -99,7 +99,7 @@ export interface Container {
 
 // ─── Pod Structure ───────────────────────────────────────────────────────
 
-export interface PodMetadata {
+interface PodMetadata {
     name: string
     namespace: string
     labels?: Record<string, string>
@@ -107,12 +107,12 @@ export interface PodMetadata {
     creationTimestamp: string
 }
 
-export interface PodSpec {
+interface PodSpec {
     containers: readonly Container[]
     volumes?: Volume[]
 }
 
-export interface PodStatus {
+interface PodStatus {
     phase: PodPhase
     restartCount: number
 }
@@ -125,7 +125,7 @@ export interface Pod extends KubernetesResource {
     status: PodStatus
 }
 
-export interface PodConfig {
+interface PodConfig {
     name: string
     namespace: string
     containers: Container[]
@@ -161,7 +161,7 @@ export const createPod = (config: PodConfig): Pod => {
     return deepFreeze(pod)
 }
 
-// ─── Zod Schemas for YAML Validation ─────────────────────────────────────
+// ─── Zod Schemas for YAML Validation (internal use only) ────────────────
 
 const ContainerSchema = z.object({
     name: z.string().min(1, 'Container name is required'),
@@ -187,7 +187,7 @@ const ContainerSchema = z.object({
     startupProbe: z.any().optional()
 })
 
-export const PodManifestSchema = z.object({
+const PodManifestSchema = z.object({
     apiVersion: z.literal('v1'),
     kind: z.literal('Pod'),
     metadata: z.object({

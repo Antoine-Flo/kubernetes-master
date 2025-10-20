@@ -31,6 +31,22 @@ export interface KeyValueOptions {
     maxKeyWidth?: number  // Max key width for alignment
 }
 
+// ─── String Comparison ───────────────────────────────────────────────────
+
+/**
+ * Alphabetical string comparison using localeCompare for reliable sorting
+ * @param a - First string
+ * @param b - Second string
+ * @returns Negative if a < b, positive if a > b, zero if equal
+ * 
+ * @example
+ * ['zebra', 'apple', 'Banana'].sort(compareStrings)
+ * // => ['apple', 'Banana', 'zebra']
+ */
+export const compareStrings = (a: string, b: string): number => {
+    return a.localeCompare(b)
+}
+
 // ─── Helpers - Unix-like Formatting ──────────────────────────────────────
 
 /**
@@ -298,7 +314,7 @@ export const formatColumns = (
     }
 
     // Sort alphabetically if requested
-    const sortedItems = sort ? [...items].sort() : items
+    const sortedItems = sort ? [...items].sort(compareStrings) : items
 
     // Try to fit everything on one line first
     const oneLine = sortedItems.join(' '.repeat(spacing))

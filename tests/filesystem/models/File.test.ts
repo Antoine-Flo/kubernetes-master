@@ -2,29 +2,10 @@ import { describe, it, expect } from 'vitest'
 import {
     createFile,
     getFileExtension,
-    getSupportedExtensions,
     isValidExtension,
-    type FileNode
 } from '../../../src/filesystem/models/File'
 
 describe('File Model', () => {
-    describe('getSupportedExtensions', () => {
-        it('should return array of supported extensions', () => {
-            const extensions = getSupportedExtensions()
-            expect(extensions).toContain('.yaml')
-            expect(extensions).toContain('.yml')
-            expect(extensions).toContain('.json')
-            expect(extensions).toContain('.kyaml')
-        })
-
-        it('should be immutable', () => {
-            const extensions = getSupportedExtensions()
-            expect(() => {
-                (extensions as any).push('.txt')
-            }).toThrow()
-        })
-    })
-
     describe('getFileExtension', () => {
         it('should extract extension from filename', () => {
             expect(getFileExtension('pod.yaml')).toBe('.yaml')

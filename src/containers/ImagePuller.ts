@@ -5,13 +5,13 @@ import type { ImageRegistry } from './registry/ImageRegistry'
 // IMAGE PULL SIMULATOR
 // ═══════════════════════════════════════════════════════════════════════════
 
-export interface PullEvent {
+interface PullEvent {
     event: 'Pulling' | 'Pulled' | 'Created' | 'Started'
     message: string
     timestamp: string
 }
 
-export type PullResult =
+type PullResult =
     | { ok: true; status: PodPhase; events: PullEvent[] }
     | { ok: false; status: PodPhase; error: string }
 
