@@ -33,6 +33,11 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
+    "@codemirror/commands": "^6.9.0",
+    "@codemirror/lang-yaml": "^6.1.2",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/theme-one-dark": "^6.1.3",
+    "@codemirror/view": "^6.38.6",
     "@tailwindcss/vite": "^4.1.14",
     "@xterm/xterm": "^5.5.0",
     "tailwindcss": "^4.1.14",

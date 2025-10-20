@@ -35,6 +35,9 @@
 - ✅ **Result Pattern Migration** - `{type, data/message}` → `{ok, value/error}` (Fetch API style)
 - ✅ **Sprint 5.5**: Apply/Create Handlers - YAML parser + kubectl apply/create (63 tests)
 
+### Editor Integration
+- ✅ **Sprint 13 (Early)**: YAML Editor - CodeMirror 6 integration with nano command (25 tests)
+
 ## Next Sprint
 
 **Sprint 5.6** - kubectl logs + exec
@@ -119,7 +122,7 @@
 ### Sprint 13: Terminal Enhancements
 - Syntax highlighting (real-time)
 - Enhanced prompt (contextual)
-- Terminal YAML editor (nano-like)
+- ✅ Terminal YAML editor (CodeMirror-based, nano command)
 
 ### Sprint 14: Real Registry + Chaos Hooks
 - Fetch from Docker Hub API

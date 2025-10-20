@@ -1,6 +1,7 @@
 import type { ClusterState } from '../cluster/ClusterState'
 import type { createFileSystem } from '../filesystem/FileSystem'
 import { compareStrings } from '../shared/formatter'
+import { VALID_COMMANDS } from '../shell/commands/parser'
 
 type FileSystem = ReturnType<typeof createFileSystem>
 
@@ -17,11 +18,29 @@ export interface AutocompleteContext {
 
 // ─── Constants ───────────────────────────────────────────────────────────
 
-const COMMANDS = ['kubectl', 'cd', 'ls', 'pwd', 'mkdir', 'touch', 'cat', 'rm', 'clear', 'help', 'debug']
+const COMMANDS = ['kubectl', ...VALID_COMMANDS]
 const KUBECTL_ACTIONS = ['get', 'describe', 'delete', 'apply', 'create']
 const KUBECTL_RESOURCES = ['pods', 'pod', 'po', 'deployments', 'deployment', 'deploy', 'services', 'service', 'svc', 'namespaces', 'namespace', 'ns']
 const KUBECTL_FLAGS = ['-n', '--namespace', '-o', '--output', '-l', '--selector', '-f', '--filename', '-A', '--all-namespaces']
 const SHELL_FLAGS = ['-l', '-r', '-p']
+
+// ─── File Completion Configuration ───────────────────────────────────────
+
+interface FileCompletionOptions {
+    directoriesOnly?: boolean    // Only suggest directories (e.g., cd)
+    filesOnly?: boolean          // Only suggest files (e.g., cat, nano)
+    extensions?: string[]        // Filter by extensions (e.g., ['.yaml', '.yml'])
+}
+
+const COMMAND_FILE_COMPLETION: Record<string, FileCompletionOptions> = {
+    'cd': { directoriesOnly: true },
+    'cat': { filesOnly: true },
+    'nano': { filesOnly: true, extensions: ['.yaml', '.yml', '.json', '.txt', '.kyaml'] },
+    'vi': { filesOnly: true, extensions: ['.yaml', '.yml', '.json', '.txt', '.kyaml'] },
+    'vim': { filesOnly: true, extensions: ['.yaml', '.yml', '.json', '.txt', '.kyaml'] },
+    'ls': {},  // All files and directories
+    'rm': {},  // All files and directories
+}
 
 // Resource type to canonical mapping
 const RESOURCE_CANONICAL: Record<string, string> = {
@@ -125,7 +144,10 @@ const getKubectlCompletions = (
 
     // kubectl apply/create -f <file>
     if ((action === 'apply' || action === 'create') && currentLine.includes('-f')) {
-        return getFileCompletions(currentToken, context.fileSystem, false)
+        return getFileCompletions(currentToken, context.fileSystem, {
+            filesOnly: true,
+            extensions: ['.yaml', '.yml']
+        })
     }
 
     // kubectl <action> <resource>
@@ -171,16 +193,10 @@ const getShellCompletions = (
         return filterMatches(SHELL_FLAGS, currentToken)
     }
 
-    // Commands that complete with files/directories
-    const fileCommands = ['cat', 'rm', 'ls']
-    const dirCommands = ['cd']
-
-    if (dirCommands.includes(command)) {
-        return getFileCompletions(currentToken, context.fileSystem, true)
-    }
-
-    if (fileCommands.includes(command)) {
-        return getFileCompletions(currentToken, context.fileSystem, false)
+    // Check if command has file completion config
+    const fileCompletionConfig = COMMAND_FILE_COMPLETION[command]
+    if (fileCompletionConfig !== undefined) {
+        return getFileCompletions(currentToken, context.fileSystem, fileCompletionConfig)
     }
 
     return []
@@ -191,7 +207,7 @@ const getShellCompletions = (
 const getFileCompletions = (
     currentToken: string,
     fileSystem: FileSystem,
-    directoriesOnly: boolean
+    options: FileCompletionOptions = {}
 ): string[] => {
     const currentPath = fileSystem.getCurrentPath()
     let targetPath = currentPath
@@ -213,15 +229,26 @@ const getFileCompletions = (
         return []
     }
 
-    const entries = listing.value
+    let entries = listing.value
 
-    // Filter by type if needed
-    const candidates = directoriesOnly
-        ? entries.filter(e => e.type === 'directory')
-        : entries
+    // Filter by type
+    if (options.directoriesOnly) {
+        entries = entries.filter(e => e.type === 'directory')
+    } else if (options.filesOnly) {
+        entries = entries.filter(e => e.type === 'file')
+    }
+
+    // Filter by extensions
+    if (options.extensions && options.extensions.length > 0) {
+        const extensions = options.extensions
+        entries = entries.filter(e => {
+            if (e.type === 'directory') return false
+            return extensions.some(ext => e.name.endsWith(ext))
+        })
+    }
 
     // Extract names
-    let names = candidates.map(e => e.name)
+    let names = entries.map(e => e.name)
 
     // Handle absolute path completion - prefix with path
     if (currentToken.startsWith('/')) {

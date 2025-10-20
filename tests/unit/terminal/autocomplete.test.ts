@@ -131,6 +131,9 @@ describe('Autocomplete', () => {
             expect(completions).toContain('mkdir')
             expect(completions).toContain('touch')
             expect(completions).toContain('cat')
+            expect(completions).toContain('nano')
+            expect(completions).toContain('vi')
+            expect(completions).toContain('vim')
             expect(completions).toContain('rm')
         })
 
@@ -266,6 +269,14 @@ describe('Autocomplete', () => {
             expect(completions).toContain('examples')
         })
 
+        it('cd only suggests directories, not files', () => {
+            // In manifests: has pod.yaml file
+            context.fileSystem.changeDirectory('/manifests')
+            const completions = getCompletions('cd ', context)
+            expect(completions).toEqual([])  // No subdirectories in manifests
+            expect(completions).not.toContain('pod.yaml')
+        })
+
         it('completes directory names with partial match', () => {
             const completions = getCompletions('cd m', context)
             expect(completions).toEqual(['manifests'])
@@ -284,16 +295,73 @@ describe('Autocomplete', () => {
             expect(completions).toContain('pod.yaml')
         })
 
+        it('cat only suggests files, not directories', () => {
+            // At root: has directories but no files
+            const completions = getCompletions('cat ', context)
+            expect(completions).toEqual([])  // No files at root
+            expect(completions).not.toContain('manifests')
+            expect(completions).not.toContain('examples')
+        })
+
         it('completes paths after kubectl apply -f', () => {
             context.fileSystem.changeDirectory('/manifests')
             const completions = getCompletions('kubectl apply -f ', context)
             expect(completions).toContain('pod.yaml')
         })
 
+        it('kubectl apply -f only suggests yaml files', () => {
+            context.fileSystem.changeDirectory('/manifests')
+            context.fileSystem.createFile('config.json')
+            context.fileSystem.createFile('deployment.yaml')
+
+            const completions = getCompletions('kubectl apply -f ', context)
+            expect(completions).toContain('pod.yaml')
+            expect(completions).toContain('deployment.yaml')
+            expect(completions).not.toContain('config.json')  // JSON not suggested for kubectl
+        })
+
         it('completes files after rm', () => {
             context.fileSystem.changeDirectory('/manifests')
             const completions = getCompletions('rm ', context)
             expect(completions).toContain('pod.yaml')
+        })
+
+        it('completes files after nano', () => {
+            context.fileSystem.changeDirectory('/manifests')
+            const completions = getCompletions('nano ', context)
+            expect(completions).toContain('pod.yaml')
+        })
+
+        it('nano only suggests files, not directories', () => {
+            // At root: has directories (manifests, examples) and no files
+            const completions = getCompletions('nano ', context)
+            expect(completions).toEqual([])  // No files at root
+            expect(completions).not.toContain('manifests')
+            expect(completions).not.toContain('examples')
+        })
+
+        it('nano only suggests files with valid extensions', () => {
+            // Add a file with invalid extension
+            context.fileSystem.changeDirectory('/manifests')
+            context.fileSystem.createFile('script.sh')
+            context.fileSystem.createFile('config.yaml')
+
+            const completions = getCompletions('nano ', context)
+            expect(completions).toContain('pod.yaml')
+            expect(completions).toContain('config.yaml')
+            expect(completions).not.toContain('script.sh')  // .sh not in allowed extensions
+        })
+
+        it('vi and vim work as aliases for nano', () => {
+            context.fileSystem.changeDirectory('/manifests')
+
+            const viCompletions = getCompletions('vi ', context)
+            const vimCompletions = getCompletions('vim ', context)
+            const nanoCompletions = getCompletions('nano ', context)
+
+            // All should suggest the same files
+            expect(viCompletions).toEqual(nanoCompletions)
+            expect(vimCompletions).toEqual(nanoCompletions)
         })
 
         it('handles absolute paths', () => {

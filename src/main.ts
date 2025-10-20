@@ -6,6 +6,7 @@ import { createLogger } from './logger/Logger'
 import { createShellExecutor } from './shell/commands/executor'
 import { createSeedFileSystem } from './filesystem/seedFileSystem'
 import { createFileSystem } from './filesystem/FileSystem'
+import { createEditorModal } from './editor/EditorModal'
 
 // ╔═══════════════════════════════════════════════════════════════════════╗
 // ║                      KUBECTL SIMULATOR - MAIN                         ║
@@ -29,11 +30,17 @@ const fileSystem = createFileSystem(fileSystemState)
 // Create logger
 const logger = createLogger({ mirrorToConsole: true })
 
+// Create editor modal
+const editorModalContainer = document.createElement('div')
+editorModalContainer.id = 'editor-modal-container'
+document.body.appendChild(editorModalContainer)
+const editorModal = createEditorModal(editorModalContainer)
+
 // Create kubectl executor
 const kubectlExecutor = createKubectlExecutor(clusterState, fileSystem, logger)
 
 // Create shell executor
-const shellExecutor = createShellExecutor(fileSystem, logger)
+const shellExecutor = createShellExecutor(fileSystem, logger, editorModal)
 
 // Initialize terminal with autocomplete context
 const terminal = createTerminalManager(terminalContainer, {

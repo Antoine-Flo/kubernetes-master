@@ -15,6 +15,9 @@ export type ShellCommand =
     | 'clear'
     | 'help'
     | 'debug'
+    | 'nano'
+    | 'vi'
+    | 'vim'
 
 export interface ParsedShellCommand {
     command: ShellCommand

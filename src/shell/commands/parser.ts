@@ -35,7 +35,7 @@ type ParseContext = {
 
 // ─── Constants ───────────────────────────────────────────────────────────
 
-const VALID_COMMANDS: ShellCommand[] = [
+export const VALID_COMMANDS: ShellCommand[] = [
     'cd',
     'ls',
     'pwd',
@@ -46,6 +46,9 @@ const VALID_COMMANDS: ShellCommand[] = [
     'clear',
     'help',
     'debug',
+    'nano',
+    'vi',
+    'vim',
 ]
 
 // Shell flags that require values (for future use)

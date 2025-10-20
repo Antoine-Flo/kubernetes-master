@@ -6,6 +6,8 @@ import { error, success } from '../../shared/result'
 import { createImageRegistry } from '../../containers/registry/ImageRegistry'
 import type { Logger } from '../../logger/Logger'
 import { formatColumns, formatLongListing, formatTable, type FileEntry } from '../../shared/formatter'
+import type { EditorModal } from '../../editor/EditorModal'
+import { handleNano } from './handlers/nano'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SHELL COMMAND EXECUTOR
@@ -21,14 +23,24 @@ type CommandHandler = (args: string[], flags: Record<string, boolean | string>) 
 
 /**
  * Create command handlers Map with dependencies captured in closures
- * Uses currying to pre-apply logger and fileSystem
+ * Uses currying to pre-apply logger, fileSystem, and editorModal
  * Guarantees uniqueness (Map keys are unique)
  */
-const createHandlers = (fileSystem: FileSystem, logger: Logger): Map<string, CommandHandler> => {
+const createHandlers = (fileSystem: FileSystem, logger: Logger, editorModal?: EditorModal): Map<string, CommandHandler> => {
     // Currying helper: pre-applies logger and fileSystem
     const withDeps = <TArgs extends any[]>(
         handler: (logger: Logger, fs: FileSystem, ...args: TArgs) => ExecutionResult
     ) => (...args: TArgs) => handler(logger, fileSystem, ...args)
+
+    // Currying helper for nano: pre-applies logger, fileSystem, and editorModal
+    const withEditorDeps = <TArgs extends any[]>(
+        handler: (logger: Logger, fs: FileSystem, modal: EditorModal, ...args: TArgs) => ExecutionResult
+    ) => (...args: TArgs) => {
+        if (!editorModal) {
+            return error('Editor not available')
+        }
+        return handler(logger, fileSystem, editorModal, ...args)
+    }
 
     const handlers = new Map<string, CommandHandler>()
 
@@ -43,6 +55,9 @@ const createHandlers = (fileSystem: FileSystem, logger: Logger): Map<string, Com
     handlers.set('cat', withDeps(handleCat))
     handlers.set('rm', withDeps(handleRm))
     handlers.set('debug', withDeps(handleDebug))
+    handlers.set('nano', withEditorDeps(handleNano))
+    handlers.set('vi', withEditorDeps(handleNano))    // Alias for nano
+    handlers.set('vim', withEditorDeps(handleNano))   // Alias for nano
 
     return handlers
 }
@@ -69,14 +84,15 @@ const routeCommand = (
 
 /**
  * Create a shell executor
- * Factory function that encapsulates FileSystem and Logger in closures
+ * Factory function that encapsulates FileSystem, Logger, and EditorModal in closures
  * 
  * @param fileSystem - The file system to operate on
  * @param logger - Application logger for tracking commands
+ * @param editorModal - Optional editor modal for nano command
  * @returns Executor with execute method
  */
-export const createShellExecutor = (fileSystem: FileSystem, logger: Logger) => {
-    const handlers = createHandlers(fileSystem, logger)
+export const createShellExecutor = (fileSystem: FileSystem, logger: Logger, editorModal?: EditorModal) => {
+    const handlers = createHandlers(fileSystem, logger, editorModal)
 
     const execute = (input: string): ExecutionResult => {
         logger.info('COMMAND', `Shell: ${input}`)
@@ -263,6 +279,9 @@ const handleHelp = (_logger: Logger): ExecutionResult => {
   mkdir <name>    Create directory
   touch <file>    Create empty file
   cat <file>      Display file contents
+  nano <file>     Edit file with YAML editor
+  vi <file>       Edit file with YAML editor (alias)
+  vim <file>      Edit file with YAML editor (alias)
   rm <file>       Remove file
   rm -r <dir>     Remove directory
   clear           Clear terminal
