@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { parseCommand } from '../../../../src/kubectl/commands/parser'
-import type { ParsedCommand } from '../../../../src/kubectl/commands/types'
 
 describe('kubectl Parser', () => {
   describe('parseCommand', () => {

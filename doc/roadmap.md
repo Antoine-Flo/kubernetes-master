@@ -235,15 +235,18 @@ Code quality checks (automated in `npm test`):
 - Unit tests (vitest)
 - Dead code detection (knip)
 - Type checking (tsc)
+- Linting (eslint with strict TypeScript rules)
 
 ## Commands
 
 ```bash
 npm run dev        # Dev server
-npm test           # Run tests (includes knip check)
+npm test           # Run tests (includes knip, lint, and unit tests)
 npm run test:unit  # Run unit tests only
 npm run coverage   # Coverage report
 npm run knip       # Check for unused code
+npm run lint       # Lint code with ESLint
+npm run lint:fix   # Auto-fix linting issues
 npm run build      # Production build
 npm run tsc        # Type check
 ```

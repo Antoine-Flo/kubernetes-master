@@ -66,21 +66,21 @@ export const deletePod = (
 
 // ─── ConfigMap Operations ────────────────────────────────────────────
 
-export const addConfigMap = (state: ClusterStateData, configMap: ConfigMap): ClusterStateData => ({
+const addConfigMap = (state: ClusterStateData, configMap: ConfigMap): ClusterStateData => ({
     ...state,
     configMaps: configMapRepo.add(state.configMaps, configMap),
 })
 
-export const getConfigMaps = (state: ClusterStateData, namespace?: string): ConfigMap[] =>
+const getConfigMaps = (state: ClusterStateData, namespace?: string): ConfigMap[] =>
     configMapRepo.getAll(state.configMaps, namespace)
 
-export const findConfigMap = (
+const findConfigMap = (
     state: ClusterStateData,
     name: string,
     namespace: string
 ): Result<ConfigMap> => configMapRepo.find(state.configMaps, name, namespace)
 
-export const deleteConfigMap = (
+const deleteConfigMap = (
     state: ClusterStateData,
     name: string,
     namespace: string
@@ -98,21 +98,21 @@ export const deleteConfigMap = (
 
 // ─── Secret Operations ───────────────────────────────────────────────
 
-export const addSecret = (state: ClusterStateData, secret: Secret): ClusterStateData => ({
+const addSecret = (state: ClusterStateData, secret: Secret): ClusterStateData => ({
     ...state,
     secrets: secretRepo.add(state.secrets, secret),
 })
 
-export const getSecrets = (state: ClusterStateData, namespace?: string): Secret[] =>
+const getSecrets = (state: ClusterStateData, namespace?: string): Secret[] =>
     secretRepo.getAll(state.secrets, namespace)
 
-export const findSecret = (
+const findSecret = (
     state: ClusterStateData,
     name: string,
     namespace: string
 ): Result<Secret> => secretRepo.find(state.secrets, name, namespace)
 
-export const deleteSecret = (
+const deleteSecret = (
     state: ClusterStateData,
     name: string,
     namespace: string

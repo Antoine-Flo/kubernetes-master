@@ -291,9 +291,9 @@ describe('pipeResult', () => {
 
     it('should propagate first error in pipeline', () => {
         const step1 = (x: number): Result<number> => success(x + 1)
-        const step2 = (_x: number): Result<number> => error('step 2 failed')
+        const step2 = (): Result<number> => error('step 2 failed')
         const step3 = (x: number): Result<number> => success(x * 2)
-        const step4 = (_x: number): Result<number> => error('step 4 failed')
+        const step4 = (): Result<number> => error('step 4 failed')
 
         const composed = pipeResult(step1, step2, step3, step4)
         const result = composed(5)

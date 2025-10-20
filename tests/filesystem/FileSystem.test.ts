@@ -4,8 +4,7 @@ import {
     resolvePath,
     getDepth,
     validateFilename,
-    findNode,
-    type FileSystemState
+    findNode
 } from '../../src/filesystem/FileSystem'
 import { createDirectory, createFile } from '../../src/filesystem/models'
 

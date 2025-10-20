@@ -6,13 +6,13 @@
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
-export interface TableOptions {
+interface TableOptions {
     align?: ('left' | 'right')[]  // Per-column alignment (no center, like real shells)
     spacing?: number  // Spaces between columns (default: 2 like kubectl)
     uppercase?: boolean  // Uppercase headers (default: true for kubectl)
 }
 
-export interface ColumnOptions {
+interface ColumnOptions {
     terminalWidth?: number  // Terminal width (default: 80)
     spacing?: number  // Spaces between columns (default: 2)
     sort?: boolean  // Alphabetical sort (default: true)
@@ -25,7 +25,7 @@ export interface FileEntry {
     modified: string  // ISO timestamp
 }
 
-export interface KeyValueOptions {
+interface KeyValueOptions {
     indent?: number  // Indentation (default: 2)
     separator?: string  // Separator (default: ':  ' with 2 spaces)
     maxKeyWidth?: number  // Max key width for alignment

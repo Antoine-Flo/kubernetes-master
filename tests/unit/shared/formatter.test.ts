@@ -10,10 +10,7 @@ import {
     formatColumns,
     formatLongListing,
     formatKeyValue,
-    type FileEntry,
-    type TableOptions,
-    type ColumnOptions,
-    type KeyValueOptions
+    type FileEntry
 } from '../../../src/shared/formatter'
 
 // ═══════════════════════════════════════════════════════════════════════════

@@ -31,7 +31,7 @@ export const createTerminalManager = (
     let cursorPosition = 0 // Position of cursor in currentLine (0 = start)
     let commandCallback: CommandCallback | undefined
     let prompt = 'kubectl> '
-    let commandHistory: string[] = []
+    const commandHistory: string[] = []
     let historyIndex = -1
     let tempCurrentLine = ''
     let lastTabPress = 0

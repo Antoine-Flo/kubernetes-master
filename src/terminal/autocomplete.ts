@@ -216,7 +216,7 @@ const getFileCompletions = (
     const entries = listing.value
 
     // Filter by type if needed
-    let candidates = directoriesOnly
+    const candidates = directoriesOnly
         ? entries.filter(e => e.type === 'directory')
         : entries
 

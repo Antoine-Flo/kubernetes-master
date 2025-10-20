@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { parseShellCommand } from '../../../../src/shell/commands/parser'
-import type { ParsedShellCommand } from '../../../../src/shell/commands/types'
 
 describe('Shell Parser', () => {
     describe('parseShellCommand', () => {

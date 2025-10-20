@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createDirectory, type DirectoryNode } from '../../../src/filesystem/models/Directory'
+import { createDirectory } from '../../../src/filesystem/models/Directory'
 
 describe('Directory Model', () => {
     describe('createDirectory', () => {

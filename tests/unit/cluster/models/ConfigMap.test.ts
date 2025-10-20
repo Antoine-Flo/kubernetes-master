@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createConfigMap, type ConfigMap } from '../../../../src/cluster/models/ConfigMap'
+import { createConfigMap } from '../../../../src/cluster/models/ConfigMap'
 
 describe('ConfigMap Model', () => {
     describe('createConfigMap', () => {
@@ -126,7 +126,7 @@ describe('ConfigMap Model', () => {
 
             // TypeScript will prevent this, but testing runtime immutability
             expect(() => {
-                ;(configMap as any).metadata.name = 'modified'
+                ; (configMap as any).metadata.name = 'modified'
             }).toThrow()
 
             expect(configMap.metadata.name).toBe(originalName)
