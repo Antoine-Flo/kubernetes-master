@@ -7,11 +7,11 @@ describe('ImageRegistry', () => {
             const registry = createImageRegistry()
             const result = registry.parseImageString('nginx')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data.name).toBe('nginx')
-                expect(result.data.registry).toBe('docker.io/library')
-                expect(result.data.tag).toBe('latest')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value.name).toBe('nginx')
+                expect(result.value.registry).toBe('docker.io/library')
+                expect(result.value.tag).toBe('latest')
             }
         })
 
@@ -19,11 +19,11 @@ describe('ImageRegistry', () => {
             const registry = createImageRegistry()
             const result = registry.parseImageString('nginx:1.25')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data.name).toBe('nginx')
-                expect(result.data.registry).toBe('docker.io/library')
-                expect(result.data.tag).toBe('1.25')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value.name).toBe('nginx')
+                expect(result.value.registry).toBe('docker.io/library')
+                expect(result.value.tag).toBe('1.25')
             }
         })
 
@@ -31,11 +31,11 @@ describe('ImageRegistry', () => {
             const registry = createImageRegistry()
             const result = registry.parseImageString('myregistry.io/broken-app:v1.0')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data.name).toBe('broken-app')
-                expect(result.data.registry).toBe('myregistry.io')
-                expect(result.data.tag).toBe('v1.0')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value.name).toBe('broken-app')
+                expect(result.value.registry).toBe('myregistry.io')
+                expect(result.value.tag).toBe('v1.0')
             }
         })
 
@@ -43,11 +43,11 @@ describe('ImageRegistry', () => {
             const registry = createImageRegistry()
             const result = registry.parseImageString('private.registry.io/broken-app:latest')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data.name).toBe('broken-app')
-                expect(result.data.registry).toBe('private.registry.io')
-                expect(result.data.tag).toBe('latest')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value.name).toBe('broken-app')
+                expect(result.value.registry).toBe('private.registry.io')
+                expect(result.value.tag).toBe('latest')
             }
         })
 
@@ -55,9 +55,9 @@ describe('ImageRegistry', () => {
             const registry = createImageRegistry()
             const result = registry.parseImageString('')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('Image name cannot be empty')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('Image name cannot be empty')
             }
         })
 
@@ -65,9 +65,9 @@ describe('ImageRegistry', () => {
             const registry = createImageRegistry()
             const result = registry.parseImageString('::invalid::')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('Invalid image format')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('Invalid image format')
             }
         })
     })
@@ -77,10 +77,10 @@ describe('ImageRegistry', () => {
             const registry = createImageRegistry()
             const result = registry.validateImage('nginx')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data.name).toBe('nginx')
-                expect(result.data.tags).toContain('latest')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value.name).toBe('nginx')
+                expect(result.value.tags).toContain('latest')
             }
         })
 
@@ -88,17 +88,17 @@ describe('ImageRegistry', () => {
             const registry = createImageRegistry()
             const result = registry.validateImage('nginx:1.25')
 
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
         })
 
         it('should reject unknown image', () => {
             const registry = createImageRegistry()
             const result = registry.validateImage('unknown-image:latest')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('Image not found in registry')
-                expect(result.message).toContain("Run 'debug images'")
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('Image not found in registry')
+                expect(result.error).toContain("Run 'debug images'")
             }
         })
 
@@ -106,10 +106,10 @@ describe('ImageRegistry', () => {
             const registry = createImageRegistry()
             const result = registry.validateImage('nginx:9.99')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain("Tag '9.99' not found for nginx")
-                expect(result.message).toContain('Available tags:')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain("Tag '9.99' not found for nginx")
+                expect(result.error).toContain('Available tags:')
             }
         })
     })
@@ -119,10 +119,10 @@ describe('ImageRegistry', () => {
             const registry = createImageRegistry()
             const result = registry.getImage('nginx')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data.name).toBe('nginx')
-                expect(result.data.defaultPorts).toContain(80)
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value.name).toBe('nginx')
+                expect(result.value.defaultPorts).toContain(80)
             }
         })
 
@@ -130,14 +130,14 @@ describe('ImageRegistry', () => {
             const registry = createImageRegistry()
             const result = registry.getImage('nginx', '1.25')
 
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
         })
 
         it('should return error for unknown image', () => {
             const registry = createImageRegistry()
             const result = registry.getImage('unknown')
 
-            expect(result.type).toBe('error')
+            expect(result.ok).toBe(false)
         })
     })
 

@@ -159,10 +159,10 @@ describe('ClusterState Pure Functions', () => {
 
             const result = findPod(state, 'nginx', 'default')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data.metadata.name).toBe('nginx')
-                expect(result.data.metadata.namespace).toBe('default')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value.metadata.name).toBe('nginx')
+                expect(result.value.metadata.namespace).toBe('default')
             }
         })
 
@@ -171,9 +171,9 @@ describe('ClusterState Pure Functions', () => {
 
             const result = findPod(state, 'non-existent', 'default')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('not found')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('not found')
             }
         })
 
@@ -196,12 +196,12 @@ describe('ClusterState Pure Functions', () => {
             const resultDefault = findPod(state, 'nginx', 'default')
             const resultProduction = findPod(state, 'nginx', 'production')
 
-            expect(resultDefault.type).toBe('success')
-            expect(resultProduction.type).toBe('success')
+            expect(resultDefault.ok).toBe(true)
+            expect(resultProduction.ok).toBe(true)
 
-            if (resultDefault.type === 'success' && resultProduction.type === 'success') {
-                expect(resultDefault.data.metadata.namespace).toBe('default')
-                expect(resultProduction.data.metadata.namespace).toBe('production')
+            if (resultDefault.ok && resultProduction.ok) {
+                expect(resultDefault.value.metadata.namespace).toBe('default')
+                expect(resultProduction.value.metadata.namespace).toBe('production')
             }
         })
     })
@@ -225,8 +225,8 @@ describe('ClusterState Pure Functions', () => {
 
             const result = deletePod(state, 'nginx', 'default')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success' && result.state) {
+            expect(result.ok).toBe(true)
+            if (result.ok && result.state) {
                 expect(result.state.pods.items).toHaveLength(1)
                 expect(result.state.pods.items[0].metadata.name).toBe('redis')
             }
@@ -253,9 +253,9 @@ describe('ClusterState Pure Functions', () => {
 
             const result = deletePod(state, 'non-existent', 'default')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('not found')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('not found')
             }
         })
 
@@ -271,9 +271,9 @@ describe('ClusterState Pure Functions', () => {
 
             const result = deletePod(state, 'nginx', 'default')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toEqual(pod)
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toEqual(pod)
             }
         })
     })
@@ -354,7 +354,7 @@ describe('ClusterState Facade', () => {
 
             const result = clusterState.findPod('nginx', 'default')
 
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
         })
 
         it('should delete pod without passing state explicitly', () => {
@@ -368,7 +368,7 @@ describe('ClusterState Facade', () => {
             clusterState.addPod(pod)
             const result = clusterState.deletePod('nginx', 'default')
 
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
             expect(clusterState.getPods()).toHaveLength(0)
         })
 
@@ -512,9 +512,9 @@ describe('ClusterState Facade', () => {
 
             const result = clusterState.findConfigMap('app-config', 'default')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data.metadata.name).toBe('app-config')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value.metadata.name).toBe('app-config')
             }
         })
 
@@ -523,9 +523,9 @@ describe('ClusterState Facade', () => {
 
             const result = clusterState.findConfigMap('missing', 'default')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('not found')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('not found')
             }
         })
 
@@ -542,7 +542,7 @@ describe('ClusterState Facade', () => {
 
             const result = clusterState.deleteConfigMap('app-config', 'default')
 
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
             expect(clusterState.getConfigMaps()).toHaveLength(0)
         })
 
@@ -551,7 +551,7 @@ describe('ClusterState Facade', () => {
 
             const result = clusterState.deleteConfigMap('missing', 'default')
 
-            expect(result.type).toBe('error')
+            expect(result.ok).toBe(false)
         })
     })
 
@@ -606,9 +606,9 @@ describe('ClusterState Facade', () => {
 
             const result = clusterState.findSecret('db-secret', 'default')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data.metadata.name).toBe('db-secret')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value.metadata.name).toBe('db-secret')
             }
         })
 
@@ -617,9 +617,9 @@ describe('ClusterState Facade', () => {
 
             const result = clusterState.findSecret('missing', 'default')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('not found')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('not found')
             }
         })
 
@@ -637,7 +637,7 @@ describe('ClusterState Facade', () => {
 
             const result = clusterState.deleteSecret('db-secret', 'default')
 
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
             expect(clusterState.getSecrets()).toHaveLength(0)
         })
 
@@ -646,7 +646,7 @@ describe('ClusterState Facade', () => {
 
             const result = clusterState.deleteSecret('missing', 'default')
 
-            expect(result.type).toBe('error')
+            expect(result.ok).toBe(false)
         })
     })
 })

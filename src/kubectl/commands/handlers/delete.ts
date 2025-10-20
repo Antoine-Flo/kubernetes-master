@@ -20,8 +20,8 @@ export const handleDelete = (
     if (parsed.resource === 'pods') {
         const result = clusterState.deletePod(parsed.name, namespace)
 
-        if (result.type === 'error') {
-            return error(result.message)
+        if (!result.ok) {
+            return error(result.error)
         }
 
         return success(`pod "${parsed.name}" deleted`)

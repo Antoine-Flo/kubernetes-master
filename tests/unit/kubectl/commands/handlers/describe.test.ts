@@ -29,9 +29,9 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('Resource name is required')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('Resource name is required')
             }
         })
 
@@ -44,10 +44,10 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('not supported')
-                expect(result.message).toContain('deployments')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('not supported')
+                expect(result.error).toContain('deployments')
             }
         })
 
@@ -60,10 +60,10 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('not found')
-                expect(result.message).toContain('nonexistent')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('not found')
+                expect(result.error).toContain('nonexistent')
             }
         })
 
@@ -85,10 +85,10 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('not found')
-                expect(result.message).toContain('kube-system')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('not found')
+                expect(result.error).toContain('kube-system')
             }
         })
     })
@@ -114,15 +114,15 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('Name:         nginx-pod')
-                expect(result.data).toContain('Namespace:    default')
-                expect(result.data).toContain('Status:       Running')
-                expect(result.data).toContain('IP:           172.17.0.')
-                expect(result.data).toContain('Containers:')
-                expect(result.data).toContain('  nginx:')
-                expect(result.data).toContain('    Image:      nginx:latest')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Name:         nginx-pod')
+                expect(result.value).toContain('Namespace:    default')
+                expect(result.value).toContain('Status:       Running')
+                expect(result.value).toContain('IP:           172.17.0.')
+                expect(result.value).toContain('Containers:')
+                expect(result.value).toContain('  nginx:')
+                expect(result.value).toContain('    Image:      nginx:latest')
             }
         })
 
@@ -146,12 +146,12 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('  app:')
-                expect(result.data).toContain('    Image:      app:v1')
-                expect(result.data).toContain('  sidecar:')
-                expect(result.data).toContain('    Image:      logging:latest')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('  app:')
+                expect(result.value).toContain('    Image:      app:v1')
+                expect(result.value).toContain('  sidecar:')
+                expect(result.value).toContain('    Image:      logging:latest')
             }
         })
 
@@ -187,14 +187,14 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('Requests:')
-                expect(result.data).toContain('cpu: 100m')
-                expect(result.data).toContain('memory: 128Mi')
-                expect(result.data).toContain('Limits:')
-                expect(result.data).toContain('cpu: 500m')
-                expect(result.data).toContain('memory: 512Mi')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Requests:')
+                expect(result.value).toContain('cpu: 100m')
+                expect(result.value).toContain('memory: 128Mi')
+                expect(result.value).toContain('Limits:')
+                expect(result.value).toContain('cpu: 500m')
+                expect(result.value).toContain('memory: 512Mi')
             }
         })
 
@@ -237,20 +237,20 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('Liveness:')
-                expect(result.data).toContain('http-get /health on port 8080')
-                expect(result.data).toContain('delay=10s')
-                expect(result.data).toContain('period=5s')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Liveness:')
+                expect(result.value).toContain('http-get /health on port 8080')
+                expect(result.value).toContain('delay=10s')
+                expect(result.value).toContain('period=5s')
 
-                expect(result.data).toContain('Readiness:')
-                expect(result.data).toContain('exec [cat /tmp/ready]')
-                expect(result.data).toContain('delay=5s')
+                expect(result.value).toContain('Readiness:')
+                expect(result.value).toContain('exec [cat /tmp/ready]')
+                expect(result.value).toContain('delay=5s')
 
-                expect(result.data).toContain('Startup:')
-                expect(result.data).toContain('tcp-socket :8080')
-                expect(result.data).toContain('period=10s')
+                expect(result.value).toContain('Startup:')
+                expect(result.value).toContain('tcp-socket :8080')
+                expect(result.value).toContain('period=10s')
             }
         })
 
@@ -280,11 +280,11 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('Environment:')
-                expect(result.data).toContain('ENV:  production')
-                expect(result.data).toContain('DEBUG:  false')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Environment:')
+                expect(result.value).toContain('ENV:  production')
+                expect(result.value).toContain('DEBUG:  false')
             }
         })
 
@@ -328,17 +328,17 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('Environment:')
-                expect(result.data).toContain(
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Environment:')
+                expect(result.value).toContain(
                     "CONFIG_VALUE:  <set to the key 'config.json' in config map 'app-config'>"
                 )
-                expect(result.data).toContain(
+                expect(result.value).toContain(
                     "SECRET_KEY:  <set to the key 'api-key' of secret 'app-secret'>"
                 )
                 // Verify secret values are not exposed
-                expect(result.data).not.toContain('actual-secret-value')
+                expect(result.value).not.toContain('actual-secret-value')
             }
         })
 
@@ -372,18 +372,18 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('Mounts:')
-                expect(result.data).toContain('config-vol from config-vol (/etc/config) (ro)')
-                expect(result.data).toContain('data-vol from data-vol (/data) (rw)')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Mounts:')
+                expect(result.value).toContain('config-vol from config-vol (/etc/config) (ro)')
+                expect(result.value).toContain('data-vol from data-vol (/data) (rw)')
 
-                expect(result.data).toContain('Volumes:')
-                expect(result.data).toContain('config-vol:')
-                expect(result.data).toContain('Type:       ConfigMap')
-                expect(result.data).toContain('Name:       app-config')
-                expect(result.data).toContain('data-vol:')
-                expect(result.data).toContain('Type:       EmptyDir')
+                expect(result.value).toContain('Volumes:')
+                expect(result.value).toContain('config-vol:')
+                expect(result.value).toContain('Type:       ConfigMap')
+                expect(result.value).toContain('Name:       app-config')
+                expect(result.value).toContain('data-vol:')
+                expect(result.value).toContain('Type:       EmptyDir')
             }
         })
 
@@ -406,14 +406,14 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('Labels:')
-                expect(result.data).toContain('app=web')
-                expect(result.data).toContain('version=v1')
-                expect(result.data).toContain('Annotations:')
-                expect(result.data).toContain('author=team-a')
-                expect(result.data).toContain('description=Main web app')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Labels:')
+                expect(result.value).toContain('app=web')
+                expect(result.value).toContain('version=v1')
+                expect(result.value).toContain('Annotations:')
+                expect(result.value).toContain('author=team-a')
+                expect(result.value).toContain('description=Main web app')
             }
         })
 
@@ -434,10 +434,10 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('Labels:       <none>')
-                expect(result.data).toContain('Annotations:  <none>')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Labels:       <none>')
+                expect(result.value).toContain('Annotations:  <none>')
             }
         })
     })
@@ -465,16 +465,16 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('Name:         app-config')
-                expect(result.data).toContain('Namespace:    default')
-                expect(result.data).toContain('Data')
-                expect(result.data).toContain('====')
-                expect(result.data).toContain('config.json:')
-                expect(result.data).toContain('{"port": 8080}')
-                expect(result.data).toContain('database.url:')
-                expect(result.data).toContain('postgres://localhost:5432')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Name:         app-config')
+                expect(result.value).toContain('Namespace:    default')
+                expect(result.value).toContain('Data')
+                expect(result.value).toContain('====')
+                expect(result.value).toContain('config.json:')
+                expect(result.value).toContain('{"port": 8080}')
+                expect(result.value).toContain('database.url:')
+                expect(result.value).toContain('postgres://localhost:5432')
             }
         })
 
@@ -497,11 +497,11 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('BinaryData')
-                expect(result.data).toContain('image.png:')
-                expect(result.data).toContain('bytes')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('BinaryData')
+                expect(result.value).toContain('image.png:')
+                expect(result.value).toContain('bytes')
             }
         })
 
@@ -524,10 +524,10 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('Labels:       env=prod')
-                expect(result.data).toContain('Annotations:  owner=team-b')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Labels:       env=prod')
+                expect(result.value).toContain('Annotations:  owner=team-b')
             }
         })
 
@@ -540,9 +540,9 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('ConfigMap "missing" not found')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('ConfigMap "missing" not found')
             }
         })
 
@@ -562,9 +562,9 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('<no data>')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('<no data>')
             }
         })
     })
@@ -593,19 +593,19 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('Name:         app-secret')
-                expect(result.data).toContain('Namespace:    default')
-                expect(result.data).toContain('Type:  Opaque')
-                expect(result.data).toContain('Data')
-                expect(result.data).toContain('====')
-                expect(result.data).toContain('username:')
-                expect(result.data).toContain('bytes')
-                expect(result.data).toContain('password:')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Name:         app-secret')
+                expect(result.value).toContain('Namespace:    default')
+                expect(result.value).toContain('Type:  Opaque')
+                expect(result.value).toContain('Data')
+                expect(result.value).toContain('====')
+                expect(result.value).toContain('username:')
+                expect(result.value).toContain('bytes')
+                expect(result.value).toContain('password:')
                 // Verify actual values are not exposed
-                expect(result.data).not.toContain('YWRtaW4=')
-                expect(result.data).not.toContain('cGFzc3dvcmQxMjM=')
+                expect(result.value).not.toContain('YWRtaW4=')
+                expect(result.value).not.toContain('cGFzc3dvcmQxMjM=')
             }
         })
 
@@ -629,10 +629,10 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('Labels:       tier=backend')
-                expect(result.data).toContain('Annotations:  managed=terraform')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Labels:       tier=backend')
+                expect(result.value).toContain('Annotations:  managed=terraform')
             }
         })
 
@@ -645,9 +645,9 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('Secret "missing" not found')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('Secret "missing" not found')
             }
         })
 
@@ -681,9 +681,9 @@ describe('handleDescribe', () => {
             }
 
             const result1 = handleDescribe(state, parsed1)
-            expect(result1.type).toBe('success')
-            if (result1.type === 'success') {
-                expect(result1.data).toContain('Type:  kubernetes.io/service-account-token')
+            expect(result1.ok).toBe(true)
+            if (result1.ok) {
+                expect(result1.value).toContain('Type:  kubernetes.io/service-account-token')
             }
 
             const parsed2: ParsedCommand = {
@@ -694,9 +694,9 @@ describe('handleDescribe', () => {
             }
 
             const result2 = handleDescribe(state, parsed2)
-            expect(result2.type).toBe('success')
-            if (result2.type === 'success') {
-                expect(result2.data).toContain('Type:  kubernetes.io/dockerconfigjson')
+            expect(result2.ok).toBe(true)
+            if (result2.ok) {
+                expect(result2.value).toContain('Type:  kubernetes.io/dockerconfigjson')
             }
         })
 
@@ -718,9 +718,9 @@ describe('handleDescribe', () => {
             }
 
             const result = handleDescribe(state, parsed)
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('<no data>')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('<no data>')
             }
         })
     })

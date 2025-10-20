@@ -85,14 +85,14 @@ terminal.onCommand((command) => {
     }
 
     // Display result (stdout/stderr)
-    if (result.type === 'success') {
+    if (result.ok) {
         // Only write output if there's actual data
-        if (result.data) {
-            const formattedOutput = result.data.split('\n').join('\r\n')
+        if (result.value) {
+            const formattedOutput = result.value.split('\n').join('\r\n')
             terminal.write(`${formattedOutput}\r\n`)
         }
     } else {
-        terminal.write(`Error: ${result.message}\r\n`)
+        terminal.write(`Error: ${result.error}\r\n`)
     }
 
     // Update prompt after command execution (path might have changed)

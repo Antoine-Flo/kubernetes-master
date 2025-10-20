@@ -57,7 +57,7 @@ const handleDescribeWrapper = (logger: Logger, cluster: ClusterState, parsed: Pa
 const handleDeleteWrapper = (logger: Logger, cluster: ClusterState, parsed: ParsedCommand): ExecutionResult => {
     logger.debug('CLUSTER', `Deleting ${parsed.resource}: ${parsed.name}`)
     const result = handleDelete(cluster, parsed)
-    if (result.type === 'success') {
+    if (result.ok) {
         logger.info('CLUSTER', `Deleted ${parsed.resource}: ${parsed.name}`)
     }
     return result
@@ -97,8 +97,8 @@ const routeCommand = (
     const result = handler(parsed)
 
     // Log errors (success already logged in wrappers)
-    if (result.type === 'error') {
-        logger.error('CLUSTER', `${parsed.action} failed: ${result.message}`)
+    if (!result.ok) {
+        logger.error('CLUSTER', `${parsed.action} failed: ${result.error}`)
     }
 
     return result
@@ -119,12 +119,12 @@ export const createKubectlExecutor = (clusterState: ClusterState, logger: Logger
         logger.info('COMMAND', `Kubectl: ${input}`)
 
         const parseResult = parseCommand(input)
-        if (parseResult.type === 'error') {
-            logger.error('EXECUTOR', `Parse error: ${parseResult.message}`)
-            return error(parseResult.message)
+        if (!parseResult.ok) {
+            logger.error('EXECUTOR', `Parse error: ${parseResult.error}`)
+            return error(parseResult.error)
         }
 
-        return routeCommand(handlers, parseResult.data, logger)
+        return routeCommand(handlers, parseResult.value, logger)
     }
 
     return { execute }

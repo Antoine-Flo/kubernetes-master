@@ -10,12 +10,12 @@
 
 /**
  * Generic Result type for operations that can succeed or fail
- * @template T - Success data type
+ * @template T - Success value type
  * @template E - Error message type (defaults to string)
  */
 export type Result<T, E = string> =
-    | { type: 'success'; data: T }
-    | { type: 'error'; message: E }
+    | { ok: true; value: T }
+    | { ok: false; error: E }
 
 /**
  * Result type for command execution (stdout/stderr)
@@ -27,19 +27,17 @@ export type ExecutionResult = Result<string>
 
 /**
  * Create a success result
- * Pure function
  */
-export const success = <T>(data: T): Result<T> => ({
-    type: 'success',
-    data
+export const success = <T>(value: T): Result<T> => ({
+    ok: true,
+    value
 })
 
 /**
  * Create an error result
- * Pure function
  */
 export const error = (message: string): Result<never> => ({
-    type: 'error',
-    message
+    ok: false,
+    error: message
 })
 

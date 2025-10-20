@@ -19,9 +19,9 @@ describe('Shell Executor', () => {
         it('should return current path at root', () => {
             const result = executor.execute('pwd')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toBe('/')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toBe('/')
             }
         })
 
@@ -31,9 +31,9 @@ describe('Shell Executor', () => {
 
             const result = executor.execute('pwd')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toBe('/test')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toBe('/test')
             }
         })
     })
@@ -45,7 +45,7 @@ describe('Shell Executor', () => {
 
             const result = executor.execute('cd')
 
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
             expect(fileSystem.getCurrentPath()).toBe('/')
         })
 
@@ -54,16 +54,16 @@ describe('Shell Executor', () => {
 
             const result = executor.execute('cd manifests')
 
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
             expect(fileSystem.getCurrentPath()).toBe('/manifests')
         })
 
         it('should return error for non-existent directory', () => {
             const result = executor.execute('cd nonexistent')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('not found')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('not found')
             }
         })
     })
@@ -72,9 +72,9 @@ describe('Shell Executor', () => {
         it('should list empty directory', () => {
             const result = executor.execute('ls')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toBe('')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toBe('')
             }
         })
 
@@ -84,10 +84,10 @@ describe('Shell Executor', () => {
 
             const result = executor.execute('ls')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('examples')
-                expect(result.data).toContain('manifests')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('examples')
+                expect(result.value).toContain('manifests')
             }
         })
 
@@ -97,13 +97,13 @@ describe('Shell Executor', () => {
 
             const result = executor.execute('ls -l')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
+            expect(result.ok).toBe(true)
+            if (result.ok) {
                 // New format uses formatLongListing: permissions, size, date, name
-                expect(result.data).toContain('d---')  // directory permission
-                expect(result.data).toContain('examples')  // directory name
-                expect(result.data).toContain('----')  // file permission
-                expect(result.data).toContain('test.yaml')  // file name
+                expect(result.value).toContain('d---')  // directory permission
+                expect(result.value).toContain('examples')  // directory name
+                expect(result.value).toContain('----')  // file permission
+                expect(result.value).toContain('test.yaml')  // file name
             }
         })
 
@@ -115,9 +115,9 @@ describe('Shell Executor', () => {
 
             const result = executor.execute('ls examples')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('pod.yaml')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('pod.yaml')
             }
         })
     })
@@ -126,11 +126,11 @@ describe('Shell Executor', () => {
         it('should create directory', () => {
             const result = executor.execute('mkdir test')
 
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
 
             const listResult = fileSystem.listDirectory()
-            if (listResult.type === 'success') {
-                const names = listResult.data.map(n => n.name)
+            if (listResult.ok) {
+                const names = listResult.value.map(n => n.name)
                 expect(names).toContain('test')
             }
         })
@@ -138,20 +138,20 @@ describe('Shell Executor', () => {
         it('should return error when name is missing', () => {
             const result = executor.execute('mkdir')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('missing operand')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('missing operand')
             }
         })
 
         it('should handle -p flag', () => {
             const result = executor.execute('mkdir -p newdir')
 
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
 
             const listResult = fileSystem.listDirectory()
-            if (listResult.type === 'success') {
-                const names = listResult.data.map(n => n.name)
+            if (listResult.ok) {
+                const names = listResult.value.map(n => n.name)
                 expect(names).toContain('newdir')
             }
         })
@@ -161,18 +161,18 @@ describe('Shell Executor', () => {
         it('should create file', () => {
             const result = executor.execute('touch test.yaml')
 
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
 
             const readResult = fileSystem.readFile('test.yaml')
-            expect(readResult.type).toBe('success')
+            expect(readResult.ok).toBe(true)
         })
 
         it('should return error when filename is missing', () => {
             const result = executor.execute('touch')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('missing file operand')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('missing file operand')
             }
         })
     })
@@ -183,27 +183,27 @@ describe('Shell Executor', () => {
 
             const result = executor.execute('cat test.yaml')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toBe('Hello World')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toBe('Hello World')
             }
         })
 
         it('should return error for non-existent file', () => {
             const result = executor.execute('cat nonexistent.yaml')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('not found')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('not found')
             }
         })
 
         it('should return error when filename is missing', () => {
             const result = executor.execute('cat')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('missing file operand')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('missing file operand')
             }
         })
     })
@@ -214,10 +214,10 @@ describe('Shell Executor', () => {
 
             const result = executor.execute('rm test.yaml')
 
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
 
             const readResult = fileSystem.readFile('test.yaml')
-            expect(readResult.type).toBe('error')
+            expect(readResult.ok).toBe(false)
         })
 
         it('should delete directory with -r flag', () => {
@@ -225,18 +225,18 @@ describe('Shell Executor', () => {
 
             const result = executor.execute('rm -r testdir')
 
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
 
             const cdResult = fileSystem.changeDirectory('testdir')
-            expect(cdResult.type).toBe('error')
+            expect(cdResult.ok).toBe(false)
         })
 
         it('should return error when operand is missing', () => {
             const result = executor.execute('rm')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('missing operand')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('missing operand')
             }
         })
     })
@@ -245,9 +245,9 @@ describe('Shell Executor', () => {
         it('should return clear signal', () => {
             const result = executor.execute('clear')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toBe('')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toBe('')
             }
         })
     })
@@ -256,18 +256,18 @@ describe('Shell Executor', () => {
         it('should return help text', () => {
             const result = executor.execute('help')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('Available shell commands')
-                expect(result.data).toContain('cd')
-                expect(result.data).toContain('ls')
-                expect(result.data).toContain('pwd')
-                expect(result.data).toContain('mkdir')
-                expect(result.data).toContain('touch')
-                expect(result.data).toContain('cat')
-                expect(result.data).toContain('rm')
-                expect(result.data).toContain('clear')
-                expect(result.data).toContain('help')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Available shell commands')
+                expect(result.value).toContain('cd')
+                expect(result.value).toContain('ls')
+                expect(result.value).toContain('pwd')
+                expect(result.value).toContain('mkdir')
+                expect(result.value).toContain('touch')
+                expect(result.value).toContain('cat')
+                expect(result.value).toContain('rm')
+                expect(result.value).toContain('clear')
+                expect(result.value).toContain('help')
             }
         })
     })
@@ -276,27 +276,27 @@ describe('Shell Executor', () => {
         it('should handle parser errors', () => {
             const result = executor.execute('')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('empty')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('empty')
             }
         })
 
         it('should handle unknown commands', () => {
             const result = executor.execute('invalid')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('Unknown command')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('Unknown command')
             }
         })
 
         it('should display full command in error message for unknown commands', () => {
             const result = executor.execute('qsdfjmql ksjfl mqks')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toBe('Unknown command: qsdfjmql ksjfl mqks')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toBe('Unknown command: qsdfjmql ksjfl mqks')
             }
         })
     })
@@ -305,34 +305,34 @@ describe('Shell Executor', () => {
         it('should list all available images with debug images', () => {
             const result = executor.execute('debug images')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('Available Container Images')
-                expect(result.data).toContain('nginx')
-                expect(result.data).toContain('redis')
-                expect(result.data).toContain('postgres')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Available Container Images')
+                expect(result.value).toContain('nginx')
+                expect(result.value).toContain('redis')
+                expect(result.value).toContain('postgres')
             }
         })
 
         it('should show image details including tags and ports', () => {
             const result = executor.execute('debug images')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('Tags:')
-                expect(result.data).toContain('Ports:')
-                expect(result.data).toContain('Status:')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Tags:')
+                expect(result.value).toContain('Ports:')
+                expect(result.value).toContain('Status:')
             }
         })
 
         it('should show usage message for debug without args', () => {
             const result = executor.execute('debug')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('debug images')
-                expect(result.data).toContain('debug logs')
-                expect(result.data).toContain('debug clear')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('debug images')
+                expect(result.value).toContain('debug logs')
+                expect(result.value).toContain('debug clear')
             }
         })
 
@@ -343,11 +343,11 @@ describe('Shell Executor', () => {
 
             const result = executor.execute('debug logs')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('Application Logs')
-                expect(result.data).toContain('Shell: pwd')
-                expect(result.data).toContain('Shell: ls')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Application Logs')
+                expect(result.value).toContain('Shell: pwd')
+                expect(result.value).toContain('Shell: ls')
             }
         })
 
@@ -362,9 +362,9 @@ describe('Shell Executor', () => {
             // Clear logs
             const result = executor.execute('debug clear')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toContain('cleared')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('cleared')
             }
 
             // Verify logs were cleared
@@ -375,9 +375,9 @@ describe('Shell Executor', () => {
         it('should return error for unknown debug subcommand', () => {
             const result = executor.execute('debug unknown')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('Unknown debug subcommand')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('Unknown debug subcommand')
             }
         })
     })

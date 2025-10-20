@@ -208,11 +208,11 @@ const getFileCompletions = (
     }
 
     const listing = fileSystem.listDirectory(targetPath)
-    if (listing.type === 'error') {
+    if (!listing.ok) {
         return []
     }
 
-    const entries = listing.data
+    const entries = listing.value
 
     // Filter by type if needed
     let candidates = directoriesOnly

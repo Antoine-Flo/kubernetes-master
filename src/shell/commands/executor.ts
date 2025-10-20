@@ -86,17 +86,17 @@ export const createShellExecutor = (fileSystem: FileSystem, logger: Logger): She
         logger.info('COMMAND', `Shell: ${input}`)
 
         const parseResult = parseShellCommand(input)
-        if (parseResult.type === 'error') {
+        if (!parseResult.ok) {
             // Enrich error message with full input for "Unknown command" errors
-            const errorMessage = parseResult.message.startsWith('Unknown command')
+            const errorMessage = parseResult.error.startsWith('Unknown command')
                 ? `Unknown command: ${input}`
-                : parseResult.message
+                : parseResult.error
             logger.error('EXECUTOR', `Parse error: ${errorMessage}`)
             return error(errorMessage)
         }
 
-        logger.debug('EXECUTOR', `Routing to handler: ${parseResult.data.command}`)
-        return routeCommand(handlers, parseResult.data, logger)
+        logger.debug('EXECUTOR', `Routing to handler: ${parseResult.value.command}`)
+        return routeCommand(handlers, parseResult.value, logger)
     }
 
     return { execute }
@@ -119,9 +119,9 @@ const handleCd = (logger: Logger, fileSystem: FileSystem, args: string[]): Execu
         // cd without args goes to root
         logger.debug('FILESYSTEM', 'Changing to root directory')
         const result = fileSystem.changeDirectory('/')
-        if (result.type === 'error') {
-            logger.error('FILESYSTEM', `cd failed: ${result.message}`)
-            return error(result.message)
+        if (!result.ok) {
+            logger.error('FILESYSTEM', `cd failed: ${result.error}`)
+            return error(result.error)
         }
         return success('')
     }
@@ -130,9 +130,9 @@ const handleCd = (logger: Logger, fileSystem: FileSystem, args: string[]): Execu
     logger.debug('FILESYSTEM', `Changing directory to: ${path}`)
     const result = fileSystem.changeDirectory(path)
 
-    if (result.type === 'error') {
-        logger.error('FILESYSTEM', `cd failed: ${result.message}`)
-        return error(result.message)
+    if (!result.ok) {
+        logger.error('FILESYSTEM', `cd failed: ${result.error}`)
+        return error(result.error)
     }
 
     return success('')
@@ -145,12 +145,12 @@ const handleLs = (logger: Logger, fileSystem: FileSystem, args: string[], flags:
 
     const result = fileSystem.listDirectory(targetPath)
 
-    if (result.type === 'error') {
-        logger.error('FILESYSTEM', `ls failed: ${result.message}`)
-        return error(result.message)
+    if (!result.ok) {
+        logger.error('FILESYSTEM', `ls failed: ${result.error}`)
+        return error(result.error)
     }
 
-    const nodes = result.data
+    const nodes = result.value
 
     // Simple listing (just names) - use formatColumns
     if (!flags.l) {
@@ -183,9 +183,9 @@ const handleMkdir = (logger: Logger, fileSystem: FileSystem, args: string[], fla
     // Note: -p recursive creation will be handled in future sprint
     const result = fileSystem.createDirectory(dirName)
 
-    if (result.type === 'error') {
-        logger.error('FILESYSTEM', `mkdir failed: ${result.message}`)
-        return error(result.message)
+    if (!result.ok) {
+        logger.error('FILESYSTEM', `mkdir failed: ${result.error}`)
+        return error(result.error)
     }
 
     return success('')
@@ -201,9 +201,9 @@ const handleTouch = (logger: Logger, fileSystem: FileSystem, args: string[]): Ex
     logger.debug('FILESYSTEM', `Creating file: ${fileName}`)
     const result = fileSystem.createFile(fileName)
 
-    if (result.type === 'error') {
-        logger.error('FILESYSTEM', `touch failed: ${result.message}`)
-        return error(result.message)
+    if (!result.ok) {
+        logger.error('FILESYSTEM', `touch failed: ${result.error}`)
+        return error(result.error)
     }
 
     return success('')
@@ -219,12 +219,12 @@ const handleCat = (logger: Logger, fileSystem: FileSystem, args: string[]): Exec
     logger.debug('FILESYSTEM', `Reading file: ${filePath}`)
     const result = fileSystem.readFile(filePath)
 
-    if (result.type === 'error') {
-        logger.error('FILESYSTEM', `cat failed: ${result.message}`)
-        return error(result.message)
+    if (!result.ok) {
+        logger.error('FILESYSTEM', `cat failed: ${result.error}`)
+        return error(result.error)
     }
 
-    return success(result.data)
+    return success(result.value)
 }
 
 const handleRm = (logger: Logger, fileSystem: FileSystem, args: string[], flags: Record<string, boolean | string>): ExecutionResult => {
@@ -240,9 +240,9 @@ const handleRm = (logger: Logger, fileSystem: FileSystem, args: string[], flags:
     if (flags.r) {
         logger.debug('FILESYSTEM', `Removing directory: ${target}`)
         const result = fileSystem.deleteDirectory(target)
-        if (result.type === 'error') {
-            logger.error('FILESYSTEM', `rm failed: ${result.message}`)
-            return error(result.message)
+        if (!result.ok) {
+            logger.error('FILESYSTEM', `rm failed: ${result.error}`)
+            return error(result.error)
         }
         return success('')
     }
@@ -250,9 +250,9 @@ const handleRm = (logger: Logger, fileSystem: FileSystem, args: string[], flags:
     // Otherwise delete file
     logger.debug('FILESYSTEM', `Removing file: ${target}`)
     const result = fileSystem.deleteFile(target)
-    if (result.type === 'error') {
-        logger.error('FILESYSTEM', `rm failed: ${result.message}`)
-        return error(result.message)
+    if (!result.ok) {
+        logger.error('FILESYSTEM', `rm failed: ${result.error}`)
+        return error(result.error)
     }
 
     return success('')

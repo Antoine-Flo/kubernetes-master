@@ -54,10 +54,10 @@ export const deletePod = (
     namespace: string
 ): Result<Pod> & { state?: ClusterStateData } => {
     const result = podRepo.remove(state.pods, name, namespace)
-    if (result.type === 'success' && result.collection) {
+    if (result.ok && result.collection) {
         return {
-            type: 'success',
-            data: result.data,
+            ok: true,
+            value: result.value,
             state: { ...state, pods: result.collection },
         }
     }
@@ -86,10 +86,10 @@ export const deleteConfigMap = (
     namespace: string
 ): Result<ConfigMap> & { state?: ClusterStateData } => {
     const result = configMapRepo.remove(state.configMaps, name, namespace)
-    if (result.type === 'success' && result.collection) {
+    if (result.ok && result.collection) {
         return {
-            type: 'success',
-            data: result.data,
+            ok: true,
+            value: result.value,
             state: { ...state, configMaps: result.collection },
         }
     }
@@ -118,10 +118,10 @@ export const deleteSecret = (
     namespace: string
 ): Result<Secret> & { state?: ClusterStateData } => {
     const result = secretRepo.remove(state.secrets, name, namespace)
-    if (result.type === 'success' && result.collection) {
+    if (result.ok && result.collection) {
         return {
-            type: 'success',
-            data: result.data,
+            ok: true,
+            value: result.value,
             state: { ...state, secrets: result.collection },
         }
     }
@@ -159,16 +159,14 @@ export const createClusterState = (initialState?: ClusterStateData): ClusterStat
 
         findPod: (name: string, namespace: string) => findPod(state, name, namespace),
 
-        deletePod: (name: string, namespace: string) => {
+        deletePod: (name: string, namespace: string): Result<Pod> => {
             const result = deletePod(state, name, namespace)
-            if (result.type === 'success' && result.state) {
+            if (result.ok && result.state) {
                 state = result.state
-                return { type: 'success', data: result.data }
             }
-            if (result.type === 'error') {
-                return result
-            }
-            return { type: 'error', message: 'Unknown error' }
+            return result.ok && result.state
+                ? { ok: true, value: result.value }
+                : result
         },
 
         getConfigMaps: (namespace?: string) => getConfigMaps(state, namespace),
@@ -179,16 +177,14 @@ export const createClusterState = (initialState?: ClusterStateData): ClusterStat
 
         findConfigMap: (name: string, namespace: string) => findConfigMap(state, name, namespace),
 
-        deleteConfigMap: (name: string, namespace: string) => {
+        deleteConfigMap: (name: string, namespace: string): Result<ConfigMap> => {
             const result = deleteConfigMap(state, name, namespace)
-            if (result.type === 'success' && result.state) {
+            if (result.ok && result.state) {
                 state = result.state
-                return { type: 'success', data: result.data }
             }
-            if (result.type === 'error') {
-                return result
-            }
-            return { type: 'error', message: 'Unknown error' }
+            return result.ok && result.state
+                ? { ok: true, value: result.value }
+                : result
         },
 
         getSecrets: (namespace?: string) => getSecrets(state, namespace),
@@ -199,16 +195,14 @@ export const createClusterState = (initialState?: ClusterStateData): ClusterStat
 
         findSecret: (name: string, namespace: string) => findSecret(state, name, namespace),
 
-        deleteSecret: (name: string, namespace: string) => {
+        deleteSecret: (name: string, namespace: string): Result<Secret> => {
             const result = deleteSecret(state, name, namespace)
-            if (result.type === 'success' && result.state) {
+            if (result.ok && result.state) {
                 state = result.state
-                return { type: 'success', data: result.data }
             }
-            if (result.type === 'error') {
-                return result
-            }
-            return { type: 'error', message: 'Unknown error' }
+            return result.ok && result.state
+                ? { ok: true, value: result.value }
+                : result
         },
 
         toJSON: () => ({

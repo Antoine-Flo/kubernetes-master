@@ -31,8 +31,8 @@ describe('Terminal-Kubectl Integration', () => {
     it('executes kubectl get pods command and displays output', () => {
         terminal.onCommand((command) => {
             const result = kubectlExecutor.execute(command)
-            if (result.type === 'success') {
-                const formattedOutput = result.data.split('\n').join('\r\n')
+            if (result.ok) {
+                const formattedOutput = result.value.split('\n').join('\r\n')
                 terminal.write(`${formattedOutput}\r\n`)
             }
         })
@@ -51,8 +51,8 @@ describe('Terminal-Kubectl Integration', () => {
     it('executes kubectl get pods with namespace filter', () => {
         terminal.onCommand((command) => {
             const result = kubectlExecutor.execute(command)
-            if (result.type === 'success') {
-                const formattedOutput = result.data.split('\n').join('\r\n')
+            if (result.ok) {
+                const formattedOutput = result.value.split('\n').join('\r\n')
                 terminal.write(`${formattedOutput}\r\n`)
             }
         })
@@ -68,8 +68,8 @@ describe('Terminal-Kubectl Integration', () => {
     it('executes kubectl describe pod command', () => {
         terminal.onCommand((command) => {
             const result = kubectlExecutor.execute(command)
-            if (result.type === 'success') {
-                const formattedOutput = result.data.split('\n').join('\r\n')
+            if (result.ok) {
+                const formattedOutput = result.value.split('\n').join('\r\n')
                 terminal.write(`${formattedOutput}\r\n`)
             }
         })
@@ -87,8 +87,8 @@ describe('Terminal-Kubectl Integration', () => {
     it('executes kubectl delete pod command', () => {
         terminal.onCommand((command) => {
             const result = kubectlExecutor.execute(command)
-            if (result.type === 'success') {
-                const formattedOutput = result.data.split('\n').join('\r\n')
+            if (result.ok) {
+                const formattedOutput = result.value.split('\n').join('\r\n')
                 terminal.write(`${formattedOutput}\r\n`)
             }
         })
@@ -107,8 +107,8 @@ describe('Terminal-Kubectl Integration', () => {
     it('displays error for invalid kubectl command', () => {
         terminal.onCommand((command) => {
             const result = kubectlExecutor.execute(command)
-            if (result.type === 'error') {
-                terminal.write(`Error: ${result.message}\r\n`)
+            if (!result.ok) {
+                terminal.write(`Error: ${result.error}\r\n`)
             }
         })
 
@@ -122,8 +122,8 @@ describe('Terminal-Kubectl Integration', () => {
     it('displays parser error for malformed command', () => {
         terminal.onCommand((command) => {
             const result = kubectlExecutor.execute(command)
-            if (result.type === 'error') {
-                terminal.write(`Error: ${result.message}\r\n`)
+            if (!result.ok) {
+                terminal.write(`Error: ${result.error}\r\n`)
             }
         })
 
@@ -147,8 +147,8 @@ describe('Terminal-Kubectl Integration', () => {
             }
 
             const result = kubectlExecutor.execute(commandReceived)
-            if (result.type === 'success') {
-                terminal.write(`${result.data}\r\n`)
+            if (result.ok) {
+                terminal.write(`${result.value}\r\n`)
             }
         })
 
@@ -176,11 +176,11 @@ describe('Terminal-Kubectl Integration', () => {
 
             const result = kubectlExecutor.execute(trimmed)
 
-            if (result.type === 'success') {
-                const formattedOutput = result.data.split('\n').join('\r\n')
+            if (result.ok) {
+                const formattedOutput = result.value.split('\n').join('\r\n')
                 terminal.write(`${formattedOutput}\r\n`)
             } else {
-                terminal.write(`Error: ${result.message}\r\n`)
+                terminal.write(`Error: ${result.error}\r\n`)
             }
         })
 

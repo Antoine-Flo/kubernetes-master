@@ -26,17 +26,23 @@
 ### Result Types (Error Handling)
 ```typescript
 // src/shared/result.ts
-export type Result<T> = 
-  | { type: 'success'; data: T }
-  | { type: 'error'; message: string }
+export type Result<T, E = string> = 
+  | { ok: true; value: T }
+  | { ok: false; error: E }
 
-export const success = <T>(data: T): Result<T> => 
-  ({ type: 'success', data })
-export const error = (message: string): Result<never> => 
-  ({ type: 'error', message })
+export const success = <T>(value: T): Result<T> => ({ ok: true, value })
+export const error = (message: string): Result<never> => ({ ok: false, error: message })
+
+// Example usage
+const result = findPod(state, 'nginx', 'default')
+if (result.ok) {
+  console.log(result.value.metadata.name)
+} else {
+  console.error(result.error)
+}
 ```
 
-**Usage**: Unix-like pattern (Success = stdout, Error = stderr)
+**Pattern**: Discriminated union (like Fetch API). Unix-like: Success = stdout, Error = stderr
 
 ### Factory Functions (State Management)
 ```typescript

@@ -69,11 +69,11 @@ export const createImageRegistry = (): ImageRegistry => {
     const validateImage = (imageString: string): Result<ImageManifest> => {
         const parseResult = parseImageString(imageString)
 
-        if (parseResult.type === 'error') {
+        if (!parseResult.ok) {
             return parseResult
         }
 
-        const parsed = parseResult.data
+        const parsed = parseResult.value
 
         // Find image in registry
         const image = images.find(

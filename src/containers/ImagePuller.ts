@@ -11,12 +11,9 @@ export interface PullEvent {
     timestamp: string
 }
 
-export interface PullResult {
-    type: 'success' | 'error'
-    status: PodPhase
-    events?: PullEvent[]
-    message?: string
-}
+export type PullResult =
+    | { ok: true; status: PodPhase; events: PullEvent[] }
+    | { ok: false; status: PodPhase; error: string }
 
 export const simulateImagePull = (
     imageString: string,
@@ -25,26 +22,26 @@ export const simulateImagePull = (
     const validationResult = registry.validateImage(imageString)
 
     // Handle validation errors
-    if (validationResult.type === 'error') {
+    if (!validationResult.ok) {
         return {
-            type: 'error',
+            ok: false,
             status: 'Pending',
-            message: `Failed to pull image "${imageString}"\n${validationResult.message}`,
+            error: `Failed to pull image "${imageString}"\n${validationResult.error}`,
         }
     }
 
-    const image = validationResult.data
+    const image = validationResult.value
     const parseResult = registry.parseImageString(imageString)
 
-    if (parseResult.type === 'error') {
+    if (!parseResult.ok) {
         return {
-            type: 'error',
+            ok: false,
             status: 'Pending',
-            message: parseResult.message,
+            error: parseResult.error,
         }
     }
 
-    const parsed = parseResult.data
+    const parsed = parseResult.value
     const imageRef = `${parsed.registry}/${parsed.name}:${parsed.tag}`
 
     // Generate pull events
@@ -73,7 +70,7 @@ export const simulateImagePull = (
     ]
 
     return {
-        type: 'success',
+        ok: true,
         status: image.behavior.defaultStatus,
         events,
     }

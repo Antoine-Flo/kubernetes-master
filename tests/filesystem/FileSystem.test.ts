@@ -168,9 +168,9 @@ describe('FileSystem - Facade', () => {
             fs.createDirectory('manifests')
             const result = fs.changeDirectory('/manifests')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toBe('/manifests')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toBe('/manifests')
             }
             expect(fs.getCurrentPath()).toBe('/manifests')
         })
@@ -181,7 +181,7 @@ describe('FileSystem - Facade', () => {
             fs.createDirectory('dev')
 
             const result = fs.changeDirectory('dev')
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
             expect(fs.getCurrentPath()).toBe('/manifests/dev')
         })
 
@@ -190,16 +190,16 @@ describe('FileSystem - Facade', () => {
             fs.changeDirectory('/manifests')
 
             const result = fs.changeDirectory('..')
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
             expect(fs.getCurrentPath()).toBe('/')
         })
 
         it('should return error for non-existent directory', () => {
             const result = fs.changeDirectory('/notfound')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('not found')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('not found')
             }
             expect(fs.getCurrentPath()).toBe('/')
         })
@@ -208,7 +208,7 @@ describe('FileSystem - Facade', () => {
             fs.createFile('pod.yaml')
 
             const result = fs.changeDirectory('/pod.yaml')
-            expect(result.type).toBe('error')
+            expect(result.ok).toBe(false)
             expect(fs.getCurrentPath()).toBe('/')
         })
     })
@@ -217,9 +217,9 @@ describe('FileSystem - Facade', () => {
         it('should list root directory', () => {
             const result = fs.listDirectory()
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toEqual([])
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toEqual([])
             }
         })
 
@@ -228,11 +228,11 @@ describe('FileSystem - Facade', () => {
             fs.createDirectory('examples')
 
             const result = fs.listDirectory()
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toHaveLength(2)
-                expect(result.data.map(n => n.name)).toContain('manifests')
-                expect(result.data.map(n => n.name)).toContain('examples')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toHaveLength(2)
+                expect(result.value.map(n => n.name)).toContain('manifests')
+                expect(result.value.map(n => n.name)).toContain('examples')
             }
         })
 
@@ -242,22 +242,22 @@ describe('FileSystem - Facade', () => {
             fs.createFile('pod.yaml')
 
             const result = fs.listDirectory('/manifests')
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toHaveLength(1)
-                expect(result.data[0].name).toBe('pod.yaml')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toHaveLength(1)
+                expect(result.value[0].name).toBe('pod.yaml')
             }
         })
 
         it('should return error for non-existent directory', () => {
             const result = fs.listDirectory('/notfound')
-            expect(result.type).toBe('error')
+            expect(result.ok).toBe(false)
         })
 
         it('should return error when listing file', () => {
             fs.createFile('pod.yaml')
             const result = fs.listDirectory('/pod.yaml')
-            expect(result.type).toBe('error')
+            expect(result.ok).toBe(false)
         })
     })
 
@@ -265,15 +265,15 @@ describe('FileSystem - Facade', () => {
         it('should create directory in current path', () => {
             const result = fs.createDirectory('manifests')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toBe('/manifests')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toBe('/manifests')
             }
 
             const list = fs.listDirectory()
-            if (list.type === 'success') {
-                expect(list.data).toHaveLength(1)
-                expect(list.data[0].name).toBe('manifests')
+            if (list.ok) {
+                expect(list.value).toHaveLength(1)
+                expect(list.value[0].name).toBe('manifests')
             }
         })
 
@@ -282,25 +282,25 @@ describe('FileSystem - Facade', () => {
             fs.changeDirectory('/manifests')
             const result = fs.createDirectory('dev')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toBe('/manifests/dev')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toBe('/manifests/dev')
             }
         })
 
         it('should create directory recursively with -p flag', () => {
             const result = fs.createDirectory('manifests/dev/pods', true)
 
-            expect(result.type).toBe('success')
-            expect(fs.changeDirectory('/manifests/dev/pods').type).toBe('success')
+            expect(result.ok).toBe(true)
+            expect(fs.changeDirectory('/manifests/dev/pods').ok).toBe(true)
         })
 
         it('should enforce max depth of 3', () => {
             const result = fs.createDirectory('a/b/c/d', true)
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('Max depth')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('Max depth')
             }
         })
 
@@ -308,24 +308,24 @@ describe('FileSystem - Facade', () => {
             fs.createDirectory('manifests')
             const result = fs.createDirectory('manifests')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('already exists')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('already exists')
             }
         })
 
         it('should return error if parent does not exist (non-recursive)', () => {
             const result = fs.createDirectory('a/b/c', false)
 
-            expect(result.type).toBe('error')
+            expect(result.ok).toBe(false)
         })
 
         it('should validate directory name', () => {
             const result = fs.createDirectory('invalid name')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('Invalid')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('Invalid')
             }
         })
     })
@@ -334,36 +334,36 @@ describe('FileSystem - Facade', () => {
         it('should create file in current directory', () => {
             const result = fs.createFile('pod.yaml')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data.name).toBe('pod.yaml')
-                expect(result.data.path).toBe('/pod.yaml')
-                expect(result.data.content).toBe('')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value.name).toBe('pod.yaml')
+                expect(result.value.path).toBe('/pod.yaml')
+                expect(result.value.content).toBe('')
             }
         })
 
         it('should create file with content', () => {
             const result = fs.createFile('pod.yaml', 'apiVersion: v1')
 
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data.content).toBe('apiVersion: v1')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value.content).toBe('apiVersion: v1')
             }
         })
 
         it('should create file with various extensions', () => {
-            expect(fs.createFile('pod.yaml').type).toBe('success')
-            expect(fs.createFile('deploy.yml').type).toBe('success')
-            expect(fs.createFile('service.json').type).toBe('success')
-            expect(fs.createFile('config.kyaml').type).toBe('success')
+            expect(fs.createFile('pod.yaml').ok).toBe(true)
+            expect(fs.createFile('deploy.yml').ok).toBe(true)
+            expect(fs.createFile('service.json').ok).toBe(true)
+            expect(fs.createFile('config.kyaml').ok).toBe(true)
         })
 
         it('should return error for unsupported extension', () => {
             const result = fs.createFile('readme.txt')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('Unsupported')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('Unsupported')
             }
         })
 
@@ -371,16 +371,16 @@ describe('FileSystem - Facade', () => {
             fs.createFile('pod.yaml')
             const result = fs.createFile('pod.yaml')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('already exists')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('already exists')
             }
         })
 
         it('should validate filename', () => {
             const result = fs.createFile('invalid file.yaml')
 
-            expect(result.type).toBe('error')
+            expect(result.ok).toBe(false)
         })
 
         it('should enforce max depth', () => {
@@ -390,13 +390,13 @@ describe('FileSystem - Facade', () => {
 
             // Should be able to create file at depth 3
             const result = fs.createFile('file.yaml')
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
 
             // Depth 4 would exceed max, so can't create directory there
             const dirResult = fs.createDirectory('d')
-            expect(dirResult.type).toBe('error')
-            if (dirResult.type === 'error') {
-                expect(dirResult.message).toContain('Max depth')
+            expect(dirResult.ok).toBe(false)
+            if (!dirResult.ok) {
+                expect(dirResult.error).toContain('Max depth')
             }
         })
     })
@@ -406,9 +406,9 @@ describe('FileSystem - Facade', () => {
             fs.createFile('pod.yaml', 'apiVersion: v1')
 
             const result = fs.readFile('/pod.yaml')
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toBe('apiVersion: v1')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toBe('apiVersion: v1')
             }
         })
 
@@ -416,18 +416,18 @@ describe('FileSystem - Facade', () => {
             fs.createFile('pod.yaml', 'content')
 
             const result = fs.readFile('pod.yaml')
-            expect(result.type).toBe('success')
-            if (result.type === 'success') {
-                expect(result.data).toBe('content')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toBe('content')
             }
         })
 
         it('should return error for non-existent file', () => {
             const result = fs.readFile('/notfound.yaml')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('not found')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('not found')
             }
         })
 
@@ -435,7 +435,7 @@ describe('FileSystem - Facade', () => {
             fs.createDirectory('manifests')
             const result = fs.readFile('/manifests')
 
-            expect(result.type).toBe('error')
+            expect(result.ok).toBe(false)
         })
     })
 
@@ -444,25 +444,25 @@ describe('FileSystem - Facade', () => {
             fs.createFile('pod.yaml', 'old content')
 
             const result = fs.writeFile('/pod.yaml', 'new content')
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
 
             const read = fs.readFile('/pod.yaml')
-            if (read.type === 'success') {
-                expect(read.data).toBe('new content')
+            if (read.ok) {
+                expect(read.value).toBe('new content')
             }
         })
 
         it('should return error for non-existent file', () => {
             const result = fs.writeFile('/notfound.yaml', 'content')
 
-            expect(result.type).toBe('error')
+            expect(result.ok).toBe(false)
         })
 
         it('should return error when trying to write to directory', () => {
             fs.createDirectory('manifests')
             const result = fs.writeFile('/manifests', 'content')
 
-            expect(result.type).toBe('error')
+            expect(result.ok).toBe(false)
         })
     })
 
@@ -471,24 +471,24 @@ describe('FileSystem - Facade', () => {
             fs.createFile('pod.yaml')
 
             const result = fs.deleteFile('/pod.yaml')
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
 
             const list = fs.listDirectory()
-            if (list.type === 'success') {
-                expect(list.data).toHaveLength(0)
+            if (list.ok) {
+                expect(list.value).toHaveLength(0)
             }
         })
 
         it('should return error for non-existent file', () => {
             const result = fs.deleteFile('/notfound.yaml')
-            expect(result.type).toBe('error')
+            expect(result.ok).toBe(false)
         })
 
         it('should return error when trying to delete directory', () => {
             fs.createDirectory('manifests')
             const result = fs.deleteFile('/manifests')
 
-            expect(result.type).toBe('error')
+            expect(result.ok).toBe(false)
         })
     })
 
@@ -497,11 +497,11 @@ describe('FileSystem - Facade', () => {
             fs.createDirectory('manifests')
 
             const result = fs.deleteDirectory('/manifests')
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
 
             const list = fs.listDirectory()
-            if (list.type === 'success') {
-                expect(list.data).toHaveLength(0)
+            if (list.ok) {
+                expect(list.value).toHaveLength(0)
             }
         })
 
@@ -511,9 +511,9 @@ describe('FileSystem - Facade', () => {
             fs.createFile('pod.yaml')
 
             const result = fs.deleteDirectory('/manifests', false)
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('not empty')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('not empty')
             }
         })
 
@@ -524,33 +524,33 @@ describe('FileSystem - Facade', () => {
             fs.createDirectory('dev')
 
             const result = fs.deleteDirectory('/manifests', true)
-            expect(result.type).toBe('success')
+            expect(result.ok).toBe(true)
 
             fs.changeDirectory('/')
             const list = fs.listDirectory()
-            if (list.type === 'success') {
-                expect(list.data).toHaveLength(0)
+            if (list.ok) {
+                expect(list.value).toHaveLength(0)
             }
         })
 
         it('should return error for non-existent directory', () => {
             const result = fs.deleteDirectory('/notfound')
-            expect(result.type).toBe('error')
+            expect(result.ok).toBe(false)
         })
 
         it('should return error when trying to delete file', () => {
             fs.createFile('pod.yaml')
             const result = fs.deleteDirectory('/pod.yaml')
 
-            expect(result.type).toBe('error')
+            expect(result.ok).toBe(false)
         })
 
         it('should return error when trying to delete root', () => {
             const result = fs.deleteDirectory('/')
 
-            expect(result.type).toBe('error')
-            if (result.type === 'error') {
-                expect(result.message).toContain('root')
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toContain('root')
             }
         })
     })
@@ -575,8 +575,8 @@ describe('FileSystem - Facade', () => {
 
             expect(fs2.getCurrentPath()).toBe('/')
             const list = fs2.listDirectory()
-            if (list.type === 'success') {
-                expect(list.data).toHaveLength(2)
+            if (list.ok) {
+                expect(list.value).toHaveLength(2)
             }
         })
 

@@ -4,6 +4,8 @@
 // Common parsing helpers for both kubectl and shell parsers.
 // Philosophy: Like Unix getopt() - shared utilities, program-specific logic.
 
+import { success, error, type Result } from './result'
+
 // ─── Types ───────────────────────────────────────────────────────────────
 
 export type ParsedFlags = Record<string, string | boolean>
@@ -18,9 +20,9 @@ export type ParsedFlags = Record<string, string | boolean>
 export const trim = <Ctx extends { input: string }>(ctx: Ctx): Result<Ctx> => {
     const trimmed = ctx.input.trim()
     if (!trimmed) {
-        return { type: 'error', message: 'Command cannot be empty' }
+        return error('Command cannot be empty')
     }
-    return { type: 'success', data: { ...ctx, input: trimmed } }
+    return success({ ...ctx, input: trimmed })
 }
 
 /**
@@ -32,9 +34,9 @@ export const tokenize = <Ctx extends { input: string }>(
 ): Result<Ctx & { tokens: string[] }> => {
     const tokens = ctx.input.trim().split(/\s+/).filter((t) => t.length > 0)
     if (tokens.length === 0) {
-        return { type: 'error', message: 'Command cannot be empty' }
+        return error('Command cannot be empty')
     }
-    return { type: 'success', data: { ...ctx, tokens } }
+    return success({ ...ctx, tokens })
 }
 
 /**
@@ -45,17 +47,17 @@ export const parseFlags = <Ctx extends { tokens?: string[] }>(
     aliases?: Record<string, string>
 ) => (ctx: Ctx): Result<Ctx & { flags: ParsedFlags; normalizedFlags?: ParsedFlags }> => {
     if (!ctx.tokens) {
-        return { type: 'error', message: 'No tokens available' }
+        return error('No tokens available')
     }
 
     const rawFlags = parseFlagsRaw(ctx.tokens, startIndex)
 
     if (aliases) {
         const normalized = normalizeFlags(rawFlags, aliases)
-        return { type: 'success', data: { ...ctx, flags: rawFlags, normalizedFlags: normalized } }
+        return success({ ...ctx, flags: rawFlags, normalizedFlags: normalized })
     }
 
-    return { type: 'success', data: { ...ctx, flags: rawFlags } }
+    return success({ ...ctx, flags: rawFlags })
 }
 
 // ─── Flag Parsing (low-level helpers) ────────────────────────────────────
@@ -173,22 +175,19 @@ export const parseSelector = (selector: string): Record<string, string> => {
 export const pipeResult = <T, E = string>(
     ...fns: Array<(arg: T) => Result<T, E>>
 ) => (input: T): Result<T, E> => {
-    let current: Result<T, E> = { type: 'success', data: input }
+    let current: Result<T, E> = { ok: true, value: input }
 
     for (const fn of fns) {
-        if (current.type === 'error') {
+        if (!current.ok) {
             return current
         }
-        current = fn(current.data)
+        current = fn(current.value)
     }
 
     return current
 }
 
-// Type alias for Result (to avoid circular dependency)
-type Result<T, E = string> =
-    | { type: 'success'; data: T }
-    | { type: 'error'; message: E }
+
 
 // ─── Validation Helpers ──────────────────────────────────────────────────
 
@@ -208,16 +207,16 @@ export const extract = <Ctx extends { tokens?: string[] }, K extends string>(
     errorPrefix: string
 ) => (ctx: Ctx): Result<Ctx & Record<K, string>> => {
     if (!ctx.tokens || ctx.tokens.length <= tokenIndex) {
-        return { type: 'error', message: errorPrefix }
+        return error(errorPrefix)
     }
 
     const token = ctx.tokens[tokenIndex]
 
     if (!validValues.includes(token)) {
-        return { type: 'error', message: `${errorPrefix}: ${token}` }
+        return error(`${errorPrefix}: ${token}`)
     }
 
-    return { type: 'success', data: { ...ctx, [fieldName]: token } as Ctx & Record<K, string> }
+    return success({ ...ctx, [fieldName]: token } as Ctx & Record<K, string>)
 }
 
 /**
@@ -230,16 +229,16 @@ export const checkFlags = <Ctx extends { flags?: ParsedFlags }>(
     flagsRequiringValues: string[] = []
 ) => (ctx: Ctx): Result<Ctx> => {
     if (!ctx.flags) {
-        return { type: 'success', data: ctx }
+        return success(ctx)
     }
 
     for (const flagName of flagsRequiringValues) {
         if (flagName in ctx.flags && ctx.flags[flagName] === true) {
-            return { type: 'error', message: `flag -${flagName} requires a value` }
+            return error(`flag -${flagName} requires a value`)
         }
     }
 
-    return { type: 'success', data: ctx }
+    return success(ctx)
 }
 
 /**
@@ -249,11 +248,11 @@ export const extractArgs = <Ctx extends { tokens?: string[] }>(
     startIndex = 1
 ) => (ctx: Ctx): Result<Ctx & { args: string[] }> => {
     if (!ctx.tokens) {
-        return { type: 'error', message: 'No tokens available' }
+        return error('No tokens available')
     }
 
     const args = extractArgsRaw(ctx.tokens, startIndex)
-    return { type: 'success', data: { ...ctx, args } }
+    return success({ ...ctx, args })
 }
 
 /**

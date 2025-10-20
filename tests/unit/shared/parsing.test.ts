@@ -8,6 +8,7 @@ import {
     pipeResult,
     extractArgsRaw,
 } from '../../../src/shared/parsing'
+import { success, error, type Result } from '../../../src/shared/result'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SHARED PARSING UTILITIES TESTS
@@ -16,70 +17,70 @@ import {
 describe('trim (pipeline step)', () => {
     it('should trim input and return success', () => {
         const result = trim({ input: '  kubectl get pods  ' })
-        expect(result.type).toBe('success')
-        if (result.type === 'success') {
-            expect(result.data.input).toBe('kubectl get pods')
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+            expect(result.value.input).toBe('kubectl get pods')
         }
     })
 
     it('should return error for empty input', () => {
         const result = trim({ input: '' })
-        expect(result.type).toBe('error')
-        if (result.type === 'error') {
-            expect(result.message).toBe('Command cannot be empty')
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+            expect(result.error).toBe('Command cannot be empty')
         }
     })
 
     it('should return error for whitespace-only input', () => {
         const result = trim({ input: '   ' })
-        expect(result.type).toBe('error')
+        expect(result.ok).toBe(false)
     })
 })
 
 describe('tokenize (pipeline step)', () => {
     it('should tokenize input and return success', () => {
         const result = tokenize({ input: 'kubectl get pods' })
-        expect(result.type).toBe('success')
-        if (result.type === 'success') {
-            expect(result.data.tokens).toEqual(['kubectl', 'get', 'pods'])
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+            expect(result.value.tokens).toEqual(['kubectl', 'get', 'pods'])
         }
     })
 
     it('should handle multiple spaces', () => {
         const result = tokenize({ input: 'kubectl  get   pods' })
-        expect(result.type).toBe('success')
-        if (result.type === 'success') {
-            expect(result.data.tokens).toEqual(['kubectl', 'get', 'pods'])
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+            expect(result.value.tokens).toEqual(['kubectl', 'get', 'pods'])
         }
     })
 
     it('should handle leading and trailing whitespace', () => {
         const result = tokenize({ input: '  kubectl get pods  ' })
-        expect(result.type).toBe('success')
-        if (result.type === 'success') {
-            expect(result.data.tokens).toEqual(['kubectl', 'get', 'pods'])
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+            expect(result.value.tokens).toEqual(['kubectl', 'get', 'pods'])
         }
     })
 
     it('should handle tabs', () => {
         const result = tokenize({ input: 'kubectl\tget\tpods' })
-        expect(result.type).toBe('success')
-        if (result.type === 'success') {
-            expect(result.data.tokens).toEqual(['kubectl', 'get', 'pods'])
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+            expect(result.value.tokens).toEqual(['kubectl', 'get', 'pods'])
         }
     })
 
     it('should return error for empty input', () => {
         const result = tokenize({ input: '' })
-        expect(result.type).toBe('error')
-        if (result.type === 'error') {
-            expect(result.message).toBe('Command cannot be empty')
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+            expect(result.error).toBe('Command cannot be empty')
         }
     })
 
     it('should return error for whitespace-only input', () => {
         const result = tokenize({ input: '   ' })
-        expect(result.type).toBe('error')
+        expect(result.ok).toBe(false)
     })
 })
 
@@ -257,66 +258,61 @@ describe('parseSelector', () => {
 })
 
 describe('pipeResult', () => {
-    // Helper types for testing
-    type Result<T> = { type: 'success'; data: T } | { type: 'error'; message: string }
-    const ok = <T>(data: T): Result<T> => ({ type: 'success', data })
-    const err = (message: string): Result<never> => ({ type: 'error', message })
-
     it('should compose successful Result transformations', () => {
-        const addOne = (x: number): Result<number> => ok(x + 1)
-        const double = (x: number): Result<number> => ok(x * 2)
-        const subtract3 = (x: number): Result<number> => ok(x - 3)
+        const addOne = (x: number): Result<number> => success(x + 1)
+        const double = (x: number): Result<number> => success(x * 2)
+        const subtract3 = (x: number): Result<number> => success(x - 3)
 
         const composed = pipeResult(addOne, double, subtract3)
         const result = composed(5)
 
         // (5 + 1) * 2 - 3 = 12 - 3 = 9
-        expect(result.type).toBe('success')
-        if (result.type === 'success') {
-            expect(result.data).toBe(9)
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+            expect(result.value).toBe(9)
         }
     })
 
     it('should stop at first error (Railway pattern)', () => {
-        const addOne = (x: number): Result<number> => ok(x + 1)
+        const addOne = (x: number): Result<number> => success(x + 1)
         const failIfEven = (x: number): Result<number> =>
-            x % 2 === 0 ? err('number is even') : ok(x)
-        const double = (x: number): Result<number> => ok(x * 2)
+            x % 2 === 0 ? error('number is even') : success(x)
+        const double = (x: number): Result<number> => success(x * 2)
 
         const composed = pipeResult(addOne, failIfEven, double)
         const result = composed(5)
 
         // 5 + 1 = 6 (even), should fail here, double never runs
-        expect(result.type).toBe('error')
-        if (result.type === 'error') {
-            expect(result.message).toBe('number is even')
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+            expect(result.error).toBe('number is even')
         }
     })
 
     it('should propagate first error in pipeline', () => {
-        const step1 = (x: number): Result<number> => ok(x + 1)
-        const step2 = (_x: number): Result<number> => err('step 2 failed')
-        const step3 = (x: number): Result<number> => ok(x * 2)
-        const step4 = (_x: number): Result<number> => err('step 4 failed')
+        const step1 = (x: number): Result<number> => success(x + 1)
+        const step2 = (_x: number): Result<number> => error('step 2 failed')
+        const step3 = (x: number): Result<number> => success(x * 2)
+        const step4 = (_x: number): Result<number> => error('step 4 failed')
 
         const composed = pipeResult(step1, step2, step3, step4)
         const result = composed(5)
 
         // Should stop at step2, never reach step3 or step4
-        expect(result.type).toBe('error')
-        if (result.type === 'error') {
-            expect(result.message).toBe('step 2 failed')
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+            expect(result.error).toBe('step 2 failed')
         }
     })
 
     it('should work with single function', () => {
-        const addOne = (x: number): Result<number> => ok(x + 1)
+        const addOne = (x: number): Result<number> => success(x + 1)
         const composed = pipeResult(addOne)
         const result = composed(5)
 
-        expect(result.type).toBe('success')
-        if (result.type === 'success') {
-            expect(result.data).toBe(6)
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+            expect(result.value).toBe(6)
         }
     })
 
@@ -324,9 +320,9 @@ describe('pipeResult', () => {
         const composed = pipeResult<number>()
         const result = composed(5)
 
-        expect(result.type).toBe('success')
-        if (result.type === 'success') {
-            expect(result.data).toBe(5)
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+            expect(result.value).toBe(5)
         }
     })
 
@@ -334,35 +330,35 @@ describe('pipeResult', () => {
         type User = { name: string; age: number }
 
         const validateName = (user: User): Result<User> =>
-            user.name.length > 0 ? ok(user) : err('name is required')
+            user.name.length > 0 ? success(user) : error('name is required')
 
         const validateAge = (user: User): Result<User> =>
-            user.age >= 18 ? ok(user) : err('must be 18 or older')
+            user.age >= 18 ? success(user) : error('must be 18 or older')
 
         const normalize = (user: User): Result<User> =>
-            ok({ ...user, name: user.name.trim().toUpperCase() })
+            success({ ...user, name: user.name.trim().toUpperCase() })
 
         const pipeline = pipeResult(validateName, validateAge, normalize)
 
         // Valid user
         const validResult = pipeline({ name: 'Alice', age: 25 })
-        expect(validResult.type).toBe('success')
-        if (validResult.type === 'success') {
-            expect(validResult.data.name).toBe('ALICE')
+        expect(validResult.ok).toBe(true)
+        if (validResult.ok) {
+            expect(validResult.value.name).toBe('ALICE')
         }
 
         // Invalid name
         const invalidName = pipeline({ name: '', age: 25 })
-        expect(invalidName.type).toBe('error')
-        if (invalidName.type === 'error') {
-            expect(invalidName.message).toBe('name is required')
+        expect(invalidName.ok).toBe(false)
+        if (!invalidName.ok) {
+            expect(invalidName.error).toBe('name is required')
         }
 
         // Invalid age
         const invalidAge = pipeline({ name: 'Bob', age: 16 })
-        expect(invalidAge.type).toBe('error')
-        if (invalidAge.type === 'error') {
-            expect(invalidAge.message).toBe('must be 18 or older')
+        expect(invalidAge.ok).toBe(false)
+        if (!invalidAge.ok) {
+            expect(invalidAge.error).toBe('must be 18 or older')
         }
     })
 })

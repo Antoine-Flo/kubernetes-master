@@ -299,7 +299,9 @@ const createNavigationOps = (getState: () => FileSystemState, setState: (s: File
         const node = findNode(state.tree, absolutePath)
 
         const validation = validateIsDirectory(node, absolutePath)
-        if (validation.type === 'error') return validation
+        if (!validation.ok) {
+            return validation
+        }
 
         setState({ ...state, currentPath: absolutePath })
         return success(absolutePath)
@@ -311,9 +313,11 @@ const createNavigationOps = (getState: () => FileSystemState, setState: (s: File
         const node = findNode(state.tree, targetPath)
 
         const validation = validateIsDirectory(node, targetPath)
-        if (validation.type === 'error') return validation
+        if (!validation.ok) {
+            return validation
+        }
 
-        return success(Array.from(validation.data.children.values()))
+        return success(Array.from(validation.value.children.values()))
     }
 })
 
@@ -325,7 +329,9 @@ const createDirectoryOps = (getState: () => FileSystemState) => ({
         const absolutePath = resolvePath(state.currentPath, name)
 
         const validation = validateDirectoryCreation(name, absolutePath, state.tree)
-        if (validation.type === 'error') return validation
+        if (!validation.ok) {
+            return validation
+        }
 
         if (recursive) {
             createDirectoriesRecursive(state.tree, absolutePath)
@@ -333,7 +339,7 @@ const createDirectoryOps = (getState: () => FileSystemState) => ({
         }
 
         const result = createSingleDirectory(state.tree, absolutePath)
-        if (result.type === 'error') return result
+        if (!result.ok) return result
 
         return success(absolutePath)
     },
@@ -348,9 +354,11 @@ const createDirectoryOps = (getState: () => FileSystemState) => ({
 
         const node = findNode(state.tree, absolutePath)
         const validation = validateIsDirectory(node, absolutePath)
-        if (validation.type === 'error') return validation
+        if (!validation.ok) {
+            return validation
+        }
 
-        if (!recursive && validation.data.children.size > 0) {
+        if (!recursive && validation.value.children.size > 0) {
             return error(`Directory not empty: ${absolutePath}`)
         }
 
@@ -372,7 +380,9 @@ const createFileOps = (getState: () => FileSystemState) => ({
             state.currentPath,
             state.tree
         )
-        if (validation.type === 'error') return validation
+        if (!validation.ok) {
+            return validation
+        }
 
         try {
             const file = createFile(name, absolutePath, content)
@@ -389,9 +399,11 @@ const createFileOps = (getState: () => FileSystemState) => ({
         const node = findNode(state.tree, absolutePath)
 
         const validation = validateIsFile(node, absolutePath)
-        if (validation.type === 'error') return validation
+        if (!validation.ok) {
+            return validation
+        }
 
-        return success(validation.data.content)
+        return success(validation.value.content)
     },
 
     writeFile: (path: string, content: string): Result<void> => {
@@ -400,10 +412,12 @@ const createFileOps = (getState: () => FileSystemState) => ({
         const node = findNode(state.tree, absolutePath)
 
         const validation = validateIsFile(node, absolutePath)
-        if (validation.type === 'error') return validation
+        if (!validation.ok) {
+            return validation
+        }
 
         // Side effect: Update file with new content and modifiedAt timestamp
-        const updatedFile = createFile(validation.data.name, validation.data.path, content)
+        const updatedFile = createFile(validation.value.name, validation.value.path, content)
         removeNode(state.tree, absolutePath)
         insertNode(state.tree, absolutePath, updatedFile)
 
@@ -416,7 +430,9 @@ const createFileOps = (getState: () => FileSystemState) => ({
         const node = findNode(state.tree, absolutePath)
 
         const validation = validateIsFile(node, absolutePath)
-        if (validation.type === 'error') return validation
+        if (!validation.ok) {
+            return validation
+        }
 
         removeNode(state.tree, absolutePath)
         return success(undefined)

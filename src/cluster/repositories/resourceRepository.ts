@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // Generic CRUD operations for any Kubernetes resource type
 
-import type { Result } from '../../shared/result'
+import { success, error, type Result } from '../../shared/result'
 import type { KubernetesResource, ResourceCollection } from './types'
 
 // Create empty collection
@@ -42,13 +42,10 @@ export const find = <T extends KubernetesResource>(
     )
 
     if (!item) {
-        return {
-            type: 'error',
-            message: `${kind} "${name}" not found in namespace "${namespace}"`,
-        }
+        return error(`${kind} "${name}" not found in namespace "${namespace}"`)
     }
 
-    return { type: 'success', data: item }
+    return success(item)
 }
 
 // Remove resource by name and namespace
@@ -63,18 +60,15 @@ export const remove = <T extends KubernetesResource>(
     )
 
     if (index === -1) {
-        return {
-            type: 'error',
-            message: `${kind} "${name}" not found in namespace "${namespace}"`,
-        }
+        return error(`${kind} "${name}" not found in namespace "${namespace}"`)
     }
 
     const deleted = collection.items[index]
     const newItems = [...collection.items.slice(0, index), ...collection.items.slice(index + 1)]
 
     return {
-        type: 'success',
-        data: deleted,
+        ok: true,
+        value: deleted,
         collection: { items: newItems },
     }
 }

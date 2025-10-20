@@ -38,9 +38,9 @@ describe('kubectl Executor', () => {
             it('should route "kubectl get pods" to get handler', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl get pods')
-                expect(result.type).toBe('success')
-                if (result.type === 'success') {
-                    expect(result.data).toContain('nginx-pod')
+                expect(result.ok).toBe(true)
+                if (result.ok) {
+                    expect(result.value).toContain('nginx-pod')
                 }
             })
 
@@ -48,9 +48,9 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl describe pod nginx-pod')
 
-                expect(result.type).toBe('success')
-                if (result.type === 'success') {
-                    expect(result.data).toContain('nginx-pod')
+                expect(result.ok).toBe(true)
+                if (result.ok) {
+                    expect(result.value).toContain('nginx-pod')
                 }
             })
 
@@ -58,9 +58,9 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl delete pod nginx-pod')
 
-                expect(result.type).toBe('success')
-                if (result.type === 'success') {
-                    expect(result.data).toContain('deleted')
+                expect(result.ok).toBe(true)
+                if (result.ok) {
+                    expect(result.value).toContain('deleted')
                 }
             })
 
@@ -68,9 +68,9 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl apply -f pod.yaml')
 
-                expect(result.type).toBe('success')
-                if (result.type === 'success') {
-                    expect(result.data).toContain('apply')
+                expect(result.ok).toBe(true)
+                if (result.ok) {
+                    expect(result.value).toContain('apply')
                 }
             })
 
@@ -78,9 +78,9 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl create -f deployment.yaml')
 
-                expect(result.type).toBe('success')
-                if (result.type === 'success') {
-                    expect(result.data).toContain('create')
+                expect(result.ok).toBe(true)
+                if (result.ok) {
+                    expect(result.value).toContain('create')
                 }
             })
         })
@@ -90,28 +90,28 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl get pods')
 
-                expect(result.type).toBe('success')
+                expect(result.ok).toBe(true)
             })
 
             it('should handle "kubectl get deployments"', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl get deployments')
 
-                expect(result.type).toBe('success')
+                expect(result.ok).toBe(true)
             })
 
             it('should handle "kubectl get services"', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl get services')
 
-                expect(result.type).toBe('success')
+                expect(result.ok).toBe(true)
             })
 
             it('should handle "kubectl get namespaces"', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl get namespaces')
 
-                expect(result.type).toBe('success')
+                expect(result.ok).toBe(true)
             })
         })
 
@@ -120,10 +120,10 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl get pods -n kube-system')
 
-                expect(result.type).toBe('success')
-                if (result.type === 'success') {
-                    expect(result.data).toContain('redis-pod')
-                    expect(result.data).not.toContain('nginx-pod')
+                expect(result.ok).toBe(true)
+                if (result.ok) {
+                    expect(result.value).toContain('redis-pod')
+                    expect(result.value).not.toContain('nginx-pod')
                 }
             })
 
@@ -131,9 +131,9 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl describe pod redis-pod -n kube-system')
 
-                expect(result.type).toBe('success')
-                if (result.type === 'success') {
-                    expect(result.data).toContain('redis-pod')
+                expect(result.ok).toBe(true)
+                if (result.ok) {
+                    expect(result.value).toContain('redis-pod')
                 }
             })
 
@@ -141,10 +141,10 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl get pods')
 
-                expect(result.type).toBe('success')
-                if (result.type === 'success') {
-                    expect(result.data).toContain('nginx-pod')
-                    expect(result.data).not.toContain('redis-pod')
+                expect(result.ok).toBe(true)
+                if (result.ok) {
+                    expect(result.value).toContain('nginx-pod')
+                    expect(result.value).not.toContain('redis-pod')
                 }
             })
         })
@@ -154,9 +154,9 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('invalid command')
 
-                expect(result.type).toBe('error')
-                if (result.type === 'error') {
-                    expect(result.message).toBeTruthy()
+                expect(result.ok).toBe(false)
+                if (!result.ok) {
+                    expect(result.error).toBeTruthy()
                 }
             })
 
@@ -164,9 +164,9 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('')
 
-                expect(result.type).toBe('error')
-                if (result.type === 'error') {
-                    expect(result.message).toContain('empty')
+                expect(result.ok).toBe(false)
+                if (!result.ok) {
+                    expect(result.error).toContain('empty')
                 }
             })
 
@@ -174,9 +174,9 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl describe pod nonexistent')
 
-                expect(result.type).toBe('error')
-                if (result.type === 'error') {
-                    expect(result.message).toContain('not found')
+                expect(result.ok).toBe(false)
+                if (!result.ok) {
+                    expect(result.error).toContain('not found')
                 }
             })
 
@@ -184,9 +184,9 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl describe pod nginx-pod -n kube-system')
 
-                expect(result.type).toBe('error')
-                if (result.type === 'error') {
-                    expect(result.message).toContain('not found')
+                expect(result.ok).toBe(false)
+                if (!result.ok) {
+                    expect(result.error).toContain('not found')
                 }
             })
         })
@@ -196,7 +196,7 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl delete pod nginx-pod')
 
-                expect(result.type).toBe('success')
+                expect(result.ok).toBe(true)
 
                 // Verify pod is actually deleted
                 const pods = clusterState.getPods('default')
@@ -207,7 +207,7 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl delete pod redis-pod -n kube-system')
 
-                expect(result.type).toBe('success')
+                expect(result.ok).toBe(true)
 
                 const pods = clusterState.getPods('kube-system')
                 expect(pods.find(p => p.metadata.name === 'redis-pod')).toBeUndefined()
@@ -217,9 +217,9 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl delete pod nonexistent')
 
-                expect(result.type).toBe('error')
-                if (result.type === 'error') {
-                    expect(result.message).toContain('not found')
+                expect(result.ok).toBe(false)
+                if (!result.ok) {
+                    expect(result.error).toContain('not found')
                 }
             })
         })
@@ -229,9 +229,9 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl get po')
 
-                expect(result.type).toBe('success')
-                if (result.type === 'success') {
-                    expect(result.data).toContain('nginx-pod')
+                expect(result.ok).toBe(true)
+                if (result.ok) {
+                    expect(result.value).toContain('nginx-pod')
                 }
             })
 
@@ -239,9 +239,9 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl describe po nginx-pod')
 
-                expect(result.type).toBe('success')
-                if (result.type === 'success') {
-                    expect(result.data).toContain('nginx-pod')
+                expect(result.ok).toBe(true)
+                if (result.ok) {
+                    expect(result.value).toContain('nginx-pod')
                 }
             })
 
@@ -249,7 +249,7 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl delete po nginx-pod')
 
-                expect(result.type).toBe('success')
+                expect(result.ok).toBe(true)
             })
         })
 
@@ -258,10 +258,10 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl get pods -n default')
 
-                expect(result.type).toBe('success')
-                if (result.type === 'success') {
-                    expect(result.data).toBeTruthy()
-                    expect(result.data).toContain('nginx-pod')
+                expect(result.ok).toBe(true)
+                if (result.ok) {
+                    expect(result.value).toBeTruthy()
+                    expect(result.value).toContain('nginx-pod')
                 }
             })
 
@@ -269,9 +269,9 @@ describe('kubectl Executor', () => {
                 const executor = createKubectlExecutor(clusterState, logger)
                 const result = executor.execute('kubectl get invalidresource')
 
-                expect(result.type).toBe('error')
-                if (result.type === 'error') {
-                    expect(result.message).toBeTruthy()
+                expect(result.ok).toBe(false)
+                if (!result.ok) {
+                    expect(result.error).toBeTruthy()
                 }
             })
         })

@@ -76,11 +76,11 @@ export const parseShellCommand = (input: string): Result<ParsedShellCommand> => 
     const result = pipeline({ input })
 
     // Transform ParseContext result to ParsedShellCommand result
-    if (result.type === 'error') {
+    if (!result.ok) {
         return result
     }
 
-    const ctx = result.data
+    const ctx = result.value
     if (!ctx.command || !ctx.args || !ctx.flags) {
         return error('Internal parsing error: incomplete context')
     }
