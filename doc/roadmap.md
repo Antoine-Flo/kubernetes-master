@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**798 tests passing** | **~94% coverage** | **Architecture: Functional (Factory + Pure functions + ADT + Event Sourcing)**
+**873 tests passing** | **~89% coverage** | **Architecture: Functional (Factory + Pure functions + ADT + Event Sourcing)**
 
 ## Completed Sprints
 
@@ -34,12 +34,15 @@
 ### Code Quality & Refactoring
 - ✅ **Result Pattern Migration** - `{type, data/message}` → `{ok, value/error}` (Fetch API style)
 - ✅ **Sprint 5.5**: Apply/Create Handlers - YAML parser + kubectl apply/create (63 tests)
+- ✅ **Handler Refactoring**: Configuration-driven pattern for kubectl handlers (describe.ts: 69→62 lines, -10% code duplication)
+- ✅ **ClusterState Refactoring**: Generic factory pattern with `createResourceOperations` and `createFacadeMethods` helpers (304→213 lines, -30% code, eliminated repetitive CRUD operations)
 
 ### Editor Integration
 - ✅ **Sprint 13 (Early)**: YAML Editor - CodeMirror 6 integration with nano command (25 tests)
 
 ### Advanced kubectl Commands
 - ✅ **Sprint 5.6**: kubectl logs + exec (69 tests) - Dynamic log generation, tail/follow flags, interactive shell simulation, autocomplete
+- ✅ **Sprint 5.7**: kubectl label & annotate (75 tests) - Add/remove labels and annotations, --overwrite flag support
 
 ### UI Enhancements
 - ✅ **UI Polish**: Navigation bar with GitHub link, footer with useful links, SEO metadata - Minimalist and modern design
@@ -50,15 +53,9 @@
 
 ## Next Sprint
 
-**Sprint 5.7** - kubectl label & annotate
-- Add/remove labels and annotations
-- --overwrite flag support
+**Sprint 6** - Storage + Integration + Polish
 
-**Sprint 5.8** - Dynamic Log Generator Enhancement
-- Replace hardcoded log patterns with dynamic generation
-- Context-aware logs based on pod state and events
-- Realistic timestamps and log volume simulation
-- Support for different log levels and formats
+See details in "Upcoming (Phase 1 - MVP)" section below.
 
 ## Upcoming (Phase 1 - MVP)
 
@@ -90,6 +87,14 @@
 - README with examples
 - Coverage >80%
 - ~700+ tests total
+
+## Backlog (Deferred Features)
+
+**Sprint 5.8** - Dynamic Log Generator Enhancement
+- Replace hardcoded log patterns with dynamic generation
+- Context-aware logs based on pod state and events
+- Realistic timestamps and log volume simulation
+- Support for different log levels and formats
 
 ## Phase 2: Advanced Kubernetes (Sprints 7-14)
 

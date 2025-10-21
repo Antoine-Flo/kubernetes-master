@@ -9,6 +9,8 @@ import { handleApply } from './handlers/apply'
 import { handleCreate } from './handlers/create'
 import { handleLogs } from './handlers/logs'
 import { handleExec } from './handlers/exec'
+import { handleLabel } from './handlers/label'
+import { handleAnnotate } from './handlers/annotate'
 import type { ExecutionResult } from '../../shared/result'
 import { error, success } from '../../shared/result'
 import type { Logger } from '../../logger/Logger'
@@ -35,6 +37,8 @@ const createHandlers = (clusterState: ClusterState, fileSystem: FileSystem, logg
     handlers.set('create', withDeps(handleCreateWrapper))
     handlers.set('logs', withDeps(handleLogsWrapper))
     handlers.set('exec', withDeps(handleExecWrapper))
+    handlers.set('label', withDeps(handleLabelWrapper))
+    handlers.set('annotate', withDeps(handleAnnotateWrapper))
 
     return handlers
 }
@@ -92,6 +96,30 @@ const handleExecWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSyste
     logger.debug('CLUSTER', `Executing command in pod ${parsed.name}: ${command}`)
     const output = handleExec(cluster.toJSON(), parsed)
     return success(output)
+}
+
+const handleLabelWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, parsed: ParsedCommand): ExecutionResult => {
+    logger.debug('CLUSTER', `Labeling ${parsed.resource}: ${parsed.name}`)
+    const result = handleLabel(cluster.toJSON(), parsed)
+    if (result.ok && result.state) {
+        cluster.loadState(result.state)
+        logger.info('CLUSTER', `Labeled ${parsed.resource}: ${parsed.name}`)
+    }
+    return result.ok && result.state
+        ? { ok: true, value: result.value }
+        : result
+}
+
+const handleAnnotateWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, parsed: ParsedCommand): ExecutionResult => {
+    logger.debug('CLUSTER', `Annotating ${parsed.resource}: ${parsed.name}`)
+    const result = handleAnnotate(cluster.toJSON(), parsed)
+    if (result.ok && result.state) {
+        cluster.loadState(result.state)
+        logger.info('CLUSTER', `Annotated ${parsed.resource}: ${parsed.name}`)
+    }
+    return result.ok && result.state
+        ? { ok: true, value: result.value }
+        : result
 }
 
 /**

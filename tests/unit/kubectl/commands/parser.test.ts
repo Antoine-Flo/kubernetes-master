@@ -533,6 +533,232 @@ describe('kubectl Parser', () => {
         }
       })
     })
+
+    describe('label commands', () => {
+      it('should parse "kubectl label pods nginx app=web"', () => {
+        const result = parseCommand('kubectl label pods nginx app=web')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.action).toBe('label')
+          expect(result.value.resource).toBe('pods')
+          expect(result.value.name).toBe('nginx')
+          expect(result.value.labelChanges).toEqual({ app: 'web' })
+        }
+      })
+
+      it('should parse label with multiple key=value pairs', () => {
+        const result = parseCommand('kubectl label pods nginx app=web tier=frontend')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.labelChanges).toEqual({
+            app: 'web',
+            tier: 'frontend',
+          })
+        }
+      })
+
+      it('should parse label removal with key- syntax', () => {
+        const result = parseCommand('kubectl label pods nginx app-')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.labelChanges).toEqual({ app: null })
+        }
+      })
+
+      it('should parse multiple label removals', () => {
+        const result = parseCommand('kubectl label pods nginx app- tier-')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.labelChanges).toEqual({
+            app: null,
+            tier: null,
+          })
+        }
+      })
+
+      it('should parse mixed addition and removal', () => {
+        const result = parseCommand('kubectl label pods nginx app=new tier-')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.labelChanges).toEqual({
+            app: 'new',
+            tier: null,
+          })
+        }
+      })
+
+      it('should parse label with --overwrite flag', () => {
+        const result = parseCommand('kubectl label pods nginx app=updated --overwrite')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.flags.overwrite).toBe(true)
+          expect(result.value.labelChanges).toEqual({ app: 'updated' })
+        }
+      })
+
+      it('should parse label with namespace flag', () => {
+        const result = parseCommand('kubectl label pods nginx app=web -n kube-system')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.namespace).toBe('kube-system')
+          expect(result.value.labelChanges).toEqual({ app: 'web' })
+        }
+      })
+
+      it('should parse label for configmaps', () => {
+        const result = parseCommand('kubectl label configmaps my-config version=1.0')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.resource).toBe('configmaps')
+          expect(result.value.name).toBe('my-config')
+          expect(result.value.labelChanges).toEqual({ version: '1.0' })
+        }
+      })
+
+      it('should parse label for secrets', () => {
+        const result = parseCommand('kubectl label secrets db-secret app=database')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.resource).toBe('secrets')
+          expect(result.value.name).toBe('db-secret')
+          expect(result.value.labelChanges).toEqual({ app: 'database' })
+        }
+      })
+
+      it('should return error when name is missing', () => {
+        const result = parseCommand('kubectl label pods')
+
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+          expect(result.error).toContain('requires a resource name')
+        }
+      })
+
+      it('should parse label with resource alias', () => {
+        const result = parseCommand('kubectl label po nginx app=web')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.resource).toBe('pods')
+          expect(result.value.name).toBe('nginx')
+        }
+      })
+    })
+
+    describe('annotate commands', () => {
+      it('should parse "kubectl annotate pods nginx description=test"', () => {
+        const result = parseCommand('kubectl annotate pods nginx description=test')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.action).toBe('annotate')
+          expect(result.value.resource).toBe('pods')
+          expect(result.value.name).toBe('nginx')
+          expect(result.value.annotationChanges).toEqual({ description: 'test' })
+        }
+      })
+
+      it('should parse annotate with multiple key=value pairs', () => {
+        const result = parseCommand('kubectl annotate pods nginx description=test owner=team')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.annotationChanges).toEqual({
+            description: 'test',
+            owner: 'team',
+          })
+        }
+      })
+
+      it('should parse annotation removal with key- syntax', () => {
+        const result = parseCommand('kubectl annotate pods nginx description-')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.annotationChanges).toEqual({ description: null })
+        }
+      })
+
+      it('should parse annotate with --overwrite flag', () => {
+        const result = parseCommand('kubectl annotate pods nginx description=updated --overwrite')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.flags.overwrite).toBe(true)
+          expect(result.value.annotationChanges).toEqual({ description: 'updated' })
+        }
+      })
+
+      it('should parse annotate with namespace flag', () => {
+        const result = parseCommand('kubectl annotate pods nginx owner=team -n kube-system')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.namespace).toBe('kube-system')
+          expect(result.value.annotationChanges).toEqual({ owner: 'team' })
+        }
+      })
+
+      it('should parse annotate for configmaps', () => {
+        const result = parseCommand('kubectl annotate configmaps my-config description=config')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.resource).toBe('configmaps')
+          expect(result.value.name).toBe('my-config')
+          expect(result.value.annotationChanges).toEqual({ description: 'config' })
+        }
+      })
+
+      it('should parse annotate for secrets', () => {
+        const result = parseCommand('kubectl annotate secrets db-secret owner=admin')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.resource).toBe('secrets')
+          expect(result.value.name).toBe('db-secret')
+          expect(result.value.annotationChanges).toEqual({ owner: 'admin' })
+        }
+      })
+
+      it('should return error when name is missing', () => {
+        const result = parseCommand('kubectl annotate pods')
+
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+          expect(result.error).toContain('requires a resource name')
+        }
+      })
+
+      it('should parse annotation with URL value', () => {
+        const result = parseCommand('kubectl annotate pods nginx docs=https://example.com')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.annotationChanges).toEqual({
+            docs: 'https://example.com',
+          })
+        }
+      })
+
+      it('should parse annotation with equals sign in value', () => {
+        const result = parseCommand('kubectl annotate pods nginx config=key=value')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.annotationChanges).toEqual({ config: 'key=value' })
+        }
+      })
+    })
   })
 })
 

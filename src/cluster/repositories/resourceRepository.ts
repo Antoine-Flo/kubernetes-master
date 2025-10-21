@@ -73,6 +73,36 @@ const remove = <T extends KubernetesResource>(
     }
 }
 
+// Update resource by name and namespace (internal use only)
+const update = <T extends KubernetesResource>(
+    collection: ResourceCollection<T>,
+    name: string,
+    namespace: string,
+    updateFn: (resource: T) => T,
+    kind: string
+): Result<T> & { collection?: ResourceCollection<T> } => {
+    const index = collection.items.findIndex(
+        (r) => r.metadata.name === name && r.metadata.namespace === namespace
+    )
+
+    if (index === -1) {
+        return error(`${kind} "${name}" not found in namespace "${namespace}"`)
+    }
+
+    const updated = updateFn(collection.items[index])
+    const newItems = [
+        ...collection.items.slice(0, index),
+        updated,
+        ...collection.items.slice(index + 1),
+    ]
+
+    return {
+        ok: true,
+        value: updated,
+        collection: { items: newItems },
+    }
+}
+
 // Create resource-specific repository with bound kind
 export const createResourceRepository = <T extends KubernetesResource>(kind: string) => {
     return {
@@ -84,6 +114,12 @@ export const createResourceRepository = <T extends KubernetesResource>(kind: str
             find(collection, name, namespace, kind),
         remove: (collection: ResourceCollection<T>, name: string, namespace: string) =>
             remove(collection, name, namespace, kind),
+        update: (
+            collection: ResourceCollection<T>,
+            name: string,
+            namespace: string,
+            updateFn: (resource: T) => T
+        ) => update(collection, name, namespace, updateFn, kind),
     }
 }
 

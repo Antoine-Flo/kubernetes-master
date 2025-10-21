@@ -34,11 +34,13 @@ type ParseContext = {
     flags?: Record<string, string | boolean>
     normalizedFlags?: Record<string, string | boolean>
     execCommand?: string[]
+    labelChanges?: Record<string, string | null>
+    annotationChanges?: Record<string, string | null>
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────
 
-const VALID_ACTIONS: Action[] = ['get', 'describe', 'delete', 'apply', 'create', 'logs', 'exec']
+const VALID_ACTIONS: Action[] = ['get', 'describe', 'delete', 'apply', 'create', 'logs', 'exec', 'label', 'annotate']
 
 // Flag aliases: short form → long form
 const FLAG_ALIASES: Record<string, string> = {
@@ -96,7 +98,7 @@ const execTransformer: ActionTransformer = (ctx) => {
     }
 
     // Set resource to pods (exec always targets pods)
-    let updatedCtx = { ...ctx, resource: 'pods' as Resource }
+    const updatedCtx = { ...ctx, resource: 'pods' as Resource }
 
     // Find the -- separator
     const separatorIndex = ctx.tokens.indexOf('--')
@@ -128,6 +130,103 @@ const logsTransformer: ActionTransformer = (ctx) => {
 }
 
 /**
+ * Parse key-value changes from tokens (for label/annotate)
+ * Supports: key=value (add/update) and key- (remove)
+ */
+const parseChanges = (tokens: string[]): Record<string, string | null> => {
+    const changes: Record<string, string | null> = {}
+
+    for (const token of tokens) {
+        // Skip flags
+        if (token.startsWith('-')) {
+            continue
+        }
+
+        // Check for removal syntax: key-
+        if (token.endsWith('-') && !token.includes('=')) {
+            const key = token.slice(0, -1)
+            if (key) {
+                changes[key] = null
+            }
+            continue
+        }
+
+        // Check for key=value syntax
+        if (token.includes('=')) {
+            const [key, ...valueParts] = token.split('=')
+            const value = valueParts.join('=') // Handle values with = in them
+            if (key && value !== undefined) {
+                changes[key] = value
+            }
+        }
+    }
+
+    return changes
+}
+
+/**
+ * Transformer for label command: sets resource, extracts name and label changes
+ */
+const labelTransformer: ActionTransformer = (ctx) => {
+    if (!ctx.tokens) {
+        return success(ctx)
+    }
+
+    // Extract resource from position 2
+    const resourceToken = ctx.tokens[2]
+    if (!resourceToken || resourceToken.startsWith('-')) {
+        return error('Invalid or missing resource type')
+    }
+
+    // Map resource alias to canonical
+    const resource = RESOURCE_ALIAS_MAP[resourceToken] as Resource | undefined
+    if (!resource) {
+        return error('Invalid or missing resource type')
+    }
+
+    // Extract name from position 3 (skip flags)
+    const name = findNameSkippingFlags(ctx.tokens, 3)
+
+    // Parse label changes from tokens after name
+    // Skip: kubectl (0), label (1), resource (2), name (3)
+    const changesTokens = ctx.tokens.slice(4)
+    const labelChanges = parseChanges(changesTokens)
+
+    return success({ ...ctx, resource, name, labelChanges })
+}
+
+/**
+ * Transformer for annotate command: sets resource, extracts name and annotation changes
+ */
+const annotateTransformer: ActionTransformer = (ctx) => {
+    if (!ctx.tokens) {
+        return success(ctx)
+    }
+
+    // Extract resource from position 2
+    const resourceToken = ctx.tokens[2]
+    if (!resourceToken || resourceToken.startsWith('-')) {
+        return error('Invalid or missing resource type')
+    }
+
+    // Map resource alias to canonical
+    const resource = RESOURCE_ALIAS_MAP[resourceToken] as Resource | undefined
+    if (!resource) {
+        return error('Invalid or missing resource type')
+    }
+
+    // Extract name from position 3 (skip flags)
+    const name = findNameSkippingFlags(ctx.tokens, 3)
+
+    // Parse annotation changes from tokens after name
+    // Skip: kubectl (0), annotate (1), resource (2), name (3)
+    const changesTokens = ctx.tokens.slice(4)
+    const annotationChanges = parseChanges(changesTokens)
+
+    return success({ ...ctx, resource, name, annotationChanges })
+}
+
+/**
  * Default transformer: no-op, returns context as-is
  */
 const identityTransformer: ActionTransformer = (ctx) => success(ctx)
@@ -136,11 +235,13 @@ const identityTransformer: ActionTransformer = (ctx) => success(ctx)
  * Map of action-specific transformers
  * Add new actions here without modifying the pipeline
  */
-const ACTION_TRANSFORMERS: Record<string, ActionTransformer> = {
+const ACTIONS_WITH_CUSTOM_PARSING: Record<string, ActionTransformer> = {
     'exec': execTransformer,
     'logs': logsTransformer,
     'apply': applyCreateTransformer,
     'create': applyCreateTransformer,
+    'label': labelTransformer,
+    'annotate': annotateTransformer,
 }
 
 /**
@@ -150,7 +251,7 @@ const getTransformerForAction = (action?: Action): ActionTransformer => {
     if (!action) {
         return identityTransformer
     }
-    return ACTION_TRANSFORMERS[action] || identityTransformer
+    return ACTIONS_WITH_CUSTOM_PARSING[action] || identityTransformer
 }
 
 /**
@@ -214,6 +315,8 @@ export const parseCommand = (input: string): Result<ParsedCommand> => {
         selector: getSelectorFromFlags(normalizedFlags),
         flags: ctx.flags,
         execCommand: ctx.execCommand,
+        labelChanges: ctx.labelChanges,
+        annotationChanges: ctx.annotationChanges,
     })
 }
 
@@ -293,11 +396,21 @@ const findNameAtPosition = (tokens: string[], position: number): string | undefi
 }
 
 const extractName = (ctx: ParseContext): Result<ParseContext> => {
+    // Skip if name already set by transformer (check for property, not just truthiness)
+    if ('name' in ctx && ctx.name !== undefined) {
+        return success(ctx)
+    }
+
+    // Also skip for label/annotate since transformer handles name extraction
+    if (ctx.action === 'label' || ctx.action === 'annotate') {
+        return success(ctx)
+    }
+
     if (!ctx.tokens) {
         return success(ctx)
     }
 
-    const hasTransformer = ctx.action && ACTION_TRANSFORMERS[ctx.action]
+    const hasTransformer = ctx.action && ACTIONS_WITH_CUSTOM_PARSING[ctx.action]
 
     const name = hasTransformer
         ? findNameSkippingFlags(ctx.tokens, 2)  // Position 2: kubectl <action> <name>
@@ -377,7 +490,7 @@ const validateCommandSemantics = (
     _resource: Resource,
     name?: string
 ): string | undefined => {
-    if ((action === 'delete' || action === 'describe' || action === 'logs' || action === 'exec') && !name) {
+    if ((action === 'delete' || action === 'describe' || action === 'logs' || action === 'exec' || action === 'label' || action === 'annotate') && !name) {
         return `${action} requires a resource name`
     }
     return undefined
