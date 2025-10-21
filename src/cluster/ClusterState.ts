@@ -1,15 +1,29 @@
-import type { Pod } from './ressources/Pod'
-import type { ConfigMap } from './ressources/ConfigMap'
-import type { Secret } from './ressources/Secret'
 import type { Result } from '../shared/result'
+import type { EventBus } from './events/EventBus'
+import {
+    handleConfigMapCreated,
+    handleConfigMapDeleted,
+    handleConfigMapUpdated,
+    handlePodCreated,
+    handlePodDeleted,
+    handlePodUpdated,
+    handleSecretCreated,
+    handleSecretDeleted,
+    handleSecretUpdated,
+} from './events/handlers'
+import type { ClusterEvent } from './events/types'
 import { createResourceRepository } from './repositories/resourceRepository'
-import type { ResourceCollection, KubernetesResource } from './repositories/types'
+import type { KubernetesResource, ResourceCollection } from './repositories/types'
+import type { ConfigMap } from './ressources/ConfigMap'
+import type { Pod } from './ressources/Pod'
+import type { Secret } from './ressources/Secret'
 
 // ╔═══════════════════════════════════════════════════════════════════════╗
 // ║                    KUBERNETES CLUSTER STATE                           ║
 // ╚═══════════════════════════════════════════════════════════════════════╝
 // Manages virtual K8s cluster with pods, configmaps, secrets, and more.
 // Uses Generic Repository Pattern for DRY CRUD operations.
+// Now supports event-driven architecture via EventBus subscription.
 
 export interface ClusterStateData {
     pods: ResourceCollection<Pod>
@@ -152,13 +166,50 @@ const createFacadeMethods = <T extends KubernetesResource>(
     },
 })
 
+// ─── Event Handling ──────────────────────────────────────────────────────
+
+/**
+ * Event handler map for dispatching events to handlers
+ * Using object lookup pattern instead of switch
+ */
+const EVENT_HANDLERS: Record<string, (state: ClusterStateData, event: any) => ClusterStateData> = {
+    PodCreated: handlePodCreated,
+    PodDeleted: handlePodDeleted,
+    PodUpdated: handlePodUpdated,
+    ConfigMapCreated: handleConfigMapCreated,
+    ConfigMapDeleted: handleConfigMapDeleted,
+    ConfigMapUpdated: handleConfigMapUpdated,
+    SecretCreated: handleSecretCreated,
+    SecretDeleted: handleSecretDeleted,
+    SecretUpdated: handleSecretUpdated,
+}
+
+/**
+ * Apply event to cluster state
+ * Dispatches to appropriate handler based on event type
+ */
+const applyEventToState = (state: ClusterStateData, event: ClusterEvent): ClusterStateData => {
+    const handler = EVENT_HANDLERS[event.type]
+    if (!handler) {
+        return state
+    }
+    return handler(state, event)
+}
+
 // Facade factory function
-export const createClusterState = (initialState?: ClusterStateData): ClusterState => {
+export const createClusterState = (initialState?: ClusterStateData, eventBus?: EventBus): ClusterState => {
     let state: ClusterStateData = initialState || createEmptyState()
 
     const getState = () => state
     const setState = (newState: ClusterStateData) => {
         state = newState
+    }
+
+    // Subscribe to events if EventBus is provided
+    if (eventBus) {
+        eventBus.subscribeAll((event) => {
+            state = applyEventToState(state, event)
+        })
     }
 
     const podMethods = createFacadeMethods(podOps, getState, setState)

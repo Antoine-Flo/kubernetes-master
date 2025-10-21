@@ -1,15 +1,16 @@
-import './style.css'
-import { createTerminalManager } from './terminal/TerminalManager'
+import type { ClusterStateData } from './cluster/ClusterState'
+import { createEventBus } from './cluster/events/EventBus'
 import { createSeedCluster } from './cluster/seedCluster'
+import { createAutoSaveClusterState, createAutoSaveFileSystem } from './cluster/storage/autoSave'
+import { createStorageAdapter } from './cluster/storage/storageAdapter'
+import { createEditorModal } from './editor/EditorModal'
+import type { FileSystemState } from './filesystem/FileSystem'
+import { createSeedFileSystem } from './filesystem/seedFileSystem'
 import { createKubectlExecutor } from './kubectl/commands/executor'
 import { createLogger } from './logger/Logger'
 import { createShellExecutor } from './shell/commands/executor'
-import { createSeedFileSystem } from './filesystem/seedFileSystem'
-import { createStorageAdapter } from './cluster/storage/storageAdapter'
-import { createAutoSaveClusterState, createAutoSaveFileSystem } from './cluster/storage/autoSave'
-import { createEditorModal } from './editor/EditorModal'
-import type { ClusterStateData } from './cluster/ClusterState'
-import type { FileSystemState } from './filesystem/FileSystem'
+import './style.css'
+import { createTerminalManager } from './terminal/TerminalManager'
 
 // ╔═══════════════════════════════════════════════════════════════════════╗
 // ║                      KUBECTL SIMULATOR - MAIN                         ║
@@ -29,10 +30,13 @@ if (!terminalContainer) {
 // Initialize storage adapter
 const storage = createStorageAdapter()
 
+// Create EventBus for event-driven architecture
+const eventBus = createEventBus({ enableHistory: true, maxHistorySize: 1000 })
+
 // Initialize cluster state: Load from storage or use seed data
 const loadedClusterState = storage.load<ClusterStateData>(CLUSTER_STATE_KEY)
 const clusterStateData = loadedClusterState.ok ? loadedClusterState.value : createSeedCluster().toJSON()
-const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData)
+const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData, eventBus)
 
 // Initialize filesystem: Load from storage or use seed data
 const loadedFileSystemState = storage.load<FileSystemState>(FILESYSTEM_STATE_KEY)
@@ -42,14 +46,20 @@ const fileSystem = createAutoSaveFileSystem(storage, FILESYSTEM_STATE_KEY, fileS
 // Create logger
 const logger = createLogger({ mirrorToConsole: true })
 
+// Subscribe logger to all events for centralized logging
+eventBus.subscribeAll((event) => {
+    const eventInfo = `${event.type} - ${JSON.stringify(event.payload).substring(0, 100)}...`
+    logger.info('EVENT', eventInfo)
+})
+
 // Create editor modal
 const editorModalContainer = document.createElement('div')
 editorModalContainer.id = 'editor-modal-container'
 document.body.appendChild(editorModalContainer)
 const editorModal = createEditorModal(editorModalContainer)
 
-// Create kubectl executor
-const kubectlExecutor = createKubectlExecutor(clusterState, fileSystem, logger)
+// Create kubectl executor with EventBus
+const kubectlExecutor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
 
 // Create shell executor
 const shellExecutor = createShellExecutor(fileSystem, logger, editorModal)

@@ -1,14 +1,16 @@
-import type { StorageAdapter } from './storageAdapter'
-import type { ClusterState, ClusterStateData } from '../ClusterState'
 import type { FileSystem, FileSystemState } from '../../filesystem/FileSystem'
-import { createClusterState } from '../ClusterState'
 import { createFileSystem } from '../../filesystem/FileSystem'
+import type { ClusterState, ClusterStateData } from '../ClusterState'
+import { createClusterState } from '../ClusterState'
+import type { EventBus } from '../events/EventBus'
+import type { StorageAdapter } from './storageAdapter'
 
 // ╔═══════════════════════════════════════════════════════════════════════╗
 // ║                      AUTO-SAVE WRAPPERS                               ║
 // ╚═══════════════════════════════════════════════════════════════════════╝
 // Wraps ClusterState and FileSystem with automatic persistence.
 // Debounces saves to avoid excessive localStorage writes.
+// Now supports event-driven architecture for simplified auto-save.
 
 const DEBOUNCE_DELAY_MS = 500
 
@@ -38,17 +40,31 @@ const createDebouncedSave = <T>(
 
 /**
  * Wrap ClusterState with auto-save functionality
- * Intercepts state-mutating methods and triggers debounced save
+ * If EventBus is provided, uses event-driven approach (simplified)
+ * Otherwise, falls back to wrapping methods (legacy)
  */
 export const createAutoSaveClusterState = (
     storage: StorageAdapter,
     key: string,
-    initialState?: ClusterStateData
+    initialState?: ClusterStateData,
+    eventBus?: EventBus
 ): ClusterState => {
-    const clusterState = createClusterState(initialState)
+    const clusterState = createClusterState(initialState, eventBus)
     const debouncedSave = createDebouncedSave(storage, key, () => clusterState.toJSON())
 
-    // Wrap mutating methods with auto-save
+    // If EventBus is provided, use event-driven approach
+    if (eventBus) {
+        // Subscribe to all mutation events and trigger save
+        eventBus.subscribeAll((event) => {
+            // Only save on mutation events (Created, Updated, Deleted)
+            if (event.type.endsWith('Created') || event.type.endsWith('Updated') || event.type.endsWith('Deleted')) {
+                debouncedSave()
+            }
+        })
+        return clusterState
+    }
+
+    // Legacy approach: wrap mutating methods with auto-save
     const originalAddPod = clusterState.addPod
     const originalDeletePod = clusterState.deletePod
     const originalUpdatePod = clusterState.updatePod

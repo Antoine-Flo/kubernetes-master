@@ -2,14 +2,16 @@
 // KUBECTL APPLY HANDLER
 // ═══════════════════════════════════════════════════════════════════════════
 // Handle kubectl apply command - create or update resources from YAML files
+// Now uses event-driven architecture
 
-import type { ParsedCommand } from '../types'
-import type { FileSystem } from '../../../filesystem/FileSystem'
 import type { ClusterState } from '../../../cluster/ClusterState'
+import type { EventBus } from '../../../cluster/events/EventBus'
+import type { FileSystem } from '../../../filesystem/FileSystem'
 import type { ExecutionResult } from '../../../shared/result'
 import { error } from '../../../shared/result'
 import { parseKubernetesYaml } from '../../yamlParser'
-import { applyResource, createResourceOps } from './resourceHelpers'
+import type { ParsedCommand } from '../types'
+import { applyResource, applyResourceWithEvents, createResourceOps } from './resourceHelpers'
 
 /**
  * Handle kubectl apply command
@@ -18,12 +20,14 @@ import { applyResource, createResourceOps } from './resourceHelpers'
  * @param fileSystem - Virtual filesystem to read files from
  * @param clusterState - Cluster state to apply resources to
  * @param parsed - Parsed command with flags
+ * @param eventBus - Optional EventBus for event-driven architecture
  * @returns ExecutionResult with success message or error
  */
 export const handleApply = (
     fileSystem: FileSystem,
     clusterState: ClusterState,
-    parsed: ParsedCommand
+    parsed: ParsedCommand,
+    eventBus?: EventBus
 ): ExecutionResult => {
     // Extract filename from flags
     const filename = parsed.flags.f || parsed.flags.filename
@@ -46,6 +50,11 @@ export const handleApply = (
 
     const resource = parseResult.value
 
-    // Apply resource using generic helper
+    // Use event-driven approach if EventBus is provided
+    if (eventBus) {
+        return applyResourceWithEvents(resource, clusterState, eventBus)
+    }
+
+    // Fallback to direct approach for backward compatibility
     return applyResource(resource, createResourceOps(clusterState, resource.kind))
 }
