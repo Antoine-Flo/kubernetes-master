@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { handleGet } from '../../../../../src/kubectl/commands/handlers/get'
 import type { ClusterStateData } from '../../../../../src/cluster/ClusterState'
 import type { ParsedCommand } from '../../../../../src/kubectl/commands/types'
-import { createPod } from '../../../../../src/cluster/models/Pod'
-import { createConfigMap } from '../../../../../src/cluster/models/ConfigMap'
-import { createSecret } from '../../../../../src/cluster/models/Secret'
+import { createPod } from '../../../../../src/cluster/ressources/Pod'
+import { createConfigMap } from '../../../../../src/cluster/ressources/ConfigMap'
+import { createSecret } from '../../../../../src/cluster/ressources/Secret'
 
 describe('handleGet', () => {
     let state: ClusterStateData

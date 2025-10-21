@@ -106,11 +106,11 @@ src/
 │
 ├── cluster/                    # Kubernetes cluster
 │   ├── ClusterState.ts         # Cluster state factory
-│   ├── models/                 # Resource models
+│   ├── probeSimulator.ts       # Health probe simulator
+│   ├── ressources/             # Kubernetes resource models
 │   │   ├── Pod.ts
 │   │   ├── ConfigMap.ts
-│   │   ├── Secret.ts
-│   │   └── probeSimulator.ts
+│   │   └── Secret.ts
 │   ├── repositories/           # Resource CRUD
 │   │   ├── resourceRepository.ts
 │   │   └── types.ts

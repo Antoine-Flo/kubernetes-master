@@ -4,9 +4,9 @@
 // Pure functions for formatting detailed kubectl describe output.
 // Reproduces real kubectl describe style with proper indentation and sections.
 
-import type { Pod, Probe, EnvVar, VolumeMount, Volume } from '../../cluster/models/Pod'
-import type { ConfigMap } from '../../cluster/models/ConfigMap'
-import type { Secret } from '../../cluster/models/Secret'
+import type { Pod, Probe, EnvVar, VolumeMount, Volume } from '../../cluster/ressources/Pod'
+import type { ConfigMap } from '../../cluster/ressources/ConfigMap'
+import type { Secret } from '../../cluster/ressources/Secret'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 

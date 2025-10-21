@@ -3,8 +3,8 @@ import {
     evaluateLivenessProbe,
     evaluateReadinessProbe,
     simulateProbeCheck,
-} from '../../../../src/cluster/models/probeSimulator'
-import { createPod, type Probe } from '../../../../src/cluster/models/Pod'
+} from '../../../../src/cluster/probeSimulator'
+import { createPod, type Probe } from '../../../../src/cluster/ressources/Pod'
 
 describe('Probe Simulator', () => {
     describe('simulateProbeCheck', () => {

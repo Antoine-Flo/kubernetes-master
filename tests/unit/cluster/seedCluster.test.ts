@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createSeedCluster } from '../../../src/cluster/seedCluster'
-import type { PodPhase } from '../../../src/cluster/models/Pod'
+import type { PodPhase } from '../../../src/cluster/ressources/Pod'
 
 describe('Seed Cluster', () => {
     describe('createSeedCluster', () => {

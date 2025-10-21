@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createConfigMap } from '../../../../src/cluster/models/ConfigMap'
+import { createConfigMap } from '../../../../src/cluster/ressources/ConfigMap'
 
 describe('ConfigMap Model', () => {
     describe('createConfigMap', () => {

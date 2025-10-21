@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createPod, type Container } from '../../../../src/cluster/models/Pod'
+import { createPod, type Container } from '../../../../src/cluster/ressources/Pod'
 
 describe('Pod Model', () => {
     describe('createPod', () => {

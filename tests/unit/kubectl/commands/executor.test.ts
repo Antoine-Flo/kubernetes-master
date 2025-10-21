@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createKubectlExecutor } from '../../../../src/kubectl/commands/executor'
 import { createClusterState } from '../../../../src/cluster/ClusterState'
-import { createPod } from '../../../../src/cluster/models/Pod'
+import { createPod } from '../../../../src/cluster/ressources/Pod'
 import { createLogger } from '../../../../src/logger/Logger'
 import { createFileSystem } from '../../../../src/filesystem/FileSystem'
 

@@ -1,4 +1,4 @@
-import type { PodPhase } from '../cluster/models/Pod'
+import type { PodPhase } from '../cluster/ressources/Pod'
 import type { ImageRegistry } from './registry/ImageRegistry'
 
 // ═══════════════════════════════════════════════════════════════════════════

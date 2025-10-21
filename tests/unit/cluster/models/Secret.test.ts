@@ -3,7 +3,7 @@ import {
     createSecret,
     encodeBase64,
     decodeBase64,
-} from '../../../../src/cluster/models/Secret'
+} from '../../../../src/cluster/ressources/Secret'
 
 describe('Secret Model', () => {
     describe('createSecret', () => {

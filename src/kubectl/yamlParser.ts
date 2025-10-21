@@ -5,12 +5,12 @@
 // Uses Zod schemas defined in resource models for validation.
 
 import { parse } from 'yaml'
-import type { Pod } from '../cluster/models/Pod'
-import { parsePodManifest } from '../cluster/models/Pod'
-import type { ConfigMap } from '../cluster/models/ConfigMap'
-import { parseConfigMapManifest } from '../cluster/models/ConfigMap'
-import type { Secret } from '../cluster/models/Secret'
-import { parseSecretManifest } from '../cluster/models/Secret'
+import type { Pod } from '../cluster/ressources/Pod'
+import { parsePodManifest } from '../cluster/ressources/Pod'
+import type { ConfigMap } from '../cluster/ressources/ConfigMap'
+import { parseConfigMapManifest } from '../cluster/ressources/ConfigMap'
+import type { Secret } from '../cluster/ressources/Secret'
+import { parseSecretManifest } from '../cluster/ressources/Secret'
 import type { Result } from '../shared/result'
 import { success, error } from '../shared/result'
 

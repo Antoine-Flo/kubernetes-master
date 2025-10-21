@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createTerminalManager } from '../../../src/terminal/TerminalManager'
 import { createClusterState } from '../../../src/cluster/ClusterState'
 import { createFileSystem } from '../../../src/filesystem/FileSystem'
-import { createPod } from '../../../src/cluster/models/Pod'
+import { createPod } from '../../../src/cluster/ressources/Pod'
 
 describe('TerminalManager', () => {
     let container: HTMLElement

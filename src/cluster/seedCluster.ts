@@ -1,7 +1,7 @@
-import { createPod } from './models/Pod'
-import { createConfigMap } from './models/ConfigMap'
-import { createSecret } from './models/Secret'
-import { encodeBase64 } from './models/Secret'
+import { createPod } from './ressources/Pod'
+import { createConfigMap } from './ressources/ConfigMap'
+import { createSecret } from './ressources/Secret'
+import { encodeBase64 } from './ressources/Secret'
 import { createClusterState } from './ClusterState'
 import type { ClusterState } from './ClusterState'
 

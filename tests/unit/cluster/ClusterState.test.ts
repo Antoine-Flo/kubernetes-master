@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { createPod } from '../../../src/cluster/models/Pod'
-import { createConfigMap } from '../../../src/cluster/models/ConfigMap'
-import { createSecret } from '../../../src/cluster/models/Secret'
+import { createPod } from '../../../src/cluster/ressources/Pod'
+import { createConfigMap } from '../../../src/cluster/ressources/ConfigMap'
+import { createSecret } from '../../../src/cluster/ressources/Secret'
 import {
     createEmptyState,
     addPod,

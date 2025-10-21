@@ -1,9 +1,9 @@
 import type { ClusterStateData } from '../../../cluster/ClusterState'
 import type { ParsedCommand } from '../types'
 import { formatTable, formatAge } from '../../../shared/formatter'
-import type { Pod } from '../../../cluster/models/Pod'
-import type { ConfigMap } from '../../../cluster/models/ConfigMap'
-import type { Secret, SecretType } from '../../../cluster/models/Secret'
+import type { Pod } from '../../../cluster/ressources/Pod'
+import type { ConfigMap } from '../../../cluster/ressources/ConfigMap'
+import type { Secret, SecretType } from '../../../cluster/ressources/Secret'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // KUBECTL GET HANDLER

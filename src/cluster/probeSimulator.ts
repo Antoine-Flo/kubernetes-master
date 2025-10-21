@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // Pure functions to simulate Kubernetes health probes (liveness, readiness)
 
-import type { Pod, Probe, PodPhase } from './Pod'
+import type { Pod, Probe, PodPhase } from './ressources/Pod'
 
 // ADT for probe results
 type ProbeResult = { success: true } | { success: false; reason: string }

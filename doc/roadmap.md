@@ -122,7 +122,6 @@
 ### Sprint 13: Terminal Enhancements
 - Syntax highlighting (real-time)
 - Enhanced prompt (contextual)
-- ✅ Terminal YAML editor (CodeMirror-based, nano command)
 
 ### Sprint 14: Real Registry + Chaos Hooks
 - Fetch from Docker Hub API
