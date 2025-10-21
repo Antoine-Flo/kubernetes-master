@@ -1,6 +1,7 @@
 import type { ClusterStateData } from '../../../cluster/ClusterState'
-import type { ParsedCommand } from '../types'
+import type { EventBus } from '../../../cluster/events/EventBus'
 import type { ExecutionResult } from '../../../shared/result'
+import type { ParsedCommand } from '../types'
 import { handleMetadataChange } from './metadataHelpers'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -12,16 +13,18 @@ import { handleMetadataChange } from './metadataHelpers'
 /**
  * Handle kubectl label command
  * Supports pods, configmaps, and secrets
+ * Event-driven when EventBus is provided
  */
 export const handleLabel = (
     state: ClusterStateData,
-    parsed: ParsedCommand
+    parsed: ParsedCommand,
+    eventBus?: EventBus
 ): ExecutionResult & { state?: ClusterStateData } => {
     return handleMetadataChange(state, parsed, {
         metadataType: 'labels',
         commandName: 'label',
         changesKey: 'labelChanges',
         actionPastTense: 'labeled',
-    })
+    }, eventBus)
 }
 

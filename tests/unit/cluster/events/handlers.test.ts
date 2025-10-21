@@ -1,22 +1,34 @@
 import { describe, expect, it } from 'vitest'
 import { createEmptyState } from '../../../../src/cluster/ClusterState'
 import {
+    handleConfigMapAnnotated,
     handleConfigMapCreated,
     handleConfigMapDeleted,
+    handleConfigMapLabeled,
+    handlePodAnnotated,
     handlePodCreated,
     handlePodDeleted,
+    handlePodLabeled,
     handlePodUpdated,
+    handleSecretAnnotated,
     handleSecretCreated,
     handleSecretDeleted,
+    handleSecretLabeled,
 } from '../../../../src/cluster/events/handlers'
 import {
+    createConfigMapAnnotatedEvent,
     createConfigMapCreatedEvent,
     createConfigMapDeletedEvent,
+    createConfigMapLabeledEvent,
+    createPodAnnotatedEvent,
     createPodCreatedEvent,
     createPodDeletedEvent,
+    createPodLabeledEvent,
     createPodUpdatedEvent,
+    createSecretAnnotatedEvent,
     createSecretCreatedEvent,
     createSecretDeletedEvent,
+    createSecretLabeledEvent,
 } from '../../../../src/cluster/events/types'
 import type { ConfigMap } from '../../../../src/cluster/ressources/ConfigMap'
 import type { Pod } from '../../../../src/cluster/ressources/Pod'
@@ -39,8 +51,7 @@ describe('Event Handlers', () => {
         },
         status: {
             phase: 'Running',
-            conditions: [],
-            containerStatuses: [],
+            restartCount: 0,
         },
     })
 
@@ -65,7 +76,7 @@ describe('Event Handlers', () => {
             namespace: 'default',
             creationTimestamp: new Date().toISOString(),
         },
-        type: 'Opaque',
+        type: { type: 'Opaque' },
         data: {
             'password': btoa('secret'),
         },
@@ -200,6 +211,178 @@ describe('Event Handlers', () => {
             handlePodCreated(state, event)
 
             expect(state).toEqual(originalState)
+        })
+    })
+
+    describe('Label handlers', () => {
+        it('should update pod labels when handling PodLabeled', () => {
+            const state = createEmptyState()
+            const pod = createMockPod()
+            const createEvent = createPodCreatedEvent(pod, 'test')
+            const stateWithPod = handlePodCreated(state, createEvent)
+
+            const labeledPod = {
+                ...pod,
+                metadata: {
+                    ...pod.metadata,
+                    labels: { app: 'nginx', env: 'prod' },
+                },
+            }
+
+            const labelEvent = createPodLabeledEvent(
+                'test-pod',
+                'default',
+                { app: 'nginx', env: 'prod' },
+                labeledPod,
+                pod,
+                'test'
+            )
+
+            const newState = handlePodLabeled(stateWithPod, labelEvent)
+
+            expect(newState.pods.items[0].metadata.labels).toEqual({ app: 'nginx', env: 'prod' })
+        })
+
+        it('should update configmap labels when handling ConfigMapLabeled', () => {
+            const state = createEmptyState()
+            const cm = createMockConfigMap()
+            const createEvent = createConfigMapCreatedEvent(cm, 'test')
+            const stateWithCM = handleConfigMapCreated(state, createEvent)
+
+            const labeledCM = {
+                ...cm,
+                metadata: {
+                    ...cm.metadata,
+                    labels: { type: 'config' },
+                },
+            }
+
+            const labelEvent = createConfigMapLabeledEvent(
+                'test-cm',
+                'default',
+                { type: 'config' },
+                labeledCM,
+                cm,
+                'test'
+            )
+
+            const newState = handleConfigMapLabeled(stateWithCM, labelEvent)
+
+            expect(newState.configMaps.items[0].metadata.labels).toEqual({ type: 'config' })
+        })
+
+        it('should update secret labels when handling SecretLabeled', () => {
+            const state = createEmptyState()
+            const secret = createMockSecret()
+            const createEvent = createSecretCreatedEvent(secret, 'test')
+            const stateWithSecret = handleSecretCreated(state, createEvent)
+
+            const labeledSecret = {
+                ...secret,
+                metadata: {
+                    ...secret.metadata,
+                    labels: { sensitive: 'true' },
+                },
+            }
+
+            const labelEvent = createSecretLabeledEvent(
+                'test-secret',
+                'default',
+                { sensitive: 'true' },
+                labeledSecret,
+                secret,
+                'test'
+            )
+
+            const newState = handleSecretLabeled(stateWithSecret, labelEvent)
+
+            expect(newState.secrets.items[0].metadata.labels).toEqual({ sensitive: 'true' })
+        })
+    })
+
+    describe('Annotation handlers', () => {
+        it('should update pod annotations when handling PodAnnotated', () => {
+            const state = createEmptyState()
+            const pod = createMockPod()
+            const createEvent = createPodCreatedEvent(pod, 'test')
+            const stateWithPod = handlePodCreated(state, createEvent)
+
+            const annotatedPod = {
+                ...pod,
+                metadata: {
+                    ...pod.metadata,
+                    annotations: { description: 'test pod' },
+                },
+            }
+
+            const annotateEvent = createPodAnnotatedEvent(
+                'test-pod',
+                'default',
+                { description: 'test pod' },
+                annotatedPod,
+                pod,
+                'test'
+            )
+
+            const newState = handlePodAnnotated(stateWithPod, annotateEvent)
+
+            expect(newState.pods.items[0].metadata.annotations).toEqual({ description: 'test pod' })
+        })
+
+        it('should update configmap annotations when handling ConfigMapAnnotated', () => {
+            const state = createEmptyState()
+            const cm = createMockConfigMap()
+            const createEvent = createConfigMapCreatedEvent(cm, 'test')
+            const stateWithCM = handleConfigMapCreated(state, createEvent)
+
+            const annotatedCM = {
+                ...cm,
+                metadata: {
+                    ...cm.metadata,
+                    annotations: { owner: 'team-a' },
+                },
+            }
+
+            const annotateEvent = createConfigMapAnnotatedEvent(
+                'test-cm',
+                'default',
+                { owner: 'team-a' },
+                annotatedCM,
+                cm,
+                'test'
+            )
+
+            const newState = handleConfigMapAnnotated(stateWithCM, annotateEvent)
+
+            expect(newState.configMaps.items[0].metadata.annotations).toEqual({ owner: 'team-a' })
+        })
+
+        it('should update secret annotations when handling SecretAnnotated', () => {
+            const state = createEmptyState()
+            const secret = createMockSecret()
+            const createEvent = createSecretCreatedEvent(secret, 'test')
+            const stateWithSecret = handleSecretCreated(state, createEvent)
+
+            const annotatedSecret = {
+                ...secret,
+                metadata: {
+                    ...secret.metadata,
+                    annotations: { rotation: 'monthly' },
+                },
+            }
+
+            const annotateEvent = createSecretAnnotatedEvent(
+                'test-secret',
+                'default',
+                { rotation: 'monthly' },
+                annotatedSecret,
+                secret,
+                'test'
+            )
+
+            const newState = handleSecretAnnotated(stateWithSecret, annotateEvent)
+
+            expect(newState.secrets.items[0].metadata.annotations).toEqual({ rotation: 'monthly' })
         })
     })
 })

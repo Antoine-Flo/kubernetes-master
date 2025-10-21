@@ -86,6 +86,28 @@ return handler(args)
 
 **Purpose**: Replace if/switch chains with object lookup
 
+### Event-Driven Architecture
+```typescript
+// Émission d'événements lors des mutations
+eventBus.emit(createPodCreatedEvent(pod, 'kubectl'))
+
+// Souscription aux événements
+eventBus.subscribe('PodCreated', (event) => {
+  // Réagir à l'événement
+})
+
+// Filtrage d'événements
+eventBus.subscribeFiltered(
+  byNamespace('production'),
+  (event) => { /* ... */ }
+)
+```
+
+**Fichiers**: `src/cluster/events/`  
+**Principe**: CQRS + Event Sourcing - les commandes émettent des événements, les subscribers réagissent  
+**Avantages**: Logging centralisé, découplage, historique complet, time-travel debugging  
+**Utilisation**: AutoSave, analytics, logs - tout passe par les événements
+
 ## Module Structure
 
 ```
@@ -107,6 +129,13 @@ src/
 ├── cluster/                    # Kubernetes cluster
 │   ├── ClusterState.ts         # Cluster state factory
 │   ├── probeSimulator.ts       # Health probe simulator
+│   ├── events/                 # Event system (CQRS)
+│   │   ├── types.ts            # Event types & factories
+│   │   ├── EventBus.ts         # Observer pattern
+│   │   ├── handlers.ts         # Pure event handlers
+│   │   ├── filters.ts          # Event filtering
+│   │   ├── analytics.ts        # Metrics tracking
+│   │   └── timeTravel.ts       # Snapshots & replay
 │   ├── ressources/             # Kubernetes resource models
 │   │   ├── Pod.ts
 │   │   ├── ConfigMap.ts

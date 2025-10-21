@@ -1,14 +1,20 @@
 import type { Result } from '../shared/result'
 import type { EventBus } from './events/EventBus'
 import {
+    handleConfigMapAnnotated,
     handleConfigMapCreated,
     handleConfigMapDeleted,
+    handleConfigMapLabeled,
     handleConfigMapUpdated,
+    handlePodAnnotated,
     handlePodCreated,
     handlePodDeleted,
+    handlePodLabeled,
     handlePodUpdated,
+    handleSecretAnnotated,
     handleSecretCreated,
     handleSecretDeleted,
+    handleSecretLabeled,
     handleSecretUpdated,
 } from './events/handlers'
 import type { ClusterEvent } from './events/types'
@@ -182,6 +188,12 @@ const EVENT_HANDLERS: Record<string, (state: ClusterStateData, event: any) => Cl
     SecretCreated: handleSecretCreated,
     SecretDeleted: handleSecretDeleted,
     SecretUpdated: handleSecretUpdated,
+    PodLabeled: handlePodLabeled,
+    ConfigMapLabeled: handleConfigMapLabeled,
+    SecretLabeled: handleSecretLabeled,
+    PodAnnotated: handlePodAnnotated,
+    ConfigMapAnnotated: handleConfigMapAnnotated,
+    SecretAnnotated: handleSecretAnnotated,
 }
 
 /**

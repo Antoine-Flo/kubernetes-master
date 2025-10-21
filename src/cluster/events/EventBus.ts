@@ -7,11 +7,15 @@ import type { ClusterEvent, EventSubscriber, EventType, UnsubscribeFn } from './
 // Allows components to subscribe to specific event types or all events.
 // Optionally stores event history for time-travel debugging (Phase 4).
 
+export type EventFilter = (event: ClusterEvent) => boolean
+
 export interface EventBus {
     emit: (event: ClusterEvent) => void
     subscribe: <T extends ClusterEvent>(eventType: EventType, subscriber: EventSubscriber<T>) => UnsubscribeFn
     subscribeAll: (subscriber: EventSubscriber) => UnsubscribeFn
+    subscribeFiltered: (filter: EventFilter, subscriber: EventSubscriber) => UnsubscribeFn
     getHistory: () => readonly ClusterEvent[]
+    getHistoryFiltered: (filter: EventFilter) => readonly ClusterEvent[]
     clearHistory: () => void
 }
 
@@ -53,6 +57,7 @@ export const createEventBus = (options: EventBusOptions = {}): EventBus => {
     // Subscribers storage: Map<EventType, Set<Subscriber>>
     const subscribers = new Map<EventType, Set<EventSubscriber>>()
     const allSubscribers = new Set<EventSubscriber>()
+    const filteredSubscribers = new Map<EventSubscriber, EventFilter>()
     let eventHistory: ClusterEvent[] = []
 
     /**
@@ -75,6 +80,13 @@ export const createEventBus = (options: EventBusOptions = {}): EventBus => {
         // Notify all-events subscribers
         allSubscribers.forEach(subscriber => {
             subscriber(event)
+        })
+
+        // Notify filtered subscribers
+        filteredSubscribers.forEach((filter, subscriber) => {
+            if (filter(event)) {
+                subscriber(event)
+            }
         })
     }
 
@@ -114,10 +126,29 @@ export const createEventBus = (options: EventBusOptions = {}): EventBus => {
     }
 
     /**
+     * Subscribe to events matching a filter
+     */
+    const subscribeFiltered = (filter: EventFilter, subscriber: EventSubscriber): UnsubscribeFn => {
+        filteredSubscribers.set(subscriber, filter)
+
+        // Return unsubscribe function
+        return () => {
+            filteredSubscribers.delete(subscriber)
+        }
+    }
+
+    /**
      * Get event history (read-only)
      */
     const getHistory = (): readonly ClusterEvent[] => {
         return [...eventHistory]
+    }
+
+    /**
+     * Get filtered event history
+     */
+    const getHistoryFiltered = (filter: EventFilter): readonly ClusterEvent[] => {
+        return eventHistory.filter(filter)
     }
 
     /**
@@ -131,7 +162,9 @@ export const createEventBus = (options: EventBusOptions = {}): EventBus => {
         emit,
         subscribe,
         subscribeAll,
+        subscribeFiltered,
         getHistory,
+        getHistoryFiltered,
         clearHistory,
     }
 }

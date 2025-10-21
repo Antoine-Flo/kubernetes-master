@@ -65,9 +65,6 @@ const handleDescribeWrapper = (logger: Logger, cluster: ClusterState, _fs: FileS
 const handleDeleteWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, eventBus: EventBus | undefined, parsed: ParsedCommand): ExecutionResult => {
     logger.debug('CLUSTER', `Deleting ${parsed.resource}: ${parsed.name}`)
     const result = handleDelete(cluster, parsed, eventBus)
-    if (result.ok) {
-        logger.info('CLUSTER', `Deleted ${parsed.resource}: ${parsed.name}`)
-    }
     return result
 }
 
@@ -75,9 +72,6 @@ const handleApplyWrapper = (logger: Logger, cluster: ClusterState, fs: FileSyste
     const file = parsed.flags.f || parsed.flags.filename
     logger.debug('CLUSTER', `Applying resource from file: ${file}`)
     const result = handleApply(fs, cluster, parsed, eventBus)
-    if (result.ok) {
-        logger.info('CLUSTER', 'Resource applied successfully')
-    }
     return result
 }
 
@@ -85,9 +79,6 @@ const handleCreateWrapper = (logger: Logger, cluster: ClusterState, fs: FileSyst
     const file = parsed.flags.f || parsed.flags.filename
     logger.debug('CLUSTER', `Creating resource from file: ${file}`)
     const result = handleCreate(fs, cluster, parsed, eventBus)
-    if (result.ok) {
-        logger.info('CLUSTER', 'Resource created successfully')
-    }
     return result
 }
 
@@ -104,24 +95,22 @@ const handleExecWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSyste
     return success(output)
 }
 
-const handleLabelWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, _eventBus: EventBus | undefined, parsed: ParsedCommand): ExecutionResult => {
+const handleLabelWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, eventBus: EventBus | undefined, parsed: ParsedCommand): ExecutionResult => {
     logger.debug('CLUSTER', `Labeling ${parsed.resource}: ${parsed.name}`)
-    const result = handleLabel(cluster.toJSON(), parsed)
+    const result = handleLabel(cluster.toJSON(), parsed, eventBus)
     if (result.ok && result.state) {
         cluster.loadState(result.state)
-        logger.info('CLUSTER', `Labeled ${parsed.resource}: ${parsed.name}`)
     }
     return result.ok && result.state
         ? { ok: true, value: result.value }
         : result
 }
 
-const handleAnnotateWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, _eventBus: EventBus | undefined, parsed: ParsedCommand): ExecutionResult => {
+const handleAnnotateWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, eventBus: EventBus | undefined, parsed: ParsedCommand): ExecutionResult => {
     logger.debug('CLUSTER', `Annotating ${parsed.resource}: ${parsed.name}`)
-    const result = handleAnnotate(cluster.toJSON(), parsed)
+    const result = handleAnnotate(cluster.toJSON(), parsed, eventBus)
     if (result.ok && result.state) {
         cluster.loadState(result.state)
-        logger.info('CLUSTER', `Annotated ${parsed.resource}: ${parsed.name}`)
     }
     return result.ok && result.state
         ? { ok: true, value: result.value }

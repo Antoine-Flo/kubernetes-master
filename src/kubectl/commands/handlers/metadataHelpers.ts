@@ -1,11 +1,20 @@
 import type { ClusterStateData } from '../../../cluster/ClusterState'
-import type { ParsedCommand } from '../types'
-import type { ExecutionResult, Result } from '../../../shared/result'
-import { success, error } from '../../../shared/result'
-import type { Pod } from '../../../cluster/ressources/Pod'
+import type { EventBus } from '../../../cluster/events/EventBus'
+import {
+    createConfigMapAnnotatedEvent,
+    createConfigMapLabeledEvent,
+    createPodAnnotatedEvent,
+    createPodLabeledEvent,
+    createSecretAnnotatedEvent,
+    createSecretLabeledEvent,
+} from '../../../cluster/events/types'
 import type { ConfigMap } from '../../../cluster/ressources/ConfigMap'
+import type { Pod } from '../../../cluster/ressources/Pod'
 import type { Secret } from '../../../cluster/ressources/Secret'
 import { deepFreeze } from '../../../shared/deepFreeze'
+import type { ExecutionResult, Result } from '../../../shared/result'
+import { error, success } from '../../../shared/result'
+import type { ParsedCommand } from '../types'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // METADATA HELPERS (LABELS & ANNOTATIONS)
@@ -153,13 +162,14 @@ const updateResource = <T extends ResourceWithMetadata>(
 }
 
 /**
- * Generic handler for metadata changes (labels or annotations)
+ * Generic handler for metadata changes (labels or annotations) with event support
  * Strategy pattern: configurable behavior via config object
  */
 export const handleMetadataChange = (
     state: ClusterStateData,
     parsed: ParsedCommand,
-    config: MetadataOperationConfig
+    config: MetadataOperationConfig,
+    eventBus?: EventBus
 ): ExecutionResult & { state?: ClusterStateData } => {
     const namespace = parsed.namespace || 'default'
 
@@ -177,7 +187,21 @@ export const handleMetadataChange = (
 
     const overwrite = parsed.flags['overwrite'] === true
 
-    // Create update function for the resource
+    // Event-driven path
+    if (eventBus) {
+        return handleMetadataChangeWithEvents(
+            state,
+            parsed.resource,
+            parsed.name,
+            namespace,
+            changes,
+            overwrite,
+            config,
+            eventBus
+        )
+    }
+
+    // Legacy path
     const updateFn = (resource: ResourceWithMetadata) =>
         applyMetadataChanges(resource, changes, overwrite, config.metadataType)
 
@@ -189,5 +213,78 @@ export const handleMetadataChange = (
         updateFn,
         config.actionPastTense
     )
+}
+
+/**
+ * Handle metadata changes with event emission
+ * Event-driven approach that emits appropriate events
+ */
+const handleMetadataChangeWithEvents = (
+    state: ClusterStateData,
+    resourceType: string,
+    name: string,
+    namespace: string,
+    changes: Record<string, string | null>,
+    overwrite: boolean,
+    config: MetadataOperationConfig,
+    eventBus: EventBus
+): ExecutionResult & { state?: ClusterStateData } => {
+    const accessor = RESOURCE_ACCESSORS[resourceType]
+    if (!accessor) {
+        return error(`Resource type "${resourceType}" is not supported`)
+    }
+
+    const items = accessor.getItems(state)
+    const resource = items.find(
+        (r) => r.metadata.name === name && r.metadata.namespace === namespace
+    )
+
+    if (!resource) {
+        return error(`${accessor.resourceTypeName} "${name}" not found in namespace "${namespace}"`)
+    }
+
+    // Apply metadata changes
+    const updateResult = applyMetadataChanges(resource, changes, overwrite, config.metadataType)
+    if (!updateResult.ok) {
+        return updateResult
+    }
+
+    const updatedResource = updateResult.value
+    const metadataKey = config.metadataType
+    const metadataValue = updatedResource.metadata[metadataKey] || {}
+
+    // Emit appropriate event based on resource type and metadata type
+    const eventFactoryMap = {
+        pods: {
+            labels: createPodLabeledEvent,
+            annotations: createPodAnnotatedEvent,
+        },
+        configmaps: {
+            labels: createConfigMapLabeledEvent,
+            annotations: createConfigMapAnnotatedEvent,
+        },
+        secrets: {
+            labels: createSecretLabeledEvent,
+            annotations: createSecretAnnotatedEvent,
+        },
+    }
+
+    const factory = eventFactoryMap[resourceType as keyof typeof eventFactoryMap]?.[metadataKey]
+    if (factory) {
+        const event = factory(
+            name,
+            namespace,
+            metadataValue,
+            updatedResource as any,
+            resource as any,
+            'kubectl'
+        )
+        eventBus.emit(event)
+    }
+
+    return {
+        ok: true,
+        value: `${accessor.singularName}/${name} ${config.actionPastTense}`,
+    }
 }
 
