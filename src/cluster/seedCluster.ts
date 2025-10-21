@@ -4,6 +4,7 @@ import { createSecret } from './ressources/Secret'
 import { encodeBase64 } from './ressources/Secret'
 import { createClusterState } from './ClusterState'
 import type { ClusterState } from './ClusterState'
+import { generateLogs } from './logGenerator'
 
 export const createSeedCluster = (): ClusterState => {
     // Create seed ConfigMaps
@@ -65,7 +66,7 @@ export const createSeedCluster = (): ClusterState => {
     const pods = [
         // Pod with resource limits and probes
         createPod({
-            name: 'nginx-deployment-7d8f6c9b5d-x7k2m',
+            name: 'nginx-deployment-7s8f',
             namespace: 'default',
             containers: [
                 {
@@ -118,6 +119,7 @@ export const createSeedCluster = (): ClusterState => {
             phase: 'Running',
             restartCount: 0,
             creationTimestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+            logs: generateLogs('nginx:1.21', 75),
         }),
         createPod({
             name: 'redis-master-0',
@@ -136,6 +138,7 @@ export const createSeedCluster = (): ClusterState => {
             phase: 'Running',
             restartCount: 1,
             creationTimestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+            logs: generateLogs('redis:7.0-alpine', 60),
         }),
         // Pod with env vars from ConfigMap and Secret
         createPod({
@@ -215,6 +218,7 @@ export const createSeedCluster = (): ClusterState => {
             phase: 'Running',
             restartCount: 0,
             creationTimestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+            logs: generateLogs('postgres:14-alpine', 50),
         }),
         // Kube-system namespace pods
         createPod({

@@ -33,23 +33,25 @@ type ParseContext = {
     name?: string
     flags?: Record<string, string | boolean>
     normalizedFlags?: Record<string, string | boolean>
+    execCommand?: string[]
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────
 
-const VALID_ACTIONS: Action[] = ['get', 'describe', 'delete', 'apply', 'create']
+const VALID_ACTIONS: Action[] = ['get', 'describe', 'delete', 'apply', 'create', 'logs', 'exec']
 
 // Flag aliases: short form → long form
 const FLAG_ALIASES: Record<string, string> = {
     'n': 'namespace',
     'o': 'output',
     'l': 'selector',
-    'f': 'filename',
+    'f': 'filename',  // Note: -f is also used for --follow in logs, but filename takes precedence
     'A': 'all-namespaces',
 }
 
 // Flags that require a value (cannot be boolean)
-const FLAGS_REQUIRING_VALUES = ['n', 'namespace', 'o', 'output', 'f', 'filename', 'l', 'selector']
+const FLAGS_REQUIRING_VALUES = ['n', 'namespace', 'o', 'output', 'l', 'selector', 'tail']
+// Note: 'filename' is required for apply/create, but 'f' and 'follow' are boolean for logs
 
 // Output formats for kubectl commands
 type OutputFormat = 'table' | 'yaml' | 'json'
@@ -80,31 +82,115 @@ function buildResourceAliasMap(): Record<string, string> {
     return map
 }
 
+// ─── Action-Specific Transformers ────────────────────────────────────────
+// Strategy pattern: each action has its own transformation logic
+
+type ActionTransformer = (ctx: ParseContext) => Result<ParseContext>
+
+/**
+ * Transformer for exec command: sets resource and extracts command after -- separator
+ */
+const execTransformer: ActionTransformer = (ctx) => {
+    if (!ctx.tokens) {
+        return success(ctx)
+    }
+
+    // Set resource to pods (exec always targets pods)
+    let updatedCtx = { ...ctx, resource: 'pods' as Resource }
+
+    // Find the -- separator
+    const separatorIndex = ctx.tokens.indexOf('--')
+    if (separatorIndex === -1) {
+        return success(updatedCtx)
+    }
+
+    // Everything after -- is the exec command
+    const execCommand = ctx.tokens.slice(separatorIndex + 1)
+
+    // Remove exec command from tokens so flag parsing doesn't see it
+    const newTokens = ctx.tokens.slice(0, separatorIndex)
+
+    return success({ ...updatedCtx, tokens: newTokens, execCommand })
+}
+
+/**
+ * Transformer for apply/create: sets default resource to pods
+ */
+const applyCreateTransformer: ActionTransformer = (ctx) => {
+    return success({ ...ctx, resource: 'pods' as Resource })
+}
+
+/**
+ * Transformer for logs: sets resource to pods
+ */
+const logsTransformer: ActionTransformer = (ctx) => {
+    return success({ ...ctx, resource: 'pods' as Resource })
+}
+
+/**
+ * Default transformer: no-op, returns context as-is
+ */
+const identityTransformer: ActionTransformer = (ctx) => success(ctx)
+
+/**
+ * Map of action-specific transformers
+ * Add new actions here without modifying the pipeline
+ */
+const ACTION_TRANSFORMERS: Record<string, ActionTransformer> = {
+    'exec': execTransformer,
+    'logs': logsTransformer,
+    'apply': applyCreateTransformer,
+    'create': applyCreateTransformer,
+}
+
+/**
+ * Get transformer for an action (returns identity if none exists)
+ */
+const getTransformerForAction = (action?: Action): ActionTransformer => {
+    if (!action) {
+        return identityTransformer
+    }
+    return ACTION_TRANSFORMERS[action] || identityTransformer
+}
+
 /**
  * Main entry point for parsing kubectl commands
- * Pure function using Railway-oriented programming (pipeResult)
  * 
  * Pipeline: validate input → tokenize → validate kubectl → extract action →
- *           parse flags → extract resource → validate → build command
+ *           apply action-specific transform → parse flags → extract resource/name → validate
  */
 export const parseCommand = (input: string): Result<ParsedCommand> => {
-    // Create the parsing pipeline
-    const pipeline = pipeResult<ParseContext>(
+    // Generic parsing pipeline (works for all commands)
+    const genericPipeline = pipeResult<ParseContext>(
         trim,
         tokenize,
         checkKubectl,
-        extract(1, VALID_ACTIONS, 'action', 'Invalid or missing action'),
+        extract(1, VALID_ACTIONS, 'action', 'Invalid or missing action')
+    )
+
+    const genericResult = genericPipeline({ input })
+    if (!genericResult.ok) {
+        return genericResult
+    }
+
+    // Apply action-specific transformation
+    const transformer = getTransformerForAction(genericResult.value.action)
+    const transformedResult = transformer(genericResult.value)
+    if (!transformedResult.ok) {
+        return transformedResult
+    }
+
+    // Continue with common parsing
+    const commandPipeline = pipeResult<ParseContext>(
         parseFlags(1, FLAG_ALIASES),
         checkFlags(FLAGS_REQUIRING_VALUES),
-        handleApplyCreate,
         extractResource,
         extractName,
         checkSemantics,
         build
     )
 
-    // Execute pipeline
-    const result = pipeline({ input })
+    const result = commandPipeline(transformedResult.value)
 
     // Transform ParseContext result to ParsedCommand result
     if (!result.ok) {
@@ -127,6 +213,7 @@ export const parseCommand = (input: string): Result<ParsedCommand> => {
         output: getOutputFromFlags(normalizedFlags),
         selector: getSelectorFromFlags(normalizedFlags),
         flags: ctx.flags,
+        execCommand: ctx.execCommand,
     })
 }
 
@@ -140,20 +227,9 @@ const checkKubectl = (ctx: ParseContext): Result<ParseContext> => {
     return success(ctx)
 }
 
-
-
-
-const handleApplyCreate = (ctx: ParseContext): Result<ParseContext> => {
-    if (ctx.action === 'apply' || ctx.action === 'create') {
-        // Set default resource for apply/create (will be overridden by file content)
-        return success({ ...ctx, resource: 'pods' as Resource })
-    }
-    return success(ctx)
-}
-
 const extractResource = (ctx: ParseContext): Result<ParseContext> => {
-    // Skip for apply/create (already handled)
-    if (ctx.action === 'apply' || ctx.action === 'create') {
+    // Skip if resource already set by transformer
+    if (ctx.resource) {
         return success(ctx)
     }
 
@@ -178,19 +254,56 @@ const extractResource = (ctx: ParseContext): Result<ParseContext> => {
     return success({ ...ctx, resource })
 }
 
-const extractName = (ctx: ParseContext): Result<ParseContext> => {
-    if (!ctx.tokens || ctx.tokens.length < 4) {
-        return success(ctx) // Name is optional
+/**
+ * Find name by skipping flags - works for dynamic position commands (logs/exec/apply/create)
+ */
+const findNameSkippingFlags = (tokens: string[], startPos: number): string | undefined => {
+    for (let i = startPos; i < tokens.length; i++) {
+        const token = tokens[i]
+
+        if (token === '--') {
+            break  // Stop at -- separator (for exec)
+        }
+
+        if (token.startsWith('-')) {
+            // Skip flag and its value if needed
+            const flagName = token.replace(/^-+/, '')
+            if (FLAGS_REQUIRING_VALUES.includes(flagName)) {
+                i++
+            }
+            continue
+        }
+
+        return token  // Found it!
     }
 
-    const nameToken = ctx.tokens[3]
+    return undefined
+}
 
-    // Skip if it's a flag
-    if (nameToken.startsWith('-')) {
+/**
+ * Find name at fixed position - works for standard commands (get/describe/delete)
+ */
+const findNameAtPosition = (tokens: string[], position: number): string | undefined => {
+    if (tokens.length <= position) {
+        return undefined
+    }
+
+    const token = tokens[position]
+    return token.startsWith('-') ? undefined : token
+}
+
+const extractName = (ctx: ParseContext): Result<ParseContext> => {
+    if (!ctx.tokens) {
         return success(ctx)
     }
 
-    return success({ ...ctx, name: nameToken })
+    const hasTransformer = ctx.action && ACTION_TRANSFORMERS[ctx.action]
+
+    const name = hasTransformer
+        ? findNameSkippingFlags(ctx.tokens, 2)  // Position 2: kubectl <action> <name>
+        : findNameAtPosition(ctx.tokens, 3)     // Position 3: kubectl <action> <resource> <name>
+
+    return success({ ...ctx, name })
 }
 
 const checkSemantics = (ctx: ParseContext): Result<ParseContext> => {
@@ -264,7 +377,7 @@ const validateCommandSemantics = (
     _resource: Resource,
     name?: string
 ): string | undefined => {
-    if ((action === 'delete' || action === 'describe') && !name) {
+    if ((action === 'delete' || action === 'describe' || action === 'logs' || action === 'exec') && !name) {
         return `${action} requires a resource name`
     }
     return undefined

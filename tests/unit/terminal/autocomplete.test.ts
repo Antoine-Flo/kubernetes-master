@@ -428,5 +428,54 @@ describe('Autocomplete', () => {
             expect(Array.isArray(completions)).toBe(true)
         })
     })
+
+    describe('kubectl logs and exec autocomplete', () => {
+        it('completes logs action from kubectl lo', () => {
+            const completions = getCompletions('kubectl lo', context)
+            expect(completions).toContain('logs')
+        })
+
+        it('completes exec action from kubectl e', () => {
+            const completions = getCompletions('kubectl e', context)
+            expect(completions).toContain('exec')
+        })
+
+        it('completes pod names after kubectl logs', () => {
+            const completions = getCompletions('kubectl logs ', context)
+            expect(completions).toContain('nginx-1')
+            expect(completions).toContain('nginx-2')
+        })
+
+        it('completes pod names after kubectl logs with partial match', () => {
+            const completions = getCompletions('kubectl logs ngin', context)
+            expect(completions).toContain('nginx-1')
+            expect(completions).toContain('nginx-2')
+        })
+
+        it('completes pod names after kubectl exec', () => {
+            const completions = getCompletions('kubectl exec ', context)
+            expect(completions).toContain('nginx-1')
+            expect(completions).toContain('nginx-2')
+        })
+
+        it('completes pod names after kubectl exec with flags', () => {
+            const completions = getCompletions('kubectl exec -it ', context)
+            expect(completions).toContain('nginx-1')
+            expect(completions).toContain('nginx-2')
+        })
+
+        it('completes flags after kubectl logs pod-name', () => {
+            const completions = getCompletions('kubectl logs nginx-1 --', context)
+            expect(completions).toContain('--tail')
+            expect(completions).toContain('--follow')
+            expect(completions).toContain('--namespace')
+        })
+
+        it('completes flags after kubectl exec pod-name', () => {
+            const completions = getCompletions('kubectl exec nginx-1 -', context)
+            expect(completions).toContain('-it')
+            expect(completions).toContain('-n')
+        })
+    })
 })
 

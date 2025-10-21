@@ -115,6 +115,7 @@ interface PodSpec {
 interface PodStatus {
     phase: PodPhase
     restartCount: number
+    logs?: string[]
 }
 
 export interface Pod extends KubernetesResource {
@@ -135,6 +136,7 @@ interface PodConfig {
     creationTimestamp?: string
     phase?: PodPhase
     restartCount?: number
+    logs?: string[]
 }
 
 export const createPod = (config: PodConfig): Pod => {
@@ -155,6 +157,7 @@ export const createPod = (config: PodConfig): Pod => {
         status: {
             phase: config.phase || 'Pending',
             restartCount: config.restartCount || 0,
+            ...(config.logs && { logs: config.logs }),
         },
     }
 

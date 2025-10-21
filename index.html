@@ -4,10 +4,27 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kube Simulator</title>
+    <title>Kube Simulator - Learn kubectl interactively</title>
+    <meta name="description"
+        content="Learn kubectl interactively in a simulated Kubernetes environment. Practice safely without a real cluster.">
+    <meta name="author" content="Antoine-Flo">
+    <meta property="og:title" content="Kube Simulator">
+    <meta property="og:description" content="Practice Kubernetes commands safely in a simulated environment">
+    <meta property="og:type" content="website">
 </head>
 
 <body class="min-h-screen bg-base-300">
+    <!-- Donate Link
+    <a href="https://ko-fi.com/antoineflo" target="_blank" rel="noopener noreferrer"
+        class="fixed top-6 right-6 z-50 text-sm opacity-40 hover:opacity-100 transition-opacity flex items-center gap-2"
+        aria-label="Support this project">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path
+                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+        </svg>
+        <span class="hidden sm:inline">Donate</span>
+    </a> -->
+
     <div class="flex flex-col items-center justify-center min-h-screen p-4">
         <div class="w-full max-w-5xl">
             <!-- ASCII Title and Description -->
@@ -21,7 +38,7 @@
                 <p class="text-base-content/80 mt-6 text-xs sm:text-sm md:text-base">
                     Learn kubectl interactively in a simulated Kubernetes environment
                 </p>
-                <div class="badge badge-success badge-sm mt-2">✨ New: Create resources from YAML files!</div>
+                <div class="badge badge-success badge-sm mt-2">✨ New: kubectl logs & exec for debugging!</div>
             </div>
 
             <div id="terminal"></div>
@@ -44,6 +61,10 @@
                                         class="text-base-content/60">&lt;resource&gt; &lt;name&gt;</span></div>
                                 <div><span class="text-accent">delete</span> <span
                                         class="text-base-content/60">&lt;resource&gt; &lt;name&gt;</span></div>
+                                <div><span class="text-accent">logs</span> <span
+                                        class="text-base-content/60">&lt;pod&gt; [--tail N] [-f]</span></div>
+                                <div><span class="text-accent">exec</span> <span class="text-base-content/60">-it
+                                        &lt;pod&gt; -- &lt;command&gt;</span></div>
                                 <div><span class="text-accent">apply</span> <span class="text-base-content/60">-f
                                         &lt;file.yaml&gt;</span> </div>
                                 <div><span class="text-accent">create</span> <span class="text-base-content/60">-f
@@ -104,40 +125,73 @@
                                     <span class="text-base-content/60">Autocomplete</span>
                                 </div>
                                 <div class="text-base-content/60">💾 Auto-save state</div>
-                                <div class="text-base-content/60">📝 Create YAML files</div>
+                                <div class="text-base-content/60">📝 YAML editor (nano/vi)</div>
                                 <div class="text-base-content/60">🚀 Apply resources</div>
+                                <div class="text-base-content/60">📊 View pod logs</div>
+                                <div class="text-base-content/60">🐛 Debug with exec</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Quick Start Guide -->
-                <div class="card bg-base-200 shadow-sm mt-6">
-                    <div class="card-body p-4">
-                        <h3 class="card-title text-sm text-warning mb-3">🚀 Quick Start: Create Your First Pod</h3>
-                        <div class="text-xs space-y-2 font-mono">
-                            <div class="text-base-content/80">1. Create a YAML file:</div>
-                            <div class="pl-4 text-accent">touch my-pod.yaml</div>
+                <!-- Quick Start Guides -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                    <!-- Create Pod Guide -->
+                    <div class="card bg-base-200 shadow-sm">
+                        <div class="card-body p-4">
+                            <h3 class="card-title text-sm text-warning mb-3">🚀 Quick Start: Create Your First Pod</h3>
+                            <div class="text-xs space-y-2 font-mono">
+                                <div class="text-base-content/80">1. View examples:</div>
+                                <div class="pl-4 text-accent">ls examples/</div>
 
-                            <div class="text-base-content/80 mt-2">2. View example files:</div>
-                            <div class="pl-4 text-accent">ls examples/</div>
-                            <div class="pl-4 text-accent">cat examples/pod-example.yaml</div>
+                                <div class="text-base-content/80 mt-2">2. Apply a resource:</div>
+                                <div class="pl-4 text-accent">kubectl apply -f examples/pod-example.yaml</div>
 
-                            <div class="text-base-content/80 mt-2">3. Apply a resource:</div>
-                            <div class="pl-4 text-accent">kubectl apply -f examples/pod-example.yaml</div>
+                                <div class="text-base-content/80 mt-2">3. Check status:</div>
+                                <div class="pl-4 text-accent">kubectl get pods</div>
+                                <div class="pl-4 text-accent">kubectl describe pod nginx-pod</div>
+                            </div>
+                        </div>
+                    </div>
 
-                            <div class="text-base-content/80 mt-2">4. Check it was created:</div>
-                            <div class="pl-4 text-accent">kubectl get pods</div>
+                    <!-- Debug Pod Guide -->
+                    <div class="card bg-base-200 shadow-sm">
+                        <div class="card-body p-4">
+                            <h3 class="card-title text-sm text-error mb-3">🐛 Debug: Troubleshoot Pods</h3>
+                            <div class="text-xs space-y-2 font-mono">
+                                <div class="text-base-content/80">1. View pod logs:</div>
+                                <div class="pl-4 text-accent">kubectl logs nginx-deployment-7s8f</div>
 
-                            <div class="text-base-content/60 mt-3 italic">
-                                💡 Tip: Use <span class="text-accent">kubectl apply</span> to create or update
-                                resources,
-                                or <span class="text-accent">kubectl create</span> to create new resources only.
+                                <div class="text-base-content/80 mt-2">2. Follow logs in real-time:</div>
+                                <div class="pl-4 text-accent">kubectl logs nginx-... --tail 20 -f</div>
+
+                                <div class="text-base-content/80 mt-2">3. Execute commands inside pod:</div>
+                                <div class="pl-4 text-accent">kubectl exec -it nginx-... -- env</div>
+                                <div class="pl-4 text-accent">kubectl exec -it nginx-... -- ls /app</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Footer -->
+            <footer class="mt-12 pt-8 border-t border-base-300 text-center">
+                <div class="flex justify-center gap-6 mb-4 text-sm">
+                    <a href="https://github.com/Antoine-Flo/kubernetes-master" target="_blank" rel="noopener noreferrer"
+                        class="opacity-60 hover:opacity-100 transition-opacity">
+                        Source
+                    </a>
+                    <a href="https://github.com/Antoine-Flo/kubernetes-master/blob/main/readme.md" target="_blank"
+                        rel="noopener noreferrer" class="opacity-60 hover:opacity-100 transition-opacity">
+                        Docs
+                    </a>
+                    <a href="https://github.com/Antoine-Flo/kubernetes-master/issues" target="_blank"
+                        rel="noopener noreferrer" class="opacity-60 hover:opacity-100 transition-opacity">
+                        Issues
+                    </a>
+                </div>
+                <p class="text-xs opacity-50">Built with ❤️ for the Kubernetes community</p>
+            </footer>
         </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

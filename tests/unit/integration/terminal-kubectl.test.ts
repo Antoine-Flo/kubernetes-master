@@ -77,12 +77,12 @@ describe('Terminal-Kubectl Integration', () => {
             }
         })
 
-        terminal.simulateInput('kubectl describe pod nginx-deployment-7d8f6c9b5d-x7k2m')
+        terminal.simulateInput('kubectl describe pod nginx-deployment-7s8f')
         terminal.simulateInput('\r')
 
         const outputCalls = writeSpy.mock.calls.map(call => call[0]).join('')
         expect(outputCalls).toContain('Name:')
-        expect(outputCalls).toContain('nginx-deployment-7d8f6c9b5d-x7k2m')
+        expect(outputCalls).toContain('nginx-deployment-7s8f')
         expect(outputCalls).toContain('Namespace:')
         expect(outputCalls).toContain('default')
     })

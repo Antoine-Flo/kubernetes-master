@@ -1,5 +1,5 @@
 // Action types supported by kubectl parser
-export type Action = 'get' | 'describe' | 'delete' | 'apply' | 'create'
+export type Action = 'get' | 'describe' | 'delete' | 'apply' | 'create' | 'logs' | 'exec'
 
 // Resource types (canonical names only)
 export type Resource = 'pods' | 'deployments' | 'services' | 'namespaces' | 'configmaps' | 'secrets'
@@ -13,5 +13,6 @@ export interface ParsedCommand {
   output?: 'table' | 'yaml' | 'json'
   selector?: Record<string, string> // Parsed label selector (e.g., -l app=nginx,env=prod)
   flags: Record<string, string | boolean> // Raw flags for backward compatibility
+  execCommand?: string[] // For kubectl exec: command after --
 }
 

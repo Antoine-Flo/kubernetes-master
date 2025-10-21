@@ -352,6 +352,187 @@ describe('kubectl Parser', () => {
         }
       })
     })
+
+    describe('kubectl logs commands', () => {
+      it('should parse "kubectl logs nginx"', () => {
+        const result = parseCommand('kubectl logs nginx')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.action).toBe('logs')
+          expect(result.value.resource).toBe('pods')
+          expect(result.value.name).toBe('nginx')
+          expect(result.value.namespace).toBeUndefined()
+        }
+      })
+
+      it('should parse "kubectl logs nginx -n production"', () => {
+        const result = parseCommand('kubectl logs nginx -n production')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.action).toBe('logs')
+          expect(result.value.resource).toBe('pods')
+          expect(result.value.name).toBe('nginx')
+          expect(result.value.namespace).toBe('production')
+        }
+      })
+
+      it('should parse "kubectl logs nginx --tail 20"', () => {
+        const result = parseCommand('kubectl logs nginx --tail 20')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.action).toBe('logs')
+          expect(result.value.name).toBe('nginx')
+          expect(result.value.flags.tail).toBe('20')
+        }
+      })
+
+      it('should parse "kubectl logs nginx -f"', () => {
+        const result = parseCommand('kubectl logs nginx -f')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.action).toBe('logs')
+          expect(result.value.name).toBe('nginx')
+          expect(result.value.flags.f).toBe(true)
+        }
+      })
+
+      it('should parse "kubectl logs nginx --follow"', () => {
+        const result = parseCommand('kubectl logs nginx --follow')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.action).toBe('logs')
+          expect(result.value.name).toBe('nginx')
+          expect(result.value.flags.follow).toBe(true)
+        }
+      })
+
+      it('should parse "kubectl logs nginx --tail 10 -f"', () => {
+        const result = parseCommand('kubectl logs nginx --tail 10 -f')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.action).toBe('logs')
+          expect(result.value.name).toBe('nginx')
+          expect(result.value.flags.tail).toBe('10')
+          expect(result.value.flags.f).toBe(true)
+        }
+      })
+
+      it('should return error for "kubectl logs" without pod name', () => {
+        const result = parseCommand('kubectl logs')
+
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+          expect(result.error).toBe('logs requires a resource name')
+        }
+      })
+    })
+
+    describe('kubectl exec commands', () => {
+      it('should parse "kubectl exec nginx -- ls"', () => {
+        const result = parseCommand('kubectl exec nginx -- ls')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.action).toBe('exec')
+          expect(result.value.resource).toBe('pods')
+          expect(result.value.name).toBe('nginx')
+          expect(result.value.execCommand).toEqual(['ls'])
+        }
+      })
+
+      it('should parse "kubectl exec nginx -it -- sh"', () => {
+        const result = parseCommand('kubectl exec nginx -it -- sh')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.action).toBe('exec')
+          expect(result.value.resource).toBe('pods')
+          expect(result.value.name).toBe('nginx')
+          expect(result.value.flags.it).toBe(true)
+          expect(result.value.execCommand).toEqual(['sh'])
+        }
+      })
+
+      it('should parse "kubectl exec -it nginx -- bash"', () => {
+        const result = parseCommand('kubectl exec -it nginx -- bash')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.action).toBe('exec')
+          expect(result.value.name).toBe('nginx')
+          expect(result.value.execCommand).toEqual(['bash'])
+        }
+      })
+
+      it('should parse "kubectl exec nginx -n production -- env"', () => {
+        const result = parseCommand('kubectl exec nginx -n production -- env')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.action).toBe('exec')
+          expect(result.value.name).toBe('nginx')
+          expect(result.value.namespace).toBe('production')
+          expect(result.value.execCommand).toEqual(['env'])
+        }
+      })
+
+      it('should parse command with multiple arguments', () => {
+        const result = parseCommand('kubectl exec nginx -- ls -la /app')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.action).toBe('exec')
+          expect(result.value.name).toBe('nginx')
+          expect(result.value.execCommand).toEqual(['ls', '-la', '/app'])
+        }
+      })
+
+      it('should parse "kubectl exec nginx -- echo Hello World"', () => {
+        const result = parseCommand('kubectl exec nginx -- echo Hello World')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.execCommand).toEqual(['echo', 'Hello', 'World'])
+        }
+      })
+
+      it('should handle exec without -- separator', () => {
+        const result = parseCommand('kubectl exec nginx sh')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.action).toBe('exec')
+          expect(result.value.name).toBe('nginx')
+          expect(result.value.execCommand).toBeUndefined()
+        }
+      })
+
+      it('should return error for "kubectl exec" without pod name', () => {
+        const result = parseCommand('kubectl exec')
+
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+          expect(result.error).toBe('exec requires a resource name')
+        }
+      })
+
+      it('should handle flags before -- separator', () => {
+        const result = parseCommand('kubectl exec -it -n kube-system nginx -- sh')
+
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+          expect(result.value.namespace).toBe('kube-system')
+          expect(result.value.flags.it).toBe(true)
+          expect(result.value.execCommand).toEqual(['sh'])
+        }
+      })
+    })
   })
 })
 

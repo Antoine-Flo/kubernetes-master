@@ -19,9 +19,9 @@ export interface AutocompleteContext {
 // ─── Constants ───────────────────────────────────────────────────────────
 
 const COMMANDS = ['kubectl', ...VALID_COMMANDS]
-const KUBECTL_ACTIONS = ['get', 'describe', 'delete', 'apply', 'create']
-const KUBECTL_RESOURCES = ['pods', 'pod', 'po', 'deployments', 'deployment', 'deploy', 'services', 'service', 'svc', 'namespaces', 'namespace', 'ns']
-const KUBECTL_FLAGS = ['-n', '--namespace', '-o', '--output', '-l', '--selector', '-f', '--filename', '-A', '--all-namespaces']
+const KUBECTL_ACTIONS = ['get', 'describe', 'delete', 'apply', 'create', 'logs', 'exec']
+const KUBECTL_RESOURCES = ['pods', 'pod', 'po', 'deployments', 'deployment', 'deploy', 'services', 'service', 'svc', 'namespaces', 'namespace', 'ns', 'configmaps', 'configmap', 'cm', 'secrets', 'secret']
+const KUBECTL_FLAGS = ['-n', '--namespace', '-o', '--output', '-l', '--selector', '-f', '--filename', '-A', '--all-namespaces', '--tail', '--follow', '-i', '-t', '-it']
 const SHELL_FLAGS = ['-l', '-r', '-p']
 
 // ─── File Completion Configuration ───────────────────────────────────────
@@ -56,6 +56,11 @@ const RESOURCE_CANONICAL: Record<string, string> = {
     'namespaces': 'namespaces',
     'namespace': 'namespaces',
     'ns': 'namespaces',
+    'configmaps': 'configmaps',
+    'configmap': 'configmaps',
+    'cm': 'configmaps',
+    'secrets': 'secrets',
+    'secret': 'secrets',
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────
@@ -150,6 +155,11 @@ const getKubectlCompletions = (
         })
     }
 
+    // kubectl logs/exec <pod-name> (position 2, no resource type)
+    if (action === 'logs' || action === 'exec') {
+        return getResourceNameCompletions('pods', currentToken, context)
+    }
+
     // kubectl <action> <resource>
     if (tokens.length === 2 || (tokens.length === 3 && !currentLine.endsWith(' '))) {
         return filterMatches(KUBECTL_RESOURCES, currentToken)
@@ -175,6 +185,10 @@ const getResourceNameCompletions = (
 
     if (resource === 'pods') {
         names = context.clusterState.getPods().map(pod => pod.metadata.name)
+    } else if (resource === 'configmaps') {
+        names = context.clusterState.getConfigMaps().map(cm => cm.metadata.name)
+    } else if (resource === 'secrets') {
+        names = context.clusterState.getSecrets().map(secret => secret.metadata.name)
     }
     // TODO: Add getDeployments, getServices, getNamespaces when implemented in ClusterState
 

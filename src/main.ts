@@ -49,15 +49,11 @@ const terminal = createTerminalManager(terminalContainer, {
 })
 
 // Welcome message
-terminal.write('Welcome to Kube Simulator\r\n')
-terminal.write('Type kubectl or shell commands to interact with the virtual cluster\r\n')
+terminal.write('\x1b[36m☸ Kube Simulator\x1b[0m - Learn kubectl hands-on\r\n')
 terminal.write('\r\n')
-terminal.write('Quick start:\r\n')
-terminal.write('  help              - Show all available commands\r\n')
-terminal.write('  kubectl get pods  - List pods in the cluster\r\n')
-terminal.write('  debug images      - List available container images\r\n')
+terminal.write('Try: \x1b[33mkubectl get pods\x1b[0m or \x1b[33mkubectl logs <pod>\x1b[0m\r\n')
+terminal.write('Tip: Press \x1b[32mTab\x1b[0m to autocomplete, \x1b[32m↑↓\x1b[0m for history\r\n')
 terminal.write('\r\n')
-
 // Helper: Generate dynamic prompt based on current path
 const getPrompt = (currentPath: string): string => {
     if (currentPath === '/') {

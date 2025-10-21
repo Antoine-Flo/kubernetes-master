@@ -7,6 +7,8 @@ import { handleDescribe } from './handlers/describe'
 import { handleDelete } from './handlers/delete'
 import { handleApply } from './handlers/apply'
 import { handleCreate } from './handlers/create'
+import { handleLogs } from './handlers/logs'
+import { handleExec } from './handlers/exec'
 import type { ExecutionResult } from '../../shared/result'
 import { error, success } from '../../shared/result'
 import type { Logger } from '../../logger/Logger'
@@ -31,6 +33,8 @@ const createHandlers = (clusterState: ClusterState, fileSystem: FileSystem, logg
     handlers.set('delete', withDeps(handleDeleteWrapper))
     handlers.set('apply', withDeps(handleApplyWrapper))
     handlers.set('create', withDeps(handleCreateWrapper))
+    handlers.set('logs', withDeps(handleLogsWrapper))
+    handlers.set('exec', withDeps(handleExecWrapper))
 
     return handlers
 }
@@ -75,6 +79,19 @@ const handleCreateWrapper = (logger: Logger, cluster: ClusterState, fs: FileSyst
         logger.info('CLUSTER', 'Resource created successfully')
     }
     return result
+}
+
+const handleLogsWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, parsed: ParsedCommand): ExecutionResult => {
+    logger.debug('CLUSTER', `Getting logs for pod: ${parsed.name}`)
+    const output = handleLogs(cluster.toJSON(), parsed)
+    return success(output)
+}
+
+const handleExecWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, parsed: ParsedCommand): ExecutionResult => {
+    const command = parsed.execCommand?.join(' ') || 'unknown'
+    logger.debug('CLUSTER', `Executing command in pod ${parsed.name}: ${command}`)
+    const output = handleExec(cluster.toJSON(), parsed)
+    return success(output)
 }
 
 /**

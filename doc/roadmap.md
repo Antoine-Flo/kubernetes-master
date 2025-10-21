@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**680 tests passing** | **~94% coverage** | **Architecture: Functional (Factory + Pure functions + ADT + Event Sourcing)**
+**798 tests passing** | **~94% coverage** | **Architecture: Functional (Factory + Pure functions + ADT + Event Sourcing)**
 
 ## Completed Sprints
 
@@ -38,21 +38,29 @@
 ### Editor Integration
 - ✅ **Sprint 13 (Early)**: YAML Editor - CodeMirror 6 integration with nano command (25 tests)
 
+### Advanced kubectl Commands
+- ✅ **Sprint 5.6**: kubectl logs + exec (69 tests) - Dynamic log generation, tail/follow flags, interactive shell simulation, autocomplete
+
+### UI Enhancements
+- ✅ **UI Polish**: Navigation bar with GitHub link, footer with useful links, SEO metadata - Minimalist and modern design
+
+### Documentation
+- ✅ **User-focused README**: Transformed README from developer-centric to user-friendly documentation with examples, FAQ, learning path
+- ✅ **CONTRIBUTING.md**: Standard contribution guide with setup, coding standards, testing, and PR process
+
 ## Next Sprint
 
-**Sprint 5.6** - kubectl logs + exec
-- Pod logs with rotation (max 200 lines)
-- kubectl logs with -n, --tail, -f flags
-- kubectl exec -it for interactive shell
-- Dynamic log generation per container type
-
-## Upcoming (Phase 1 - MVP)
-
-### Sprint 5: kubectl Handlers + Core Resources
-
-**5.7 - kubectl label & annotate**
+**Sprint 5.7** - kubectl label & annotate
 - Add/remove labels and annotations
 - --overwrite flag support
+
+**Sprint 5.8** - Dynamic Log Generator Enhancement
+- Replace hardcoded log patterns with dynamic generation
+- Context-aware logs based on pod state and events
+- Realistic timestamps and log volume simulation
+- Support for different log levels and formats
+
+## Upcoming (Phase 1 - MVP)
 
 ### Sprint 6: Storage + Integration + Polish
 
@@ -107,6 +115,7 @@
 - kubectl port-forward (simulation)
 - kubectl top (CPU/memory metrics)
 - kubectl config (contexts, kubeconfig)
+- Multi-resource support (e.g., `kubectl get pods,services`)
 
 ### Sprint 11: Security & Networking
 - RBAC (Roles, ClusterRoles, Bindings)
