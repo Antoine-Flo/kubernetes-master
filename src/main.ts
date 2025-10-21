@@ -5,14 +5,20 @@ import { createKubectlExecutor } from './kubectl/commands/executor'
 import { createLogger } from './logger/Logger'
 import { createShellExecutor } from './shell/commands/executor'
 import { createSeedFileSystem } from './filesystem/seedFileSystem'
-import { createFileSystem } from './filesystem/FileSystem'
+import { createStorageAdapter } from './cluster/storage/storageAdapter'
+import { createAutoSaveClusterState, createAutoSaveFileSystem } from './cluster/storage/autoSave'
 import { createEditorModal } from './editor/EditorModal'
+import type { ClusterStateData } from './cluster/ClusterState'
+import type { FileSystemState } from './filesystem/FileSystem'
 
 // ╔═══════════════════════════════════════════════════════════════════════╗
 // ║                      KUBECTL SIMULATOR - MAIN                         ║
 // ╚═══════════════════════════════════════════════════════════════════════╝
 // Entry point for the Kube Simulator application.
-// Initializes terminal, cluster state, and command execution.
+// Initializes terminal, cluster state, and command execution with persistence.
+
+const CLUSTER_STATE_KEY = 'kube-simulator:cluster-state'
+const FILESYSTEM_STATE_KEY = 'kube-simulator:filesystem-state'
 
 const terminalContainer = document.getElementById('terminal')
 
@@ -20,12 +26,18 @@ if (!terminalContainer) {
     throw new Error('Terminal container not found')
 }
 
-// Initialize cluster state with seed data
-const clusterState = createSeedCluster()
+// Initialize storage adapter
+const storage = createStorageAdapter()
 
-// Initialize filesystem with seed data
-const fileSystemState = createSeedFileSystem()
-const fileSystem = createFileSystem(fileSystemState)
+// Initialize cluster state: Load from storage or use seed data
+const loadedClusterState = storage.load<ClusterStateData>(CLUSTER_STATE_KEY)
+const clusterStateData = loadedClusterState.ok ? loadedClusterState.value : createSeedCluster().toJSON()
+const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData)
+
+// Initialize filesystem: Load from storage or use seed data
+const loadedFileSystemState = storage.load<FileSystemState>(FILESYSTEM_STATE_KEY)
+const fileSystemState = loadedFileSystemState.ok ? loadedFileSystemState.value : createSeedFileSystem()
+const fileSystem = createAutoSaveFileSystem(storage, FILESYSTEM_STATE_KEY, fileSystemState)
 
 // Create logger
 const logger = createLogger({ mirrorToConsole: true })

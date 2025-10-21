@@ -51,9 +51,13 @@
 - ✅ **User-focused README**: Transformed README from developer-centric to user-friendly documentation with examples, FAQ, learning path
 - ✅ **CONTRIBUTING.md**: Standard contribution guide with setup, coding standards, testing, and PR process
 
+### Storage & Integration
+- ✅ **Sprint 6.1**: Storage Adapter - localStorage persistence with Map serialization support, quota error handling
+- ✅ **Sprint 6.2**: Integration - Auto-save wrapper with debouncing, main.ts orchestration, load-or-seed pattern
+
 ## Next Sprint
 
-**Sprint 6** - Storage + Integration + Polish
+**Sprint 6.3-6.5** - Error Handling, UI Polish & Documentation
 
 See details in "Upcoming (Phase 1 - MVP)" section below.
 

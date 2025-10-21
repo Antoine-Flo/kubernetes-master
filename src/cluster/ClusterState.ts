@@ -90,7 +90,7 @@ const podOps = createResourceOperations<Pod>(podRepo, 'pods')
 const configMapOps = createResourceOperations<ConfigMap>(configMapRepo, 'configMaps')
 const secretOps = createResourceOperations<Secret>(secretRepo, 'secrets')
 
-// Export Pod operations for external use
+// Export Pod operations for test use only
 export const addPod = podOps.add
 export const getPods = podOps.getAll
 export const findPod = podOps.find
