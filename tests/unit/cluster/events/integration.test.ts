@@ -37,7 +37,7 @@ describe('Event System Integration', () => {
     describe('EventBus + ClusterState Integration', () => {
         it('should update cluster state when PodCreated event is emitted', () => {
             const eventBus = createEventBus()
-            const cluster = createClusterState(undefined, eventBus)
+            const cluster = createClusterState(eventBus)
 
             const pod = createTestPod()
             const event = createPodCreatedEvent(pod, 'test')
@@ -51,7 +51,7 @@ describe('Event System Integration', () => {
 
         it('should track all events in history', () => {
             const eventBus = createEventBus({ enableHistory: true, maxHistorySize: 100 })
-            createClusterState(undefined, eventBus)
+            createClusterState(eventBus)
 
             const pod1 = createTestPod('pod-1')
             const pod2 = createTestPod('pod-2')
@@ -67,7 +67,7 @@ describe('Event System Integration', () => {
 
         it('should handle multiple subscribers for the same event', () => {
             const eventBus = createEventBus()
-            const cluster = createClusterState(undefined, eventBus)
+            const cluster = createClusterState(eventBus)
 
             let subscriberCallCount = 0
             eventBus.subscribe('PodCreated', () => {
@@ -85,7 +85,7 @@ describe('Event System Integration', () => {
     describe('Label and Annotate Events', () => {
         it('should handle PodLabeled event', () => {
             const eventBus = createEventBus()
-            const cluster = createClusterState(undefined, eventBus)
+            const cluster = createClusterState(eventBus)
 
             const pod = createTestPod()
             eventBus.emit(createPodCreatedEvent(pod, 'test'))
@@ -113,7 +113,7 @@ describe('Event System Integration', () => {
 
         it('should handle PodAnnotated event', () => {
             const eventBus = createEventBus()
-            const cluster = createClusterState(undefined, eventBus)
+            const cluster = createClusterState(eventBus)
 
             const pod = createTestPod()
             eventBus.emit(createPodCreatedEvent(pod, 'test'))
@@ -141,7 +141,7 @@ describe('Event System Integration', () => {
 
         it('should track label and annotate events in history', () => {
             const eventBus = createEventBus({ enableHistory: true })
-            createClusterState(undefined, eventBus)
+            createClusterState(eventBus)
 
             const pod = createTestPod()
             eventBus.emit(createPodCreatedEvent(pod, 'test'))
@@ -169,7 +169,7 @@ describe('Event System Integration', () => {
     describe('Centralized Logging', () => {
         it('should log all events via subscribeAll', () => {
             const eventBus = createEventBus()
-            createClusterState(undefined, eventBus)
+            createClusterState(eventBus)
 
             const loggedEvents: string[] = []
             eventBus.subscribeAll((event) => {
@@ -185,7 +185,7 @@ describe('Event System Integration', () => {
 
         it('should log events from multiple sources', () => {
             const eventBus = createEventBus()
-            createClusterState(undefined, eventBus)
+            createClusterState(eventBus)
 
             const loggedEvents: Array<{ type: string; source: string }> = []
             eventBus.subscribeAll((event) => {
@@ -207,25 +207,16 @@ describe('Event System Integration', () => {
         })
     })
 
-    describe('Backward Compatibility', () => {
-        it('should work without EventBus (legacy mode)', () => {
-            const cluster = createClusterState()
-
-            cluster.addPod(createTestPod())
-
-            const pods = cluster.getPods()
-            expect(pods).toHaveLength(1)
-        })
-
-        it('should support direct mutations alongside events', () => {
+    describe('Direct Mutations with Events', () => {
+        it('should support direct mutations that trigger events', () => {
             const eventBus = createEventBus()
-            const cluster = createClusterState(undefined, eventBus)
+            const cluster = createClusterState(eventBus)
 
             // Add pod via event
             const pod1 = createTestPod('pod-1')
             eventBus.emit(createPodCreatedEvent(pod1, 'test'))
 
-            // Add pod via direct mutation
+            // Add pod via direct mutation (also triggers events internally)
             const pod2 = createTestPod('pod-2')
             cluster.addPod(pod2)
 
@@ -237,7 +228,7 @@ describe('Event System Integration', () => {
     describe('Event Ordering and Consistency', () => {
         it('should process events in order', () => {
             const eventBus = createEventBus()
-            createClusterState(undefined, eventBus)
+            createClusterState(eventBus)
 
             const processOrder: string[] = []
             eventBus.subscribeAll((event) => {
@@ -258,7 +249,7 @@ describe('Event System Integration', () => {
 
         it('should maintain state consistency across multiple events', () => {
             const eventBus = createEventBus()
-            const cluster = createClusterState(undefined, eventBus)
+            const cluster = createClusterState(eventBus)
 
             const pod = createTestPod()
             eventBus.emit(createPodCreatedEvent(pod, 'test'))
@@ -280,7 +271,7 @@ describe('Event System Integration', () => {
     describe('Event History Features', () => {
         it('should limit history size with FIFO rotation', () => {
             const eventBus = createEventBus({ enableHistory: true, maxHistorySize: 3 })
-            createClusterState(undefined, eventBus)
+            createClusterState(eventBus)
 
             for (let i = 1; i <= 5; i++) {
                 const pod = createTestPod(`pod-${i}`)
@@ -295,7 +286,7 @@ describe('Event System Integration', () => {
 
         it('should clear history when requested', () => {
             const eventBus = createEventBus({ enableHistory: true })
-            createClusterState(undefined, eventBus)
+            createClusterState(eventBus)
 
             const pod = createTestPod()
             eventBus.emit(createPodCreatedEvent(pod, 'test'))
@@ -309,7 +300,7 @@ describe('Event System Integration', () => {
 
         it('should provide read-only history copy', () => {
             const eventBus = createEventBus({ enableHistory: true })
-            createClusterState(undefined, eventBus)
+            createClusterState(eventBus)
 
             const pod = createTestPod()
             eventBus.emit(createPodCreatedEvent(pod, 'test'))
@@ -325,7 +316,7 @@ describe('Event System Integration', () => {
     describe('Event Filtering', () => {
         it('should filter events by namespace', () => {
             const eventBus = createEventBus()
-            createClusterState(undefined, eventBus)
+            createClusterState(eventBus)
 
             const filteredEvents: string[] = []
             eventBus.subscribeFiltered(byNamespace('production'), (event) => {
@@ -344,7 +335,7 @@ describe('Event System Integration', () => {
 
         it('should filter events by type', () => {
             const eventBus = createEventBus()
-            createClusterState(undefined, eventBus)
+            createClusterState(eventBus)
 
             const filteredEvents: string[] = []
             eventBus.subscribeFiltered(byTypes('PodCreated', 'PodLabeled'), (event) => {
@@ -367,7 +358,7 @@ describe('Event System Integration', () => {
 
         it('should filter events by source', () => {
             const eventBus = createEventBus()
-            createClusterState(undefined, eventBus)
+            createClusterState(eventBus)
 
             const filteredEvents: string[] = []
             eventBus.subscribeFiltered(bySource('kubectl'), (event) => {
@@ -385,7 +376,7 @@ describe('Event System Integration', () => {
 
         it('should filter events by resource kind', () => {
             const eventBus = createEventBus()
-            createClusterState(undefined, eventBus)
+            createClusterState(eventBus)
 
             const filteredEvents: string[] = []
             eventBus.subscribeFiltered(byResourceKind('Pod'), (event) => {
@@ -407,7 +398,7 @@ describe('Event System Integration', () => {
 
         it('should combine filters with AND logic', () => {
             const eventBus = createEventBus()
-            createClusterState(undefined, eventBus)
+            createClusterState(eventBus)
 
             const filteredEvents: string[] = []
             eventBus.subscribeFiltered(
@@ -428,7 +419,7 @@ describe('Event System Integration', () => {
 
         it('should retrieve filtered history', () => {
             const eventBus = createEventBus({ enableHistory: true })
-            createClusterState(undefined, eventBus)
+            createClusterState(eventBus)
 
             const pod = createTestPod()
             eventBus.emit(createPodCreatedEvent(pod, 'test'))
@@ -449,7 +440,7 @@ describe('Event System Integration', () => {
     describe('Unsubscribe Mechanism', () => {
         it('should stop receiving events after unsubscribe', () => {
             const eventBus = createEventBus()
-            createClusterState(undefined, eventBus)
+            createClusterState(eventBus)
 
             let callCount = 0
             const unsubscribe = eventBus.subscribe('PodCreated', () => {
@@ -471,7 +462,7 @@ describe('Event System Integration', () => {
 
         it('should unsubscribe from subscribeAll', () => {
             const eventBus = createEventBus()
-            createClusterState(undefined, eventBus)
+            createClusterState(eventBus)
 
             let callCount = 0
             const unsubscribe = eventBus.subscribeAll(() => {

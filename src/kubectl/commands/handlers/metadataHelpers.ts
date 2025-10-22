@@ -118,58 +118,14 @@ const RESOURCE_ACCESSORS: Record<string, ResourceCollectionAccessor<ResourceWith
 }
 
 /**
- * Generic resource updater - works for any resource type
- * Pure function that finds, updates, and returns new state
- */
-const updateResource = <T extends ResourceWithMetadata>(
-    state: ClusterStateData,
-    resourceType: string,
-    name: string,
-    namespace: string,
-    updateFn: (resource: T) => Result<T>,
-    actionPastTense: string
-): ExecutionResult & { state?: ClusterStateData } => {
-    const accessor = RESOURCE_ACCESSORS[resourceType]
-    if (!accessor) {
-        return error(`Resource type "${resourceType}" is not supported`)
-    }
-
-    const items = accessor.getItems(state) as T[]
-    const resource = items.find(
-        (r) => r.metadata.name === name && r.metadata.namespace === namespace
-    )
-
-    if (!resource) {
-        return error(`${accessor.resourceTypeName} "${name}" not found in namespace "${namespace}"`)
-    }
-
-    const updateResult = updateFn(resource)
-    if (!updateResult.ok) {
-        return updateResult
-    }
-
-    const updatedItems = items.map((r) =>
-        r.metadata.name === name && r.metadata.namespace === namespace
-            ? updateResult.value
-            : r
-    )
-
-    return {
-        ok: true,
-        value: `${accessor.singularName}/${name} ${actionPastTense}`,
-        state: accessor.setItems(state, updatedItems),
-    }
-}
-
-/**
- * Generic handler for metadata changes (labels or annotations) with event support
- * Strategy pattern: configurable behavior via config object
+ * Generic handler for metadata changes (labels or annotations)
+ * Uses event-driven architecture to apply changes
  */
 export const handleMetadataChange = (
     state: ClusterStateData,
     parsed: ParsedCommand,
     config: MetadataOperationConfig,
-    eventBus?: EventBus
+    eventBus: EventBus
 ): ExecutionResult & { state?: ClusterStateData } => {
     const namespace = parsed.namespace || 'default'
 
@@ -187,31 +143,15 @@ export const handleMetadataChange = (
 
     const overwrite = parsed.flags['overwrite'] === true
 
-    // Event-driven path
-    if (eventBus) {
-        return handleMetadataChangeWithEvents(
-            state,
-            parsed.resource,
-            parsed.name,
-            namespace,
-            changes,
-            overwrite,
-            config,
-            eventBus
-        )
-    }
-
-    // Legacy path
-    const updateFn = (resource: ResourceWithMetadata) =>
-        applyMetadataChanges(resource, changes, overwrite, config.metadataType)
-
-    return updateResource(
+    return handleMetadataChangeWithEvents(
         state,
         parsed.resource,
         parsed.name,
         namespace,
-        updateFn,
-        config.actionPastTense
+        changes,
+        overwrite,
+        config,
+        eventBus
     )
 }
 

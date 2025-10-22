@@ -10,7 +10,7 @@ import type { StorageAdapter } from './storageAdapter'
 // ╚═══════════════════════════════════════════════════════════════════════╝
 // Wraps ClusterState and FileSystem with automatic persistence.
 // Debounces saves to avoid excessive localStorage writes.
-// Now supports event-driven architecture for simplified auto-save.
+// Uses event-driven architecture for ClusterState auto-save.
 
 const DEBOUNCE_DELAY_MS = 500
 
@@ -40,103 +40,26 @@ const createDebouncedSave = <T>(
 
 /**
  * Wrap ClusterState with auto-save functionality
- * If EventBus is provided, uses event-driven approach (simplified)
- * Otherwise, falls back to wrapping methods (legacy)
+ * Uses event-driven approach to automatically save on mutations
  */
 export const createAutoSaveClusterState = (
     storage: StorageAdapter,
     key: string,
-    initialState?: ClusterStateData,
-    eventBus?: EventBus
+    initialState: ClusterStateData,
+    eventBus: EventBus
 ): ClusterState => {
     const clusterState = createClusterState(initialState, eventBus)
     const debouncedSave = createDebouncedSave(storage, key, () => clusterState.toJSON())
 
-    // If EventBus is provided, use event-driven approach
-    if (eventBus) {
-        // Subscribe to all mutation events and trigger save
-        eventBus.subscribeAll((event) => {
-            // Only save on mutation events (Created, Updated, Deleted)
-            if (event.type.endsWith('Created') || event.type.endsWith('Updated') || event.type.endsWith('Deleted')) {
-                debouncedSave()
-            }
-        })
-        return clusterState
-    }
+    // Subscribe to all mutation events and trigger save
+    eventBus.subscribeAll((event) => {
+        // Only save on mutation events (Created, Updated, Deleted)
+        if (event.type.endsWith('Created') || event.type.endsWith('Updated') || event.type.endsWith('Deleted')) {
+            debouncedSave()
+        }
+    })
 
-    // Legacy approach: wrap mutating methods with auto-save
-    const originalAddPod = clusterState.addPod
-    const originalDeletePod = clusterState.deletePod
-    const originalUpdatePod = clusterState.updatePod
-    const originalAddConfigMap = clusterState.addConfigMap
-    const originalDeleteConfigMap = clusterState.deleteConfigMap
-    const originalUpdateConfigMap = clusterState.updateConfigMap
-    const originalAddSecret = clusterState.addSecret
-    const originalDeleteSecret = clusterState.deleteSecret
-    const originalUpdateSecret = clusterState.updateSecret
-    const originalLoadState = clusterState.loadState
-
-    return {
-        ...clusterState,
-        addPod: (pod) => {
-            originalAddPod(pod)
-            debouncedSave()
-        },
-        deletePod: (name, namespace) => {
-            const result = originalDeletePod(name, namespace)
-            if (result.ok) {
-                debouncedSave()
-            }
-            return result
-        },
-        updatePod: (name, namespace, updateFn) => {
-            const result = originalUpdatePod(name, namespace, updateFn)
-            if (result.ok) {
-                debouncedSave()
-            }
-            return result
-        },
-        addConfigMap: (configMap) => {
-            originalAddConfigMap(configMap)
-            debouncedSave()
-        },
-        deleteConfigMap: (name, namespace) => {
-            const result = originalDeleteConfigMap(name, namespace)
-            if (result.ok) {
-                debouncedSave()
-            }
-            return result
-        },
-        updateConfigMap: (name, namespace, updateFn) => {
-            const result = originalUpdateConfigMap(name, namespace, updateFn)
-            if (result.ok) {
-                debouncedSave()
-            }
-            return result
-        },
-        addSecret: (secret) => {
-            originalAddSecret(secret)
-            debouncedSave()
-        },
-        deleteSecret: (name, namespace) => {
-            const result = originalDeleteSecret(name, namespace)
-            if (result.ok) {
-                debouncedSave()
-            }
-            return result
-        },
-        updateSecret: (name, namespace, updateFn) => {
-            const result = originalUpdateSecret(name, namespace, updateFn)
-            if (result.ok) {
-                debouncedSave()
-            }
-            return result
-        },
-        loadState: (state) => {
-            originalLoadState(state)
-            debouncedSave()
-        },
-    }
+    return clusterState
 }
 
 /**

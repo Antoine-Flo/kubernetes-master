@@ -1,18 +1,21 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { createKubectlExecutor } from '../../../../src/kubectl/commands/executor'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { createClusterState } from '../../../../src/cluster/ClusterState'
+import { createEventBus } from '../../../../src/cluster/events/EventBus'
 import { createPod } from '../../../../src/cluster/ressources/Pod'
-import { createLogger } from '../../../../src/logger/Logger'
 import { createFileSystem } from '../../../../src/filesystem/FileSystem'
+import { createKubectlExecutor } from '../../../../src/kubectl/commands/executor'
+import { createLogger } from '../../../../src/logger/Logger'
 
 describe('kubectl Executor', () => {
     describe('createKubectlExecutor', () => {
         let clusterState: ReturnType<typeof createClusterState>
         let fileSystem: ReturnType<typeof createFileSystem>
         let logger: ReturnType<typeof createLogger>
+        let eventBus: ReturnType<typeof createEventBus>
 
         beforeEach(() => {
-            clusterState = createClusterState()
+            eventBus = createEventBus()
+            clusterState = createClusterState(eventBus)
             fileSystem = createFileSystem()
             logger = createLogger()
 
@@ -39,7 +42,7 @@ describe('kubectl Executor', () => {
 
         describe('command routing', () => {
             it('should route "kubectl get pods" to get handler', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl get pods')
                 expect(result.ok).toBe(true)
                 if (result.ok) {
@@ -48,7 +51,7 @@ describe('kubectl Executor', () => {
             })
 
             it('should route "kubectl describe pod" to describe handler', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl describe pod nginx-pod')
 
                 expect(result.ok).toBe(true)
@@ -58,7 +61,7 @@ describe('kubectl Executor', () => {
             })
 
             it('should route "kubectl delete pod" to delete handler', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl delete pod nginx-pod')
 
                 expect(result.ok).toBe(true)
@@ -81,7 +84,7 @@ spec:
 `
                 fileSystem.createFile('pod.yaml', yaml)
 
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl apply -f pod.yaml')
 
                 expect(result.ok).toBe(true)
@@ -102,7 +105,7 @@ data:
 `
                 fileSystem.createFile('deployment.yaml', yaml)
 
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl create -f deployment.yaml')
 
                 expect(result.ok).toBe(true)
@@ -114,28 +117,28 @@ data:
 
         describe('get command with different resources', () => {
             it('should handle "kubectl get pods"', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl get pods')
 
                 expect(result.ok).toBe(true)
             })
 
             it('should handle "kubectl get deployments"', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl get deployments')
 
                 expect(result.ok).toBe(true)
             })
 
             it('should handle "kubectl get services"', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl get services')
 
                 expect(result.ok).toBe(true)
             })
 
             it('should handle "kubectl get namespaces"', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl get namespaces')
 
                 expect(result.ok).toBe(true)
@@ -144,7 +147,7 @@ data:
 
         describe('namespace handling', () => {
             it('should pass namespace to get handler from -n flag', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl get pods -n kube-system')
 
                 expect(result.ok).toBe(true)
@@ -155,7 +158,7 @@ data:
             })
 
             it('should pass namespace to describe handler', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl describe pod redis-pod -n kube-system')
 
                 expect(result.ok).toBe(true)
@@ -165,7 +168,7 @@ data:
             })
 
             it('should use default namespace when not specified', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl get pods')
 
                 expect(result.ok).toBe(true)
@@ -178,7 +181,7 @@ data:
 
         describe('error handling', () => {
             it('should return error for invalid command syntax', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('invalid command')
 
                 expect(result.ok).toBe(false)
@@ -188,7 +191,7 @@ data:
             })
 
             it('should return error for empty command', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('')
 
                 expect(result.ok).toBe(false)
@@ -198,7 +201,7 @@ data:
             })
 
             it('should return error when pod not found', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl describe pod nonexistent')
 
                 expect(result.ok).toBe(false)
@@ -208,7 +211,7 @@ data:
             })
 
             it('should return error for pod in wrong namespace', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl describe pod nginx-pod -n kube-system')
 
                 expect(result.ok).toBe(false)
@@ -220,7 +223,7 @@ data:
 
         describe('delete command', () => {
             it('should delete pod and return success message', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl delete pod nginx-pod')
 
                 expect(result.ok).toBe(true)
@@ -231,7 +234,7 @@ data:
             })
 
             it('should delete pod with namespace specified', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl delete pod redis-pod -n kube-system')
 
                 expect(result.ok).toBe(true)
@@ -241,7 +244,7 @@ data:
             })
 
             it('should return error when deleting nonexistent pod', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl delete pod nonexistent')
 
                 expect(result.ok).toBe(false)
@@ -253,7 +256,7 @@ data:
 
         describe('resource aliases', () => {
             it('should handle "kubectl get po" (pods alias)', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl get po')
 
                 expect(result.ok).toBe(true)
@@ -263,7 +266,7 @@ data:
             })
 
             it('should handle "kubectl describe po nginx-pod" (pod alias)', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl describe po nginx-pod')
 
                 expect(result.ok).toBe(true)
@@ -273,7 +276,7 @@ data:
             })
 
             it('should handle "kubectl delete po nginx-pod" (pod alias)', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl delete po nginx-pod')
 
                 expect(result.ok).toBe(true)
@@ -282,7 +285,7 @@ data:
 
         describe('integration with parser', () => {
             it('should handle complete command flow: parse → route → execute', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl get pods -n default')
 
                 expect(result.ok).toBe(true)
@@ -293,7 +296,7 @@ data:
             })
 
             it('should propagate parser errors correctly', () => {
-                const executor = createKubectlExecutor(clusterState, fileSystem, logger)
+                const executor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
                 const result = executor.execute('kubectl get invalidresource')
 
                 expect(result.ok).toBe(false)

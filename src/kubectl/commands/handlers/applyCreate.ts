@@ -1,8 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// KUBECTL CREATE HANDLER
+// KUBECTL APPLY & CREATE HANDLERS
 // ═══════════════════════════════════════════════════════════════════════════
-// Handle kubectl create command - create resources from YAML files (fails if exists)
-// Now uses event-driven architecture
+// Unified handlers for apply and create commands using event-driven architecture
 
 import type { ClusterState } from '../../../cluster/ClusterState'
 import type { EventBus } from '../../../cluster/events/EventBus'
@@ -11,24 +10,15 @@ import type { ExecutionResult } from '../../../shared/result'
 import { error } from '../../../shared/result'
 import { parseKubernetesYaml } from '../../yamlParser'
 import type { ParsedCommand } from '../types'
-import { createResource, createResourceOps, createResourceWithEvents } from './resourceHelpers'
+import { applyResourceWithEvents, createResourceWithEvents } from './resourceHelpers'
 
 /**
- * Handle kubectl create command
- * Creates resources from YAML files (fails if resource already exists)
- * 
- * @param fileSystem - Virtual filesystem to read files from
- * @param clusterState - Cluster state to create resources in
- * @param parsed - Parsed command with flags
- * @param eventBus - Optional EventBus for event-driven architecture
- * @returns ExecutionResult with success message or error
+ * Shared helper to load and parse YAML from filesystem
  */
-export const handleCreate = (
+const loadAndParseYaml = (
     fileSystem: FileSystem,
-    clusterState: ClusterState,
-    parsed: ParsedCommand,
-    eventBus?: EventBus
-): ExecutionResult => {
+    parsed: ParsedCommand
+): ExecutionResult & { resource?: any } => {
     // Extract filename from flags
     const filename = parsed.flags.f || parsed.flags.filename
 
@@ -48,13 +38,42 @@ export const handleCreate = (
         return error(`Error: ${parseResult.error}`)
     }
 
-    const resource = parseResult.value
+    return { ok: true, value: '', resource: parseResult.value }
+}
 
-    // Use event-driven approach if EventBus is provided
-    if (eventBus) {
-        return createResourceWithEvents(resource, clusterState, eventBus)
+/**
+ * Handle kubectl apply command
+ * Creates or updates resources from YAML files
+ */
+export const handleApply = (
+    fileSystem: FileSystem,
+    clusterState: ClusterState,
+    parsed: ParsedCommand,
+    eventBus: EventBus
+): ExecutionResult => {
+    const loadResult = loadAndParseYaml(fileSystem, parsed)
+    if (!loadResult.ok) {
+        return loadResult
     }
 
-    // Fallback to direct approach for backward compatibility
-    return createResource(resource, createResourceOps(clusterState, resource.kind))
+    return applyResourceWithEvents(loadResult.resource, clusterState, eventBus)
 }
+
+/**
+ * Handle kubectl create command
+ * Creates resources from YAML files (fails if resource already exists)
+ */
+export const handleCreate = (
+    fileSystem: FileSystem,
+    clusterState: ClusterState,
+    parsed: ParsedCommand,
+    eventBus: EventBus
+): ExecutionResult => {
+    const loadResult = loadAndParseYaml(fileSystem, parsed)
+    if (!loadResult.ok) {
+        return loadResult
+    }
+
+    return createResourceWithEvents(loadResult.resource, clusterState, eventBus)
+}
+

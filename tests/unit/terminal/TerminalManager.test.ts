@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { createTerminalManager } from '../../../src/terminal/TerminalManager'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createClusterState } from '../../../src/cluster/ClusterState'
-import { createFileSystem } from '../../../src/filesystem/FileSystem'
+import { createEventBus } from '../../../src/cluster/events/EventBus'
 import { createPod } from '../../../src/cluster/ressources/Pod'
+import { createFileSystem } from '../../../src/filesystem/FileSystem'
+import { createTerminalManager } from '../../../src/terminal/TerminalManager'
 
 describe('TerminalManager', () => {
     let container: HTMLElement
@@ -222,7 +223,8 @@ describe('TerminalManager', () => {
         let mockContext: any
 
         beforeEach(() => {
-            const clusterState = createClusterState()
+            const eventBus = createEventBus()
+            const clusterState = createClusterState(eventBus)
             clusterState.addPod(createPod({
                 name: 'nginx-1',
                 namespace: 'default',

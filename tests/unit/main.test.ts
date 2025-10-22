@@ -1,11 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { createTerminalManager } from '../../src/terminal/TerminalManager'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createEventBus } from '../../src/cluster/events/EventBus'
 import { createSeedCluster } from '../../src/cluster/seedCluster'
+import { createFileSystem } from '../../src/filesystem/FileSystem'
+import { createSeedFileSystem } from '../../src/filesystem/seedFileSystem'
 import { createKubectlExecutor } from '../../src/kubectl/commands/executor'
 import { createLogger } from '../../src/logger/Logger'
 import { createShellExecutor } from '../../src/shell/commands/executor'
-import { createSeedFileSystem } from '../../src/filesystem/seedFileSystem'
-import { createFileSystem } from '../../src/filesystem/FileSystem'
+import { createTerminalManager } from '../../src/terminal/TerminalManager'
 
 describe('Main Dispatcher', () => {
     let container: HTMLElement
@@ -28,11 +29,12 @@ describe('Main Dispatcher', () => {
     beforeEach(() => {
         container = document.createElement('div')
         terminal = createTerminalManager(container)
-        clusterState = createSeedCluster()
+        const eventBus = createEventBus()
+        clusterState = createSeedCluster(eventBus)
         const fileSystemState = createSeedFileSystem()
         fileSystem = createFileSystem(fileSystemState)
         logger = createLogger()
-        kubectlExecutor = createKubectlExecutor(clusterState, fileSystem, logger)
+        kubectlExecutor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
         shellExecutor = createShellExecutor(fileSystem, logger)
 
         // Spy on terminal.write to capture output

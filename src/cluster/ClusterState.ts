@@ -18,6 +18,17 @@ import {
     handleSecretUpdated,
 } from './events/handlers'
 import type { ClusterEvent } from './events/types'
+import {
+    createConfigMapCreatedEvent,
+    createConfigMapDeletedEvent,
+    createConfigMapUpdatedEvent,
+    createPodCreatedEvent,
+    createPodDeletedEvent,
+    createPodUpdatedEvent,
+    createSecretCreatedEvent,
+    createSecretDeletedEvent,
+    createSecretUpdatedEvent,
+} from './events/types'
 import { createResourceRepository } from './repositories/resourceRepository'
 import type { KubernetesResource, ResourceCollection } from './repositories/types'
 import type { ConfigMap } from './ressources/ConfigMap'
@@ -138,39 +149,66 @@ export interface ClusterState {
     loadState: (state: ClusterStateData) => void
 }
 
+// ─── Event Factory Map ────────────────────────────────────────────────
+
+const EVENT_FACTORIES = {
+    Pod: {
+        created: createPodCreatedEvent,
+        deleted: createPodDeletedEvent,
+        updated: createPodUpdatedEvent,
+    },
+    ConfigMap: {
+        created: createConfigMapCreatedEvent,
+        deleted: createConfigMapDeletedEvent,
+        updated: createConfigMapUpdatedEvent,
+    },
+    Secret: {
+        created: createSecretCreatedEvent,
+        deleted: createSecretDeletedEvent,
+        updated: createSecretUpdatedEvent,
+    },
+} as const
+
 // ─── Facade Helper ───────────────────────────────────────────────────
 
 const createFacadeMethods = <T extends KubernetesResource>(
     ops: ResourceOperations<T>,
     getState: () => ClusterStateData,
-    setState: (newState: ClusterStateData) => void
-) => ({
-    getAll: (namespace?: string) => ops.getAll(getState(), namespace),
+    _setState: (newState: ClusterStateData) => void,
+    eventBus: EventBus,
+    resourceKind: keyof typeof EVENT_FACTORIES
+) => {
+    const eventFactory = EVENT_FACTORIES[resourceKind]
 
-    add: (resource: T) => {
-        setState(ops.add(getState(), resource))
-    },
+    return {
+        getAll: (namespace?: string) => ops.getAll(getState(), namespace),
 
-    find: (name: string, namespace: string) => ops.find(getState(), name, namespace),
+        add: (resource: T) => {
+            eventBus.emit(eventFactory.created(resource as any, 'direct'))
+        },
 
-    delete: (name: string, namespace: string): Result<T> => {
-        const result = ops.delete(getState(), name, namespace)
-        if (result.ok && result.state) {
-            setState(result.state)
-            return { ok: true, value: result.value }
-        }
-        return result
-    },
+        find: (name: string, namespace: string) => ops.find(getState(), name, namespace),
 
-    update: (name: string, namespace: string, updateFn: (resource: T) => T): Result<T> => {
-        const result = ops.update(getState(), name, namespace, updateFn)
-        if (result.ok && result.state) {
-            setState(result.state)
-            return { ok: true, value: result.value }
-        }
-        return result
-    },
-})
+        delete: (name: string, namespace: string): Result<T> => {
+            const findResult = ops.find(getState(), name, namespace)
+            if (!findResult.ok) {
+                return findResult
+            }
+            eventBus.emit(eventFactory.deleted(name, namespace, findResult.value as any, 'direct'))
+            return { ok: true, value: findResult.value }
+        },
+
+        update: (name: string, namespace: string, updateFn: (resource: T) => T): Result<T> => {
+            const findResult = ops.find(getState(), name, namespace)
+            if (!findResult.ok) {
+                return findResult
+            }
+            const updatedResource = updateFn(findResult.value)
+            eventBus.emit(eventFactory.updated(name, namespace, updatedResource as any, findResult.value as any, 'direct'))
+            return { ok: true, value: updatedResource }
+        },
+    }
+}
 
 // ─── Event Handling ──────────────────────────────────────────────────────
 
@@ -209,7 +247,16 @@ const applyEventToState = (state: ClusterStateData, event: ClusterEvent): Cluste
 }
 
 // Facade factory function
-export const createClusterState = (initialState?: ClusterStateData, eventBus?: EventBus): ClusterState => {
+export function createClusterState(eventBus: EventBus): ClusterState
+export function createClusterState(initialState: ClusterStateData, eventBus: EventBus): ClusterState
+export function createClusterState(
+    initialStateOrEventBus: ClusterStateData | EventBus,
+    eventBus?: EventBus
+): ClusterState {
+    const [initialState, bus] = eventBus 
+        ? [initialStateOrEventBus as ClusterStateData, eventBus]
+        : [undefined, initialStateOrEventBus as EventBus]
+    
     let state: ClusterStateData = initialState || createEmptyState()
 
     const getState = () => state
@@ -217,16 +264,14 @@ export const createClusterState = (initialState?: ClusterStateData, eventBus?: E
         state = newState
     }
 
-    // Subscribe to events if EventBus is provided
-    if (eventBus) {
-        eventBus.subscribeAll((event) => {
-            state = applyEventToState(state, event)
-        })
-    }
+    // Subscribe to all events for state updates
+    bus.subscribeAll((event) => {
+        state = applyEventToState(state, event)
+    })
 
-    const podMethods = createFacadeMethods(podOps, getState, setState)
-    const configMapMethods = createFacadeMethods(configMapOps, getState, setState)
-    const secretMethods = createFacadeMethods(secretOps, getState, setState)
+    const podMethods = createFacadeMethods(podOps, getState, setState, bus, 'Pod')
+    const configMapMethods = createFacadeMethods(configMapOps, getState, setState, bus, 'ConfigMap')
+    const secretMethods = createFacadeMethods(secretOps, getState, setState, bus, 'Secret')
 
     return {
         getPods: podMethods.getAll,

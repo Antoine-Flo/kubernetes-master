@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { handleLabel } from '../../../../../src/kubectl/commands/handlers/label'
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { ClusterStateData } from '../../../../../src/cluster/ClusterState'
-import type { ParsedCommand } from '../../../../../src/kubectl/commands/types'
-import { createPod } from '../../../../../src/cluster/ressources/Pod'
+import { createEventBus } from '../../../../../src/cluster/events/EventBus'
 import { createConfigMap } from '../../../../../src/cluster/ressources/ConfigMap'
+import { createPod } from '../../../../../src/cluster/ressources/Pod'
 import { createSecret } from '../../../../../src/cluster/ressources/Secret'
+import { handleLabel } from '../../../../../src/kubectl/commands/handlers/label'
+import type { ParsedCommand } from '../../../../../src/kubectl/commands/types'
 
 describe('handleLabel', () => {
     let state: ClusterStateData
@@ -28,7 +29,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: 'nginx' },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('Resource name is required')
@@ -43,7 +45,8 @@ describe('handleLabel', () => {
                 flags: {},
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('No label changes provided')
@@ -59,7 +62,8 @@ describe('handleLabel', () => {
                 labelChanges: {},
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('No label changes provided')
@@ -75,7 +79,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: 'nginx' },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('not found')
@@ -101,7 +106,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: 'web' },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('not found')
@@ -127,7 +133,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: 'new' },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('already exists')
@@ -144,7 +151,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: 'web' },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('not supported')
@@ -173,15 +181,16 @@ describe('handleLabel', () => {
                 labelChanges: { app: 'web' },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+            const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok) {
                 expect(result.value).toBe('pod/nginx labeled')
-                expect(result.state).toBeDefined()
-                if (result.state) {
-                    const pod = result.state.pods.items[0]
-                    expect(pod.metadata.labels).toEqual({ app: 'web' })
-                }
+                // Event-driven: no state returned, event is emitted
+                // Verify event was emitted
+                const history = eventBus.getHistory()
+                expect(history).toHaveLength(1)
+                expect(history[0].type).toBe('PodLabeled')
             }
         })
 
@@ -202,7 +211,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: 'web', tier: 'frontend', environment: 'prod' },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -232,7 +242,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: 'web' },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -261,7 +272,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: 'new' },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -287,7 +299,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: null },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -313,7 +326,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: null, tier: null },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -339,7 +353,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: null },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -365,7 +380,8 @@ describe('handleLabel', () => {
                 labelChanges: { tier: 'frontend', old: null },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -394,7 +410,8 @@ describe('handleLabel', () => {
                 labelChanges: { nonexistent: null },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -420,7 +437,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: 'web' },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -451,7 +469,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: 'web' },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 expect(result.state.pods.items).toHaveLength(2)
@@ -483,7 +502,8 @@ describe('handleLabel', () => {
                 labelChanges: { version: '1.0' },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok) {
                 expect(result.value).toBe('configmap/my-config labeled')
@@ -512,7 +532,8 @@ describe('handleLabel', () => {
                 labelChanges: { version: null },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const cm = result.state.configMaps.items[0]
@@ -529,7 +550,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: 'test' },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('ConfigMap')
@@ -546,7 +568,7 @@ describe('handleLabel', () => {
                 createSecret({
                     name: 'db-secret',
                     namespace: 'default',
-                    type: { type: 'Opaque' },
+                    secretType: { type: 'Opaque' },
                     data: { password: 'secret' },
                 }),
             ]
@@ -559,7 +581,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: 'database' },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok) {
                 expect(result.value).toBe('secret/db-secret labeled')
@@ -575,7 +598,7 @@ describe('handleLabel', () => {
                 createSecret({
                     name: 'db-secret',
                     namespace: 'default',
-                    type: { type: 'Opaque' },
+                    secretType: { type: 'Opaque' },
                     data: { password: 'secret' },
                     labels: { app: 'database', env: 'prod' },
                 }),
@@ -589,7 +612,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: null },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const secret = result.state.secrets.items[0]
@@ -606,7 +630,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: 'test' },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('Secret')
@@ -637,9 +662,10 @@ describe('handleLabel', () => {
                 labelChanges: { app: 'web' },
             }
 
-            handleLabel(state, parsed)
+            const eventBus = createEventBus()
+            handleLabel(state, parsed, eventBus)
 
-            // Original state should not be modified
+            // Original state should not be modified (events don't mutate input state)
             expect(state.pods.items[0]).toBe(originalPod)
             expect(state.pods.items[0].metadata.labels).toBeUndefined()
         })
@@ -661,7 +687,8 @@ describe('handleLabel', () => {
                 labelChanges: { app: 'web' },
             }
 
-            const result = handleLabel(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleLabel(state, parsed, eventBus)
 
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]

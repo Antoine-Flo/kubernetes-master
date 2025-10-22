@@ -49,7 +49,7 @@ const logger = createLogger({ mirrorToConsole: true })
 // Subscribe logger to all events for centralized logging
 eventBus.subscribeAll((event) => {
     const eventInfo = `${event.type} - ${JSON.stringify(event.payload).substring(0, 100)}...`
-    logger.info('EVENT', eventInfo)
+    logger.info('CLUSTER', eventInfo)
 })
 
 // Create editor modal

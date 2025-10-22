@@ -221,29 +221,21 @@ export const generateLogs = (containerImage: string, count: number): string[] =>
     const baseTime = new Date(Date.now() - 10 * 60 * 1000)
     let currentOffset = 0
 
+    // Log generator lookup table (object lookup pattern)
+    const LOG_GENERATORS: Record<string, (ts: string, level: LogLevel, i: number) => string> = {
+        nginx: generateNginxLog,
+        redis: generateRedisLog,
+        mysql: generateMysqlLog,
+        postgres: generatePostgresLog
+    }
+
     for (let i = 0; i < actualCount; i++) {
         currentOffset += randomInt(1, 5)
         const timestamp = formatTimestamp(baseTime, currentOffset)
         const level = getLogLevel(i)
 
-        let logLine: string
-        switch (imageType) {
-            case 'nginx':
-                logLine = generateNginxLog(timestamp, level)
-                break
-            case 'redis':
-                logLine = generateRedisLog(timestamp, level, i)
-                break
-            case 'mysql':
-                logLine = generateMysqlLog(timestamp, level, i)
-                break
-            case 'postgres':
-                logLine = generatePostgresLog(timestamp, level, i)
-                break
-            default:
-                logLine = generateGenericLog(timestamp, level, i)
-                break
-        }
+        const generator = LOG_GENERATORS[imageType] || generateGenericLog
+        const logLine = generator(timestamp, level, i)
 
         logs.push(logLine)
     }

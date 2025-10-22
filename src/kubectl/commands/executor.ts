@@ -5,8 +5,7 @@ import type { Logger } from '../../logger/Logger'
 import type { ExecutionResult } from '../../shared/result'
 import { error, success } from '../../shared/result'
 import { handleAnnotate } from './handlers/annotate'
-import { handleApply } from './handlers/apply'
-import { handleCreate } from './handlers/create'
+import { handleApply, handleCreate } from './handlers/applyCreate'
 import { handleDelete } from './handlers/delete'
 import { handleDescribe } from './handlers/describe'
 import { handleExec } from './handlers/exec'
@@ -25,96 +24,42 @@ type ActionHandler = (parsed: ParsedCommand) => ExecutionResult
 const createHandlers = (
     clusterState: ClusterState,
     fileSystem: FileSystem,
-    logger: Logger,
-    eventBus?: EventBus
+    _logger: Logger,
+    eventBus: EventBus
 ): Map<string, ActionHandler> => {
-    // Currying helper: pre-applies logger, clusterState, fileSystem, and eventBus
-    const withDeps = <TArgs extends any[]>(
-        handler: (logger: Logger, cluster: ClusterState, fs: FileSystem, eventBus: EventBus | undefined, ...args: TArgs) => ExecutionResult
-    ) => (...args: TArgs) => handler(logger, clusterState, fileSystem, eventBus, ...args)
-
     const handlers = new Map<string, ActionHandler>()
 
-    // Ultra-concis: une ligne par handler, avec logging intégré
-    handlers.set('get', withDeps(handleGetWrapper))
-    handlers.set('describe', withDeps(handleDescribeWrapper))
-    handlers.set('delete', withDeps(handleDeleteWrapper))
-    handlers.set('apply', withDeps(handleApplyWrapper))
-    handlers.set('create', withDeps(handleCreateWrapper))
-    handlers.set('logs', withDeps(handleLogsWrapper))
-    handlers.set('exec', withDeps(handleExecWrapper))
-    handlers.set('label', withDeps(handleLabelWrapper))
-    handlers.set('annotate', withDeps(handleAnnotateWrapper))
+    // Direct handler mapping - logging is handled centrally by event system
+    handlers.set('get', (parsed) => success(handleGet(clusterState.toJSON(), parsed)))
+    handlers.set('describe', (parsed) => handleDescribe(clusterState.toJSON(), parsed))
+    handlers.set('delete', (parsed) => handleDelete(clusterState, parsed, eventBus))
+    handlers.set('apply', (parsed) => handleApply(fileSystem, clusterState, parsed, eventBus))
+    handlers.set('create', (parsed) => handleCreate(fileSystem, clusterState, parsed, eventBus))
+    handlers.set('logs', (parsed) => success(handleLogs(clusterState.toJSON(), parsed)))
+    handlers.set('exec', (parsed) => success(handleExec(clusterState.toJSON(), parsed)))
+    handlers.set('label', (parsed) => handleLabelAdapter(clusterState, fileSystem, eventBus, parsed))
+    handlers.set('annotate', (parsed) => handleAnnotateAdapter(clusterState, fileSystem, eventBus, parsed))
 
     return handlers
 }
 
-// ─── Handler Wrappers (with logging) ────────────────────────────────────
+// ─── Handler Adapters ────────────────────────────────────────────────────
 
-const handleGetWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, _eventBus: EventBus | undefined, parsed: ParsedCommand): ExecutionResult => {
-    logger.debug('CLUSTER', `Getting ${parsed.resource} in namespace ${parsed.namespace || 'default'}`)
-    const output = handleGet(cluster.toJSON(), parsed)
-    return success(output)
-}
-
-const handleDescribeWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, _eventBus: EventBus | undefined, parsed: ParsedCommand): ExecutionResult => {
-    logger.debug('CLUSTER', `Describing ${parsed.resource}: ${parsed.name || 'all'}`)
-    return handleDescribe(cluster.toJSON(), parsed)
-}
-
-const handleDeleteWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, eventBus: EventBus | undefined, parsed: ParsedCommand): ExecutionResult => {
-    logger.debug('CLUSTER', `Deleting ${parsed.resource}: ${parsed.name}`)
-    const result = handleDelete(cluster, parsed, eventBus)
-    return result
-}
-
-const handleApplyWrapper = (logger: Logger, cluster: ClusterState, fs: FileSystem, eventBus: EventBus | undefined, parsed: ParsedCommand): ExecutionResult => {
-    const file = parsed.flags.f || parsed.flags.filename
-    logger.debug('CLUSTER', `Applying resource from file: ${file}`)
-    const result = handleApply(fs, cluster, parsed, eventBus)
-    return result
-}
-
-const handleCreateWrapper = (logger: Logger, cluster: ClusterState, fs: FileSystem, eventBus: EventBus | undefined, parsed: ParsedCommand): ExecutionResult => {
-    const file = parsed.flags.f || parsed.flags.filename
-    logger.debug('CLUSTER', `Creating resource from file: ${file}`)
-    const result = handleCreate(fs, cluster, parsed, eventBus)
-    return result
-}
-
-const handleLogsWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, _eventBus: EventBus | undefined, parsed: ParsedCommand): ExecutionResult => {
-    logger.debug('CLUSTER', `Getting logs for pod: ${parsed.name}`)
-    const output = handleLogs(cluster.toJSON(), parsed)
-    return success(output)
-}
-
-const handleExecWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, _eventBus: EventBus | undefined, parsed: ParsedCommand): ExecutionResult => {
-    const command = parsed.execCommand?.join(' ') || 'unknown'
-    logger.debug('CLUSTER', `Executing command in pod ${parsed.name}: ${command}`)
-    const output = handleExec(cluster.toJSON(), parsed)
-    return success(output)
-}
-
-const handleLabelWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, eventBus: EventBus | undefined, parsed: ParsedCommand): ExecutionResult => {
-    logger.debug('CLUSTER', `Labeling ${parsed.resource}: ${parsed.name}`)
+// Adapters for handlers that need state management
+const handleLabelAdapter = (cluster: ClusterState, _fs: FileSystem, eventBus: EventBus, parsed: ParsedCommand): ExecutionResult => {
     const result = handleLabel(cluster.toJSON(), parsed, eventBus)
     if (result.ok && result.state) {
         cluster.loadState(result.state)
     }
-    return result.ok && result.state
-        ? { ok: true, value: result.value }
-        : result
+    return result.ok && result.state ? { ok: true, value: result.value } : result
 }
 
-const handleAnnotateWrapper = (logger: Logger, cluster: ClusterState, _fs: FileSystem, eventBus: EventBus | undefined, parsed: ParsedCommand): ExecutionResult => {
-    logger.debug('CLUSTER', `Annotating ${parsed.resource}: ${parsed.name}`)
+const handleAnnotateAdapter = (cluster: ClusterState, _fs: FileSystem, eventBus: EventBus, parsed: ParsedCommand): ExecutionResult => {
     const result = handleAnnotate(cluster.toJSON(), parsed, eventBus)
     if (result.ok && result.state) {
         cluster.loadState(result.state)
     }
-    return result.ok && result.state
-        ? { ok: true, value: result.value }
-        : result
+    return result.ok && result.state ? { ok: true, value: result.value } : result
 }
 
 /**
@@ -132,14 +77,7 @@ const routeCommand = (
         return error(`Unknown action: ${parsed.action}`)
     }
 
-    const result = handler(parsed)
-
-    // Log errors (success already logged in wrappers)
-    if (!result.ok) {
-        logger.error('CLUSTER', `${parsed.action} failed: ${result.error}`)
-    }
-
-    return result
+    return handler(parsed)
 }
 
 /**
@@ -149,14 +87,14 @@ const routeCommand = (
  * @param clusterState - The cluster state to operate on
  * @param fileSystem - The filesystem to read YAML files from
  * @param logger - Application logger for tracking commands
- * @param eventBus - Optional EventBus for event-driven architecture
+ * @param eventBus - EventBus for event-driven architecture
  * @returns Executor with execute method
  */
 export const createKubectlExecutor = (
     clusterState: ClusterState,
     fileSystem: FileSystem,
     logger: Logger,
-    eventBus?: EventBus
+    eventBus: EventBus
 ) => {
     const handlers = createHandlers(clusterState, fileSystem, logger, eventBus)
 

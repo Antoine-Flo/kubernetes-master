@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { createStorageAdapter } from '../../../../src/cluster/storage/storageAdapter'
-import { createAutoSaveClusterState, createAutoSaveFileSystem } from '../../../../src/cluster/storage/autoSave'
-import { createPod } from '../../../../src/cluster/ressources/Pod'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createEmptyState, type ClusterStateData } from '../../../../src/cluster/ClusterState'
+import { createEventBus } from '../../../../src/cluster/events/EventBus'
+import { createConfigMapCreatedEvent, createPodCreatedEvent, createPodDeletedEvent, createPodUpdatedEvent, createSecretCreatedEvent } from '../../../../src/cluster/events/types'
 import { createConfigMap } from '../../../../src/cluster/ressources/ConfigMap'
+import { createPod } from '../../../../src/cluster/ressources/Pod'
 import { createSecret } from '../../../../src/cluster/ressources/Secret'
-import type { ClusterStateData } from '../../../../src/cluster/ClusterState'
+import { createAutoSaveClusterState, createAutoSaveFileSystem } from '../../../../src/cluster/storage/autoSave'
+import { createStorageAdapter } from '../../../../src/cluster/storage/storageAdapter'
 import type { FileSystemState } from '../../../../src/filesystem/FileSystem'
 
 describe('AutoSave', () => {
@@ -20,7 +22,8 @@ describe('AutoSave', () => {
     describe('ClusterState auto-save', () => {
         it('should auto-save when adding a pod', () => {
             const storage = createStorageAdapter()
-            const clusterState = createAutoSaveClusterState(storage, 'test-cluster')
+            const eventBus = createEventBus()
+            createAutoSaveClusterState(storage, 'test-cluster', createEmptyState(), eventBus)
 
             const pod = createPod({
                 name: 'test-pod',
@@ -28,7 +31,8 @@ describe('AutoSave', () => {
                 containers: [{ name: 'nginx', image: 'nginx:latest' }],
             })
 
-            clusterState.addPod(pod)
+            // Emit event instead of calling addPod directly
+            eventBus.emit(createPodCreatedEvent(pod, 'test'))
 
             // Trigger debounce
             vi.advanceTimersByTime(500)
@@ -44,16 +48,17 @@ describe('AutoSave', () => {
         it('should debounce multiple rapid changes', () => {
             const storage = createStorageAdapter()
             const saveSpy = vi.spyOn(storage, 'save')
-            const clusterState = createAutoSaveClusterState(storage, 'test-cluster')
+            const eventBus = createEventBus()
+            createAutoSaveClusterState(storage, 'test-cluster', createEmptyState(), eventBus)
 
-            // Add multiple pods rapidly
+            // Add multiple pods rapidly via events
             for (let i = 0; i < 5; i++) {
                 const pod = createPod({
                     name: `pod-${i}`,
                     namespace: 'default',
                     containers: [{ name: 'nginx', image: 'nginx:latest' }],
                 })
-                clusterState.addPod(pod)
+                eventBus.emit(createPodCreatedEvent(pod, 'test'))
                 vi.advanceTimersByTime(100) // Less than debounce delay
             }
 
@@ -69,7 +74,8 @@ describe('AutoSave', () => {
 
         it('should auto-save when deleting a pod', () => {
             const storage = createStorageAdapter()
-            const clusterState = createAutoSaveClusterState(storage, 'test-cluster')
+            const eventBus = createEventBus()
+            createAutoSaveClusterState(storage, 'test-cluster', createEmptyState(), eventBus)
 
             const pod = createPod({
                 name: 'test-pod',
@@ -77,10 +83,10 @@ describe('AutoSave', () => {
                 containers: [{ name: 'nginx', image: 'nginx:latest' }],
             })
 
-            clusterState.addPod(pod)
+            eventBus.emit(createPodCreatedEvent(pod, 'test'))
             vi.advanceTimersByTime(500)
 
-            clusterState.deletePod('test-pod', 'default')
+            eventBus.emit(createPodDeletedEvent('test-pod', 'default', pod, 'test'))
             vi.advanceTimersByTime(500)
 
             const result = storage.load<ClusterStateData>('test-cluster')
@@ -92,7 +98,8 @@ describe('AutoSave', () => {
 
         it('should auto-save when updating a pod', () => {
             const storage = createStorageAdapter()
-            const clusterState = createAutoSaveClusterState(storage, 'test-cluster')
+            const eventBus = createEventBus()
+            createAutoSaveClusterState(storage, 'test-cluster', createEmptyState(), eventBus)
 
             const pod = createPod({
                 name: 'test-pod',
@@ -101,13 +108,11 @@ describe('AutoSave', () => {
                 phase: 'Pending',
             })
 
-            clusterState.addPod(pod)
+            eventBus.emit(createPodCreatedEvent(pod, 'test'))
             vi.advanceTimersByTime(500)
 
-            clusterState.updatePod('test-pod', 'default', (p) => ({
-                ...p,
-                status: { ...p.status, phase: 'Running' },
-            }))
+            const updatedPod = { ...pod, status: { ...pod.status, phase: 'Running' as const } }
+            eventBus.emit(createPodUpdatedEvent('test-pod', 'default', updatedPod, pod, 'test'))
             vi.advanceTimersByTime(500)
 
             const result = storage.load<ClusterStateData>('test-cluster')
@@ -119,7 +124,8 @@ describe('AutoSave', () => {
 
         it('should auto-save when adding a ConfigMap', () => {
             const storage = createStorageAdapter()
-            const clusterState = createAutoSaveClusterState(storage, 'test-cluster')
+            const eventBus = createEventBus()
+            createAutoSaveClusterState(storage, 'test-cluster', createEmptyState(), eventBus)
 
             const configMap = createConfigMap({
                 name: 'test-config',
@@ -127,7 +133,7 @@ describe('AutoSave', () => {
                 data: { key: 'value' },
             })
 
-            clusterState.addConfigMap(configMap)
+            eventBus.emit(createConfigMapCreatedEvent(configMap, 'test'))
             vi.advanceTimersByTime(500)
 
             const result = storage.load<ClusterStateData>('test-cluster')
@@ -140,7 +146,8 @@ describe('AutoSave', () => {
 
         it('should auto-save when adding a Secret', () => {
             const storage = createStorageAdapter()
-            const clusterState = createAutoSaveClusterState(storage, 'test-cluster')
+            const eventBus = createEventBus()
+            createAutoSaveClusterState(storage, 'test-cluster', createEmptyState(), eventBus)
 
             const secret = createSecret({
                 name: 'test-secret',
@@ -149,7 +156,7 @@ describe('AutoSave', () => {
                 data: { password: 'c2VjcmV0' },
             })
 
-            clusterState.addSecret(secret)
+            eventBus.emit(createSecretCreatedEvent(secret, 'test'))
             vi.advanceTimersByTime(500)
 
             const result = storage.load<ClusterStateData>('test-cluster')
@@ -163,7 +170,8 @@ describe('AutoSave', () => {
         it('should not auto-save on failed operations', () => {
             const storage = createStorageAdapter()
             const saveSpy = vi.spyOn(storage, 'save')
-            const clusterState = createAutoSaveClusterState(storage, 'test-cluster')
+            const eventBus = createEventBus()
+            const clusterState = createAutoSaveClusterState(storage, 'test-cluster', createEmptyState(), eventBus)
 
             // Try to delete non-existent pod
             clusterState.deletePod('non-existent', 'default')
@@ -188,7 +196,8 @@ describe('AutoSave', () => {
                 secrets: { items: [] },
             }
 
-            const clusterState = createAutoSaveClusterState(storage, 'test-cluster', initialState)
+            const eventBus = createEventBus()
+            const clusterState = createAutoSaveClusterState(storage, 'test-cluster', initialState, eventBus)
 
             const pods = clusterState.getPods()
             expect(pods).toHaveLength(1)
@@ -336,28 +345,39 @@ describe('AutoSave', () => {
     describe('loadState with auto-save', () => {
         it('should trigger auto-save when loadState is called on ClusterState', () => {
             const storage = createStorageAdapter()
-            const clusterState = createAutoSaveClusterState(storage, 'test-cluster')
+            const eventBus = createEventBus()
+            const clusterState = createAutoSaveClusterState(storage, 'test-cluster', createEmptyState(), eventBus)
 
-            const pod = createPod({
-                name: 'loaded-pod',
+            const pod1 = createPod({
+                name: 'initial-pod',
                 namespace: 'default',
                 containers: [{ name: 'nginx', image: 'nginx:latest' }],
             })
 
+            // Load state with initial pod
             const newState = {
-                pods: { items: [pod] },
+                pods: { items: [pod1] },
                 configMaps: { items: [] },
                 secrets: { items: [] },
             }
 
             clusterState.loadState(newState)
+            
+            // Add another pod which will trigger auto-save
+            const pod2 = createPod({
+                name: 'added-pod',
+                namespace: 'default',
+                containers: [{ name: 'redis', image: 'redis:latest' }],
+            })
+            clusterState.addPod(pod2)
             vi.advanceTimersByTime(500)
 
             const result = storage.load<ClusterStateData>('test-cluster')
             expect(result.ok).toBe(true)
             if (result.ok) {
-                expect(result.value.pods.items).toHaveLength(1)
-                expect(result.value.pods.items[0].metadata.name).toBe('loaded-pod')
+                expect(result.value.pods.items).toHaveLength(2)
+                expect(result.value.pods.items.some(p => p.metadata.name === 'initial-pod')).toBe(true)
+                expect(result.value.pods.items.some(p => p.metadata.name === 'added-pod')).toBe(true)
             }
         })
 

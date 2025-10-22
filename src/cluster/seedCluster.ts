@@ -1,12 +1,14 @@
-import { createPod } from './ressources/Pod'
-import { createConfigMap } from './ressources/ConfigMap'
-import { createSecret } from './ressources/Secret'
-import { encodeBase64 } from './ressources/Secret'
-import { createClusterState } from './ClusterState'
 import type { ClusterState } from './ClusterState'
+import { createClusterState } from './ClusterState'
+import type { EventBus } from './events/EventBus'
+import { createEventBus } from './events/EventBus'
 import { generateLogs } from './logGenerator'
+import { createConfigMap } from './ressources/ConfigMap'
+import { createPod } from './ressources/Pod'
+import { createSecret, encodeBase64 } from './ressources/Secret'
 
-export const createSeedCluster = (): ClusterState => {
+export const createSeedCluster = (eventBus?: EventBus): ClusterState => {
+    const bus = eventBus || createEventBus()
     // Create seed ConfigMaps
     const configMaps = [
         createConfigMap({
@@ -244,7 +246,7 @@ export const createSeedCluster = (): ClusterState => {
     ]
 
     // Create cluster state and add all resources
-    const clusterState = createClusterState()
+    const clusterState = createClusterState(bus)
 
     // Add ConfigMaps
     configMaps.forEach((cm) => clusterState.addConfigMap(cm))

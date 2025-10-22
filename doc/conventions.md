@@ -204,8 +204,8 @@ export const createExecutor = () => {
 ```typescript
 // Always use Result<T> for failable operations
 export type Result<T> = 
-  | { type: 'success'; data: T }
-  | { type: 'error'; message: string }
+  | { ok: true; value: T }
+  | { ok: false; error: string }
 
 const readFile = (path: string): Result<string> => {
   if (!exists(path)) return error('File not found')

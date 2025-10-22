@@ -1,14 +1,16 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { getCompletions, getCommonPrefix, formatSuggestions, type AutocompleteContext } from '../../../src/terminal/autocomplete'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { createClusterState } from '../../../src/cluster/ClusterState'
-import { createFileSystem } from '../../../src/filesystem/FileSystem'
+import { createEventBus } from '../../../src/cluster/events/EventBus'
 import { createPod } from '../../../src/cluster/ressources/Pod'
+import { createFileSystem } from '../../../src/filesystem/FileSystem'
+import { formatSuggestions, getCommonPrefix, getCompletions, type AutocompleteContext } from '../../../src/terminal/autocomplete'
 
 describe('Autocomplete', () => {
     let context: AutocompleteContext
 
     beforeEach(() => {
-        const clusterState = createClusterState()
+        const eventBus = createEventBus()
+        const clusterState = createClusterState(eventBus)
 
         // Add some test pods
         clusterState.addPod(createPod({

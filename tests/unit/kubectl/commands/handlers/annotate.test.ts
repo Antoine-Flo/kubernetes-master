@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { handleAnnotate } from '../../../../../src/kubectl/commands/handlers/annotate'
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { ClusterStateData } from '../../../../../src/cluster/ClusterState'
-import type { ParsedCommand } from '../../../../../src/kubectl/commands/types'
-import { createPod } from '../../../../../src/cluster/ressources/Pod'
+import { createEventBus } from '../../../../../src/cluster/events/EventBus'
 import { createConfigMap } from '../../../../../src/cluster/ressources/ConfigMap'
+import { createPod } from '../../../../../src/cluster/ressources/Pod'
 import { createSecret } from '../../../../../src/cluster/ressources/Secret'
+import { handleAnnotate } from '../../../../../src/kubectl/commands/handlers/annotate'
+import type { ParsedCommand } from '../../../../../src/kubectl/commands/types'
 
 describe('handleAnnotate', () => {
     let state: ClusterStateData
@@ -28,7 +29,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: 'test' },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('Resource name is required')
@@ -43,7 +45,8 @@ describe('handleAnnotate', () => {
                 flags: {},
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('No annotation changes provided')
@@ -59,7 +62,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: {},
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('No annotation changes provided')
@@ -75,7 +79,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: 'test' },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('not found')
@@ -101,7 +106,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: 'test' },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('not found')
@@ -127,7 +133,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: 'new' },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('already exists')
@@ -144,7 +151,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: 'test' },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('not supported')
@@ -173,15 +181,15 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: 'Web server' },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+            const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok) {
                 expect(result.value).toBe('pod/nginx annotated')
-                expect(result.state).toBeDefined()
-                if (result.state) {
-                    const pod = result.state.pods.items[0]
-                    expect(pod.metadata.annotations).toEqual({ description: 'Web server' })
-                }
+                // Event-driven: no state returned, event is emitted
+                const history = eventBus.getHistory()
+                expect(history).toHaveLength(1)
+                expect(history[0].type).toBe('PodAnnotated')
             }
         })
 
@@ -206,7 +214,8 @@ describe('handleAnnotate', () => {
                 },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -236,7 +245,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: 'Web server' },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -265,7 +275,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: 'new' },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -291,7 +302,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: null },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -317,7 +329,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: null, owner: null },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -343,7 +356,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: null },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -369,7 +383,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { owner: 'team-a', old: null },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -398,7 +413,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { nonexistent: null },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -424,7 +440,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: 'System pod' },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -455,7 +472,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: 'Web server' },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 expect(result.state.pods.items).toHaveLength(2)
@@ -483,7 +501,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { docs: 'https://example.com/docs' },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -510,7 +529,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: longText },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]
@@ -539,7 +559,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: 'Application config' },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok) {
                 expect(result.value).toBe('configmap/my-config annotated')
@@ -568,7 +589,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: null },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const cm = result.state.configMaps.items[0]
@@ -585,7 +607,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: 'test' },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('ConfigMap')
@@ -602,7 +625,7 @@ describe('handleAnnotate', () => {
                 createSecret({
                     name: 'db-secret',
                     namespace: 'default',
-                    type: { type: 'Opaque' },
+                    secretType: { type: 'Opaque' },
                     data: { password: 'secret' },
                 }),
             ]
@@ -615,7 +638,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: 'Database credentials' },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok) {
                 expect(result.value).toBe('secret/db-secret annotated')
@@ -631,7 +655,7 @@ describe('handleAnnotate', () => {
                 createSecret({
                     name: 'db-secret',
                     namespace: 'default',
-                    type: { type: 'Opaque' },
+                    secretType: { type: 'Opaque' },
                     data: { password: 'secret' },
                     annotations: { description: 'Creds', owner: 'admin' },
                 }),
@@ -645,7 +669,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: null },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(true)
             if (result.ok && result.state) {
                 const secret = result.state.secrets.items[0]
@@ -662,7 +687,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: 'test' },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
                 expect(result.error).toContain('Secret')
@@ -693,9 +719,10 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: 'Web server' },
             }
 
-            handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+            handleAnnotate(state, parsed, eventBus)
 
-            // Original state should not be modified
+            // Original state should not be modified (events don't mutate input state)
             expect(state.pods.items[0]).toBe(originalPod)
             expect(state.pods.items[0].metadata.annotations).toBeUndefined()
         })
@@ -717,7 +744,8 @@ describe('handleAnnotate', () => {
                 annotationChanges: { description: 'Web server' },
             }
 
-            const result = handleAnnotate(state, parsed)
+            const eventBus = createEventBus()
+        const result = handleAnnotate(state, parsed, eventBus)
 
             if (result.ok && result.state) {
                 const pod = result.state.pods.items[0]

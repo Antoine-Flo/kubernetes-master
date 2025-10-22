@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { simulateImagePull } from '../../../src/containers/ImagePuller'
 import { createImageRegistry } from '../../../src/containers/registry/ImageRegistry'
 
@@ -14,7 +14,8 @@ describe('ImagePuller', () => {
                 expect(result.events).toBeDefined()
             }
             if (result.ok) {
-                expect(result.events!.length).toBeGreaterThan(0)
+                expect(result.events).toBeDefined()
+                expect(result.events?.length).toBeGreaterThan(0)
             }
         })
 

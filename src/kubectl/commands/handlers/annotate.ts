@@ -13,12 +13,12 @@ import { handleMetadataChange } from './metadataHelpers'
 /**
  * Handle kubectl annotate command
  * Supports pods, configmaps, and secrets
- * Event-driven when EventBus is provided
+ * Uses event-driven architecture
  */
 export const handleAnnotate = (
     state: ClusterStateData,
     parsed: ParsedCommand,
-    eventBus?: EventBus
+    eventBus: EventBus
 ): ExecutionResult & { state?: ClusterStateData } => {
     return handleMetadataChange(state, parsed, {
         metadataType: 'annotations',

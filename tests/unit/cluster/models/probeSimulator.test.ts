@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
     evaluateLivenessProbe,
     evaluateReadinessProbe,
@@ -134,7 +134,9 @@ describe('Probe Simulator', () => {
                 phase: 'Running',
             })
 
-            const result = evaluateLivenessProbe(pod, pod.spec.containers[0].livenessProbe!)
+            const probe = pod.spec.containers[0].livenessProbe
+            if (!probe) throw new Error('Probe should exist')
+            const result = evaluateLivenessProbe(pod, probe)
 
             expect(result.success).toBe(true)
         })
@@ -157,7 +159,9 @@ describe('Probe Simulator', () => {
                 phase: 'Pending',
             })
 
-            const result = evaluateLivenessProbe(pod, pod.spec.containers[0].livenessProbe!)
+            const probe = pod.spec.containers[0].livenessProbe
+            if (!probe) throw new Error('Probe should exist')
+            const result = evaluateLivenessProbe(pod, probe)
 
             expect(result.success).toBe(false)
             if (!result.success) {
@@ -185,10 +189,9 @@ describe('Probe Simulator', () => {
                 creationTimestamp: new Date(Date.now() - 5000).toISOString(), // 5 seconds ago
             })
 
-            const result = evaluateLivenessProbe(
-                recentPod,
-                recentPod.spec.containers[0].livenessProbe!
-            )
+            const probe = recentPod.spec.containers[0].livenessProbe
+            if (!probe) throw new Error('Probe should exist')
+            const result = evaluateLivenessProbe(recentPod, probe)
 
             expect(result.success).toBe(false)
             if (!result.success) {
@@ -216,7 +219,9 @@ describe('Probe Simulator', () => {
                 phase: 'Running',
             })
 
-            const result = evaluateReadinessProbe(pod, pod.spec.containers[0].readinessProbe!)
+            const probe = pod.spec.containers[0].readinessProbe
+            if (!probe) throw new Error('Probe should exist')
+            const result = evaluateReadinessProbe(pod, probe)
 
             expect(result.success).toBe(true)
         })
@@ -238,7 +243,9 @@ describe('Probe Simulator', () => {
                 phase: 'Pending',
             })
 
-            const result = evaluateReadinessProbe(pod, pod.spec.containers[0].readinessProbe!)
+            const probe = pod.spec.containers[0].readinessProbe
+            if (!probe) throw new Error('Probe should exist')
+            const result = evaluateReadinessProbe(pod, probe)
 
             expect(result.success).toBe(false)
             if (!result.success) {
@@ -265,10 +272,9 @@ describe('Probe Simulator', () => {
                 creationTimestamp: new Date(Date.now() - 5000).toISOString(), // 5 seconds ago
             })
 
-            const result = evaluateReadinessProbe(
-                recentPod,
-                recentPod.spec.containers[0].readinessProbe!
-            )
+            const probe = recentPod.spec.containers[0].readinessProbe
+            if (!probe) throw new Error('Probe should exist')
+            const result = evaluateReadinessProbe(recentPod, probe)
 
             expect(result.success).toBe(false)
             if (!result.success) {
@@ -296,7 +302,9 @@ describe('Probe Simulator', () => {
                 creationTimestamp: new Date(Date.now() - 60000).toISOString(), // 60 seconds ago
             })
 
-            const result = evaluateReadinessProbe(oldPod, oldPod.spec.containers[0].readinessProbe!)
+            const probe = oldPod.spec.containers[0].readinessProbe
+            if (!probe) throw new Error('Probe should exist')
+            const result = evaluateReadinessProbe(oldPod, probe)
 
             expect(result.success).toBe(true)
         })

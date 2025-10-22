@@ -1,9 +1,13 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { createStorageAdapter } from '../../../src/cluster/storage/storageAdapter'
-import { createAutoSaveClusterState, createAutoSaveFileSystem } from '../../../src/cluster/storage/autoSave'
-import { createSeedCluster } from '../../../src/cluster/seedCluster'
-import { createSeedFileSystem } from '../../../src/filesystem/seedFileSystem'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ClusterStateData } from '../../../src/cluster/ClusterState'
+import { createEventBus } from '../../../src/cluster/events/EventBus'
+import type { Pod } from '../../../src/cluster/ressources/Pod'
 import { createPod } from '../../../src/cluster/ressources/Pod'
+import { createSeedCluster } from '../../../src/cluster/seedCluster'
+import { createAutoSaveClusterState, createAutoSaveFileSystem } from '../../../src/cluster/storage/autoSave'
+import { createStorageAdapter } from '../../../src/cluster/storage/storageAdapter'
+import type { FileSystemState } from '../../../src/filesystem/FileSystem'
+import { createSeedFileSystem } from '../../../src/filesystem/seedFileSystem'
 
 describe('Storage Persistence Integration', () => {
     const CLUSTER_STATE_KEY = 'kube-simulator:cluster-state'
@@ -27,9 +31,10 @@ describe('Storage Persistence Integration', () => {
             expect(loadResult.ok).toBe(false)
 
             // Initialize as in main.ts
-            const loadedClusterState = storage.load(CLUSTER_STATE_KEY)
+            const loadedClusterState = storage.load<ClusterStateData>(CLUSTER_STATE_KEY)
             const clusterStateData = loadedClusterState.ok ? loadedClusterState.value : createSeedCluster().toJSON()
-            const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData)
+            const eventBus = createEventBus()
+            const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData, eventBus)
 
             // Should have seed data
             const pods = clusterState.getPods()
@@ -59,7 +64,7 @@ describe('Storage Persistence Integration', () => {
             expect(loadResult.ok).toBe(false)
 
             // Initialize as in main.ts
-            const loadedFileSystemState = storage.load(FILESYSTEM_STATE_KEY)
+            const loadedFileSystemState = storage.load<FileSystemState>(FILESYSTEM_STATE_KEY)
             const fileSystemState = loadedFileSystemState.ok ? loadedFileSystemState.value : createSeedFileSystem()
             const fileSystem = createAutoSaveFileSystem(storage, FILESYSTEM_STATE_KEY, fileSystemState)
 
@@ -86,7 +91,8 @@ describe('Storage Persistence Integration', () => {
         it('should persist cluster state changes to localStorage', () => {
             const storage = createStorageAdapter()
             const clusterStateData = createSeedCluster().toJSON()
-            const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData)
+            const eventBus = createEventBus()
+            const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData, eventBus)
 
             const initialPodCount = clusterState.getPods().length
 
@@ -102,11 +108,11 @@ describe('Storage Persistence Integration', () => {
             vi.advanceTimersByTime(500)
 
             // Load from storage and verify
-            const loadResult = storage.load(CLUSTER_STATE_KEY)
+            const loadResult = storage.load<ClusterStateData>(CLUSTER_STATE_KEY)
             expect(loadResult.ok).toBe(true)
             if (loadResult.ok) {
                 expect(loadResult.value.pods.items.length).toBe(initialPodCount + 1)
-                const savedPod = loadResult.value.pods.items.find((p: any) => p.metadata.name === 'test-pod')
+                const savedPod = loadResult.value.pods.items.find((p: Pod) => p.metadata.name === 'test-pod')
                 expect(savedPod).toBeDefined()
             }
         })
@@ -123,7 +129,7 @@ describe('Storage Persistence Integration', () => {
             vi.advanceTimersByTime(500)
 
             // Load from storage and verify
-            const loadResult = storage.load(FILESYSTEM_STATE_KEY)
+            const loadResult = storage.load<FileSystemState>(FILESYSTEM_STATE_KEY)
             expect(loadResult.ok).toBe(true)
             if (loadResult.ok) {
                 expect(loadResult.value.tree.children.has('new-file.yaml')).toBe(true)
@@ -141,7 +147,8 @@ describe('Storage Persistence Integration', () => {
 
             // First "session" - create and save state
             const clusterStateData = createSeedCluster().toJSON()
-            const clusterState1 = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData)
+            const eventBus1 = createEventBus()
+            const clusterState1 = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData, eventBus1)
 
             const newPod = createPod({
                 name: 'persistent-pod',
@@ -152,9 +159,10 @@ describe('Storage Persistence Integration', () => {
             vi.advanceTimersByTime(500)
 
             // Simulate page reload - load from storage
-            const loadedClusterState = storage.load(CLUSTER_STATE_KEY)
+            const loadedClusterState = storage.load<ClusterStateData>(CLUSTER_STATE_KEY)
             const clusterStateData2 = loadedClusterState.ok ? loadedClusterState.value : createSeedCluster().toJSON()
-            const clusterState2 = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData2)
+            const eventBus2 = createEventBus()
+            const clusterState2 = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData2, eventBus2)
 
             // Should have the pod from previous session
             const pods = clusterState2.getPods()
@@ -175,7 +183,7 @@ describe('Storage Persistence Integration', () => {
             vi.advanceTimersByTime(500)
 
             // Simulate page reload - load from storage
-            const loadedFileSystemState = storage.load(FILESYSTEM_STATE_KEY)
+            const loadedFileSystemState = storage.load<FileSystemState>(FILESYSTEM_STATE_KEY)
             const fileSystemState2 = loadedFileSystemState.ok ? loadedFileSystemState.value : createSeedFileSystem()
             const fileSystem2 = createAutoSaveFileSystem(storage, FILESYSTEM_STATE_KEY, fileSystemState2)
 
@@ -198,7 +206,8 @@ describe('Storage Persistence Integration', () => {
 
             // Initialize both
             const clusterStateData = createSeedCluster().toJSON()
-            const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData)
+            const eventBus = createEventBus()
+            const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData, eventBus)
 
             const fileSystemState = createSeedFileSystem()
             const fileSystem = createAutoSaveFileSystem(storage, FILESYSTEM_STATE_KEY, fileSystemState)
@@ -217,14 +226,14 @@ describe('Storage Persistence Integration', () => {
             vi.advanceTimersByTime(500)
 
             // Verify both are stored separately
-            const clusterLoad = storage.load(CLUSTER_STATE_KEY)
-            const fileSystemLoad = storage.load(FILESYSTEM_STATE_KEY)
+            const clusterLoad = storage.load<ClusterStateData>(CLUSTER_STATE_KEY)
+            const fileSystemLoad = storage.load<FileSystemState>(FILESYSTEM_STATE_KEY)
 
             expect(clusterLoad.ok).toBe(true)
             expect(fileSystemLoad.ok).toBe(true)
 
             if (clusterLoad.ok) {
-                const hasPod = clusterLoad.value.pods.items.some((p: any) => p.metadata.name === 'cluster-pod')
+                const hasPod = clusterLoad.value.pods.items.some((p: Pod) => p.metadata.name === 'cluster-pod')
                 expect(hasPod).toBe(true)
             }
 
@@ -240,7 +249,8 @@ describe('Storage Persistence Integration', () => {
             const saveSpy = vi.spyOn(storage, 'save')
 
             const clusterStateData = createSeedCluster().toJSON()
-            const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData)
+            const eventBus = createEventBus()
+            const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData, eventBus)
 
             // Make rapid changes
             for (let i = 0; i < 10; i++) {
@@ -263,10 +273,10 @@ describe('Storage Persistence Integration', () => {
             expect(saveSpy).toHaveBeenCalledTimes(1)
 
             // Verify all changes are persisted
-            const loadResult = storage.load(CLUSTER_STATE_KEY)
+            const loadResult = storage.load<ClusterStateData>(CLUSTER_STATE_KEY)
             expect(loadResult.ok).toBe(true)
             if (loadResult.ok) {
-                const podCount = loadResult.value.pods.items.filter((p: any) => p.metadata.name.startsWith('pod-')).length
+                const podCount = loadResult.value.pods.items.filter((p: Pod) => p.metadata.name.startsWith('pod-')).length
                 expect(podCount).toBe(10)
             }
         })
@@ -277,7 +287,8 @@ describe('Storage Persistence Integration', () => {
             const storage = createStorageAdapter()
 
             const clusterStateData = createSeedCluster().toJSON()
-            const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData)
+            const eventBus = createEventBus()
+            const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData, eventBus)
 
             const newPod = createPod({
                 name: 'test-pod',
@@ -288,14 +299,14 @@ describe('Storage Persistence Integration', () => {
             vi.advanceTimersByTime(500)
 
             // Verify data exists
-            const loadResult = storage.load(CLUSTER_STATE_KEY)
+            const loadResult = storage.load<ClusterStateData>(CLUSTER_STATE_KEY)
             expect(loadResult.ok).toBe(true)
 
             // Clear storage
             storage.clear(CLUSTER_STATE_KEY)
 
             // Verify data is gone
-            const loadResult2 = storage.load(CLUSTER_STATE_KEY)
+            const loadResult2 = storage.load<ClusterStateData>(CLUSTER_STATE_KEY)
             expect(loadResult2.ok).toBe(false)
         })
 
@@ -303,7 +314,8 @@ describe('Storage Persistence Integration', () => {
             const storage = createStorageAdapter()
 
             const clusterStateData = createSeedCluster().toJSON()
-            const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData)
+            const eventBus = createEventBus()
+            const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData, eventBus)
 
             const fileSystemState = createSeedFileSystem()
             const fileSystem = createAutoSaveFileSystem(storage, FILESYSTEM_STATE_KEY, fileSystemState)
@@ -320,8 +332,8 @@ describe('Storage Persistence Integration', () => {
             storage.clearAll()
 
             // Verify all data is gone
-            const clusterLoad = storage.load(CLUSTER_STATE_KEY)
-            const fileSystemLoad = storage.load(FILESYSTEM_STATE_KEY)
+            const clusterLoad = storage.load<ClusterStateData>(CLUSTER_STATE_KEY)
+            const fileSystemLoad = storage.load<FileSystemState>(FILESYSTEM_STATE_KEY)
 
             expect(clusterLoad.ok).toBe(false)
             expect(fileSystemLoad.ok).toBe(false)
@@ -336,9 +348,10 @@ describe('Storage Persistence Integration', () => {
             localStorage.setItem(CLUSTER_STATE_KEY, '{invalid json}')
 
             // Should fall back to seed data
-            const loadedClusterState = storage.load(CLUSTER_STATE_KEY)
+            const loadedClusterState = storage.load<ClusterStateData>(CLUSTER_STATE_KEY)
             const clusterStateData = loadedClusterState.ok ? loadedClusterState.value : createSeedCluster().toJSON()
-            const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData)
+            const eventBus = createEventBus()
+            const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData, eventBus)
 
             // Should have seed data
             const pods = clusterState.getPods()

@@ -20,8 +20,7 @@ describe('EventBus', () => {
         },
         status: {
             phase: 'Running',
-            conditions: [],
-            containerStatuses: [],
+            restartCount: 0,
         },
     })
 
@@ -172,8 +171,10 @@ describe('EventBus', () => {
 
             const history = eventBus.getHistory()
             expect(history).toHaveLength(2)
-            expect(history[0].payload.pod.metadata.name).toBe('pod2')
-            expect(history[1].payload.pod.metadata.name).toBe('pod3')
+            if (history[0].type === 'PodCreated' && history[1].type === 'PodCreated') {
+                expect(history[0].payload.pod.metadata.name).toBe('pod2')
+                expect(history[1].payload.pod.metadata.name).toBe('pod3')
+            }
         })
 
         it('should clear history', () => {

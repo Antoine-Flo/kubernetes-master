@@ -1,16 +1,23 @@
-import { describe, it, expect } from 'vitest'
-import { createPod } from '../../../src/cluster/ressources/Pod'
-import { createConfigMap } from '../../../src/cluster/ressources/ConfigMap'
-import { createSecret } from '../../../src/cluster/ressources/Secret'
+import { describe, expect, it } from 'vitest'
 import {
-    createEmptyState,
     addPod,
-    getPods,
-    findPod,
-    deletePod,
     createClusterState,
+    createEmptyState,
+    deletePod,
+    findPod,
+    getPods,
     type ClusterStateData,
 } from '../../../src/cluster/ClusterState'
+import { createEventBus } from '../../../src/cluster/events/EventBus'
+import { createConfigMap } from '../../../src/cluster/ressources/ConfigMap'
+import { createPod } from '../../../src/cluster/ressources/Pod'
+import { createSecret } from '../../../src/cluster/ressources/Secret'
+
+// Test helper to create cluster state with EventBus
+const createTestClusterState = (initialState?: ClusterStateData) => {
+    const eventBus = createEventBus()
+    return createClusterState(initialState || createEmptyState(), eventBus)
+}
 
 describe('ClusterState Pure Functions', () => {
     describe('createEmptyState', () => {
@@ -274,7 +281,7 @@ describe('ClusterState Pure Functions', () => {
 describe('ClusterState Facade', () => {
     describe('createClusterState', () => {
         it('should create cluster state with empty initial state', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
 
             expect(clusterState).toBeDefined()
             expect(clusterState.getPods()).toEqual([])
@@ -292,7 +299,7 @@ describe('ClusterState Facade', () => {
                 secrets: { items: [] },
             }
 
-            const clusterState = createClusterState(initialState)
+            const clusterState = createTestClusterState(initialState)
 
             expect(clusterState.getPods()).toHaveLength(1)
             expect(clusterState.getPods()[0]).toEqual(pod)
@@ -301,7 +308,7 @@ describe('ClusterState Facade', () => {
 
     describe('facade methods', () => {
         it('should add pod without passing state explicitly', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
             const pod = createPod({
                 name: 'nginx',
                 namespace: 'default',
@@ -314,7 +321,7 @@ describe('ClusterState Facade', () => {
         })
 
         it('should get pods without passing state explicitly', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
             const pod1 = createPod({
                 name: 'nginx',
                 namespace: 'default',
@@ -335,7 +342,7 @@ describe('ClusterState Facade', () => {
         })
 
         it('should find pod without passing state explicitly', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
             const pod = createPod({
                 name: 'nginx',
                 namespace: 'default',
@@ -350,7 +357,7 @@ describe('ClusterState Facade', () => {
         })
 
         it('should delete pod without passing state explicitly', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
             const pod = createPod({
                 name: 'nginx',
                 namespace: 'default',
@@ -365,7 +372,7 @@ describe('ClusterState Facade', () => {
         })
 
         it('should maintain state across multiple operations', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
 
             const pod1 = createPod({
                 name: 'nginx',
@@ -392,7 +399,7 @@ describe('ClusterState Facade', () => {
 
     describe('toJSON and loadState', () => {
         it('should export current state as JSON', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
             const pod = createPod({
                 name: 'nginx',
                 namespace: 'default',
@@ -409,7 +416,7 @@ describe('ClusterState Facade', () => {
         })
 
         it('should load state from JSON', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
             const pod = createPod({
                 name: 'nginx',
                 namespace: 'default',
@@ -429,7 +436,7 @@ describe('ClusterState Facade', () => {
         })
 
         it('should replace existing state when loading', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
             const pod1 = createPod({
                 name: 'nginx',
                 namespace: 'default',
@@ -459,7 +466,7 @@ describe('ClusterState Facade', () => {
 
     describe('ConfigMap Operations', () => {
         it('should add configmap to state', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
             const configMap = createConfigMap({
                 name: 'app-config',
                 namespace: 'default',
@@ -473,7 +480,7 @@ describe('ClusterState Facade', () => {
         })
 
         it('should get configmaps by namespace', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
             const cm1 = createConfigMap({
                 name: 'cm1',
                 namespace: 'default',
@@ -493,7 +500,7 @@ describe('ClusterState Facade', () => {
         })
 
         it('should find configmap by name and namespace', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
             const configMap = createConfigMap({
                 name: 'app-config',
                 namespace: 'default',
@@ -511,7 +518,7 @@ describe('ClusterState Facade', () => {
         })
 
         it('should return error when configmap not found', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
 
             const result = clusterState.findConfigMap('missing', 'default')
 
@@ -522,7 +529,7 @@ describe('ClusterState Facade', () => {
         })
 
         it('should delete configmap by name and namespace', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
             const configMap = createConfigMap({
                 name: 'app-config',
                 namespace: 'default',
@@ -539,7 +546,7 @@ describe('ClusterState Facade', () => {
         })
 
         it('should return error when deleting non-existent configmap', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
 
             const result = clusterState.deleteConfigMap('missing', 'default')
 
@@ -549,7 +556,7 @@ describe('ClusterState Facade', () => {
 
     describe('Secret Operations', () => {
         it('should add secret to state', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
             const secret = createSecret({
                 name: 'db-secret',
                 namespace: 'default',
@@ -564,7 +571,7 @@ describe('ClusterState Facade', () => {
         })
 
         it('should get secrets by namespace', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
             const secret1 = createSecret({
                 name: 'secret1',
                 namespace: 'default',
@@ -586,7 +593,7 @@ describe('ClusterState Facade', () => {
         })
 
         it('should find secret by name and namespace', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
             const secret = createSecret({
                 name: 'db-secret',
                 namespace: 'default',
@@ -605,7 +612,7 @@ describe('ClusterState Facade', () => {
         })
 
         it('should return error when secret not found', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
 
             const result = clusterState.findSecret('missing', 'default')
 
@@ -616,7 +623,7 @@ describe('ClusterState Facade', () => {
         })
 
         it('should delete secret by name and namespace', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
             const secret = createSecret({
                 name: 'db-secret',
                 namespace: 'default',
@@ -634,7 +641,7 @@ describe('ClusterState Facade', () => {
         })
 
         it('should return error when deleting non-existent secret', () => {
-            const clusterState = createClusterState()
+            const clusterState = createTestClusterState()
 
             const result = clusterState.deleteSecret('missing', 'default')
 

@@ -5,14 +5,14 @@
 // Uses Zod schemas defined in resource models for validation.
 
 import { parse } from 'yaml'
-import type { Pod } from '../cluster/ressources/Pod'
-import { parsePodManifest } from '../cluster/ressources/Pod'
 import type { ConfigMap } from '../cluster/ressources/ConfigMap'
 import { parseConfigMapManifest } from '../cluster/ressources/ConfigMap'
+import type { Pod } from '../cluster/ressources/Pod'
+import { parsePodManifest } from '../cluster/ressources/Pod'
 import type { Secret } from '../cluster/ressources/Secret'
 import { parseSecretManifest } from '../cluster/ressources/Secret'
 import type { Result } from '../shared/result'
-import { success, error } from '../shared/result'
+import { error, success } from '../shared/result'
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -46,6 +46,15 @@ const isSupportedKind = (kind: string): kind is ResourceKind => {
 }
 
 /**
+ * Manifest parser lookup table (object lookup pattern)
+ */
+const MANIFEST_PARSERS: Record<ResourceKind, (obj: any) => Result<ParsedResource>> = {
+    Pod: parsePodManifest,
+    ConfigMap: parseConfigMapManifest,
+    Secret: parseSecretManifest
+}
+
+/**
  * Route validation to resource-specific parser
  */
 const validateResource = (obj: any): Result<ParsedResource> => {
@@ -58,17 +67,8 @@ const validateResource = (obj: any): Result<ParsedResource> => {
         return error(`Unsupported resource kind: ${obj.kind} (supported: Pod, ConfigMap, Secret)`)
     }
 
-    switch (obj.kind) {
-        case 'Pod':
-            return parsePodManifest(obj)
-        case 'ConfigMap':
-            return parseConfigMapManifest(obj)
-        case 'Secret':
-            return parseSecretManifest(obj)
-        default:
-            // This should never happen due to isSupportedKind check above
-            return error(`Unsupported resource kind: ${obj.kind}`)
-    }
+    const parser = MANIFEST_PARSERS[obj.kind as ResourceKind]
+    return parser(obj)
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────

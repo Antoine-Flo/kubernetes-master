@@ -1,6 +1,6 @@
 import type { ClusterStateData } from '../../../cluster/ClusterState'
-import type { ParsedCommand } from '../types'
 import type { EnvVar } from '../../../cluster/ressources/Pod'
+import type { ParsedCommand } from '../types'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // KUBECTL EXEC HANDLER
@@ -13,14 +13,16 @@ import type { EnvVar } from '../../../cluster/ressources/Pod'
 const formatEnvVar = (envVar: EnvVar): string => {
     const { name, source } = envVar
 
-    switch (source.type) {
-        case 'value':
-            return `${name}=${source.value}`
-        case 'configMapKeyRef':
-            return `${name}=<from configMap ${source.name}:${source.key}>`
-        case 'secretKeyRef':
-            return `${name}=<from secret ${source.name}:${source.key}>`
+    if (source.type === 'value') {
+        return `${name}=${source.value}`
     }
+    if (source.type === 'configMapKeyRef') {
+        return `${name}=<from configMap ${source.name}:${source.key}>`
+    }
+    if (source.type === 'secretKeyRef') {
+        return `${name}=<from secret ${source.name}:${source.key}>`
+    }
+    return `${name}=unknown`
 }
 
 /**

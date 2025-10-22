@@ -1,18 +1,21 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { handleCreate } from '../../../../../src/kubectl/commands/handlers/create'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { createClusterState } from '../../../../../src/cluster/ClusterState'
-import { createFileSystem } from '../../../../../src/filesystem/FileSystem'
-import { createPod } from '../../../../../src/cluster/ressources/Pod'
+import { createEventBus } from '../../../../../src/cluster/events/EventBus'
 import { createConfigMap } from '../../../../../src/cluster/ressources/ConfigMap'
+import { createPod } from '../../../../../src/cluster/ressources/Pod'
 import { createSecret } from '../../../../../src/cluster/ressources/Secret'
+import { createFileSystem } from '../../../../../src/filesystem/FileSystem'
+import { handleCreate } from '../../../../../src/kubectl/commands/handlers/applyCreate'
 import type { ParsedCommand } from '../../../../../src/kubectl/commands/types'
 
 describe('handleCreate', () => {
   let clusterState: ReturnType<typeof createClusterState>
   let fileSystem: ReturnType<typeof createFileSystem>
+  let eventBus: ReturnType<typeof createEventBus>
 
   beforeEach(() => {
-    clusterState = createClusterState()
+    eventBus = createEventBus()
+    clusterState = createClusterState(eventBus)
     fileSystem = createFileSystem()
   })
 
@@ -24,7 +27,7 @@ describe('handleCreate', () => {
         flags: {}
       }
 
-      const result = handleCreate(fileSystem, clusterState, parsed)
+      const result = handleCreate(fileSystem, clusterState, parsed, eventBus)
 
       expect(result.ok).toBe(false)
       if (!result.ok) {
@@ -39,7 +42,7 @@ describe('handleCreate', () => {
         flags: { f: 'nonexistent.yaml' }
       }
 
-      const result = handleCreate(fileSystem, clusterState, parsed)
+      const result = handleCreate(fileSystem, clusterState, parsed, eventBus)
 
       expect(result.ok).toBe(false)
       if (!result.ok) {
@@ -56,7 +59,7 @@ describe('handleCreate', () => {
         flags: { f: 'invalid.yaml' }
       }
 
-      const result = handleCreate(fileSystem, clusterState, parsed)
+      const result = handleCreate(fileSystem, clusterState, parsed, eventBus)
 
       expect(result.ok).toBe(false)
       if (!result.ok) {
@@ -86,7 +89,7 @@ spec:
         flags: { f: 'pod.yaml' }
       }
 
-      const result = handleCreate(fileSystem, clusterState, parsed)
+      const result = handleCreate(fileSystem, clusterState, parsed, eventBus)
 
       expect(result.ok).toBe(true)
       if (result.ok) {
@@ -128,7 +131,7 @@ spec:
         flags: { f: 'pod.yaml' }
       }
 
-      const result = handleCreate(fileSystem, clusterState, parsed)
+      const result = handleCreate(fileSystem, clusterState, parsed, eventBus)
 
       expect(result.ok).toBe(false)
       if (!result.ok) {
@@ -161,7 +164,7 @@ spec:
         flags: { filename: 'pod.yaml' }
       }
 
-      const result = handleCreate(fileSystem, clusterState, parsed)
+      const result = handleCreate(fileSystem, clusterState, parsed, eventBus)
 
       expect(result.ok).toBe(true)
     })
@@ -187,7 +190,7 @@ data:
         flags: { f: 'configmap.yaml' }
       }
 
-      const result = handleCreate(fileSystem, clusterState, parsed)
+      const result = handleCreate(fileSystem, clusterState, parsed, eventBus)
 
       expect(result.ok).toBe(true)
       if (result.ok) {
@@ -228,7 +231,7 @@ data:
         flags: { f: 'configmap.yaml' }
       }
 
-      const result = handleCreate(fileSystem, clusterState, parsed)
+      const result = handleCreate(fileSystem, clusterState, parsed, eventBus)
 
       expect(result.ok).toBe(false)
       if (!result.ok) {
@@ -264,7 +267,7 @@ data:
         flags: { f: 'secret.yaml' }
       }
 
-      const result = handleCreate(fileSystem, clusterState, parsed)
+      const result = handleCreate(fileSystem, clusterState, parsed, eventBus)
 
       expect(result.ok).toBe(true)
       if (result.ok) {
@@ -307,7 +310,7 @@ data:
         flags: { f: 'secret.yaml' }
       }
 
-      const result = handleCreate(fileSystem, clusterState, parsed)
+      const result = handleCreate(fileSystem, clusterState, parsed, eventBus)
 
       expect(result.ok).toBe(false)
       if (!result.ok) {
@@ -342,7 +345,7 @@ spec:
         flags: { f: 'pod.yaml' }
       }
 
-      const result = handleCreate(fileSystem, clusterState, parsed)
+      const result = handleCreate(fileSystem, clusterState, parsed, eventBus)
 
       expect(result.ok).toBe(true)
 
@@ -370,7 +373,7 @@ spec:
         flags: { f: 'pod.yaml' }
       }
 
-      const result = handleCreate(fileSystem, clusterState, parsed)
+      const result = handleCreate(fileSystem, clusterState, parsed, eventBus)
 
       expect(result.ok).toBe(true)
 
@@ -403,7 +406,7 @@ spec:
         flags: { f: 'manifests/pod.yaml' }
       }
 
-      const result = handleCreate(fileSystem, clusterState, parsed)
+      const result = handleCreate(fileSystem, clusterState, parsed, eventBus)
 
       expect(result.ok).toBe(true)
     })
@@ -430,7 +433,7 @@ spec:
         flags: { f: '/configs/pod.yaml' }
       }
 
-      const result = handleCreate(fileSystem, clusterState, parsed)
+      const result = handleCreate(fileSystem, clusterState, parsed, eventBus)
 
       expect(result.ok).toBe(true)
     })
@@ -464,7 +467,7 @@ spec:
       }
 
       // Create should fail
-      const createResult = handleCreate(fileSystem, clusterState, parsedCreate)
+      const createResult = handleCreate(fileSystem, clusterState, parsedCreate, eventBus)
       expect(createResult.ok).toBe(false)
 
       // Verify pod was NOT changed
