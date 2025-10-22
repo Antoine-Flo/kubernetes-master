@@ -1,6 +1,3 @@
-// Supported file extensions registry
-const SUPPORTED_EXTENSIONS = Object.freeze(['.yaml', '.yml', '.json', '.kyaml'])
-
 // File node interface
 export interface FileNode {
     readonly type: 'file'
@@ -24,11 +21,6 @@ export const getFileExtension = (filename: string): string => {
     return name.substring(lastDot)
 }
 
-// Pure function: Validate extension (internal use only)
-export const isValidExtension = (extension: string): boolean => {
-    return SUPPORTED_EXTENSIONS.includes(extension)
-}
-
 // Factory function: Create immutable file
 export const createFile = (
     name: string,
@@ -36,11 +28,6 @@ export const createFile = (
     content: string = ''
 ): FileNode => {
     const extension = getFileExtension(name)
-
-    if (!isValidExtension(extension)) {
-        throw new Error(`Unsupported file extension: ${extension}`)
-    }
-
     const now = new Date().toISOString()
 
     return Object.freeze({

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createEventBus } from '../../src/cluster/events/EventBus'
 import { createSeedCluster } from '../../src/cluster/seedCluster'
 import { createFileSystem } from '../../src/filesystem/FileSystem'
-import { createSeedFileSystem } from '../../src/filesystem/seedFileSystem'
+import { createHostFileSystem } from '../../src/filesystem/debianFileSystem'
 import { createKubectlExecutor } from '../../src/kubectl/commands/executor'
 import { createLogger } from '../../src/logger/Logger'
 import { createShellExecutor } from '../../src/shell/commands/executor'
@@ -23,6 +23,13 @@ describe('Main Dispatcher', () => {
         if (currentPath === '/') {
             return '☸ /> '
         }
+        if (currentPath === '/home/kube') {
+            return '☸ ~>'
+        }
+        if (currentPath.startsWith('/home/kube/')) {
+            const relativePath = currentPath.substring('/home/kube/'.length)
+            return `☸ ~${relativePath}>`
+        }
         return `☸ ~${currentPath}> `
     }
 
@@ -31,7 +38,7 @@ describe('Main Dispatcher', () => {
         terminal = createTerminalManager(container)
         const eventBus = createEventBus()
         clusterState = createSeedCluster(eventBus)
-        const fileSystemState = createSeedFileSystem()
+        const fileSystemState = createHostFileSystem()
         fileSystem = createFileSystem(fileSystemState)
         logger = createLogger()
         kubectlExecutor = createKubectlExecutor(clusterState, fileSystem, logger, eventBus)
@@ -106,24 +113,23 @@ describe('Main Dispatcher', () => {
 
         const outputCalls = writeSpy.mock.calls.map(call => call[0]).join('')
         expect(outputCalls).toContain('examples')
-        expect(outputCalls).toContain('manifests')
     })
 
-    it('prompt at root is ☸ />', () => {
+    it('prompt at kube home is ☸ ~>', () => {
         const currentPath = fileSystem.getCurrentPath()
-        expect(currentPath).toBe('/')
+        expect(currentPath).toBe('/home/kube')
 
         const prompt = getPrompt(currentPath)
-        expect(prompt).toBe('☸ /> ')
+        expect(prompt).toBe('☸ ~>')
     })
 
     it('prompt in subdirectories is ☸ ~{path}>', () => {
         fileSystem.changeDirectory('examples')
         const currentPath = fileSystem.getCurrentPath()
-        expect(currentPath).toBe('/examples')
+        expect(currentPath).toBe('/home/kube/examples')
 
         const prompt = getPrompt(currentPath)
-        expect(prompt).toBe('☸ ~/examples> ')
+        expect(prompt).toBe('☸ ~examples>')
     })
 
     it('updates prompt after changing directories', () => {
@@ -160,7 +166,7 @@ describe('Main Dispatcher', () => {
         terminal.simulateInput('\r')
 
         // Verify filesystem changed
-        expect(fileSystem.getCurrentPath()).toBe('/examples')
+        expect(fileSystem.getCurrentPath()).toBe('/home/kube/examples')
     })
 
     it('handles errors from kubectl executor', () => {
@@ -253,7 +259,7 @@ describe('Main Dispatcher', () => {
         // Step 1: cd to examples
         terminal.simulateInput('cd examples')
         terminal.simulateInput('\r')
-        expect(fileSystem.getCurrentPath()).toBe('/examples')
+        expect(fileSystem.getCurrentPath()).toBe('/home/kube/examples')
 
         writeSpy.mockClear()
 

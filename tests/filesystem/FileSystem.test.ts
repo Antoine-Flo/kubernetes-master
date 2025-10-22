@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
     createFileSystem,
-    resolvePath,
+    findNode,
     getDepth,
-    validateFilename,
-    findNode
+    resolvePath,
+    validateFilename
 } from '../../src/filesystem/FileSystem'
 import { createDirectory, createFile } from '../../src/filesystem/models'
 
@@ -294,12 +294,12 @@ describe('FileSystem - Facade', () => {
             expect(fs.changeDirectory('/manifests/dev/pods').ok).toBe(true)
         })
 
-        it('should enforce max depth of 3', () => {
-            const result = fs.createDirectory('a/b/c/d', true)
+        it('should allow unlimited depth', () => {
+            const result = fs.createDirectory('a/b/c/d/e/f/g/h/i/j', true)
 
-            expect(result.ok).toBe(false)
-            if (!result.ok) {
-                expect(result.error).toContain('Max depth')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toBe('/a/b/c/d/e/f/g/h/i/j')
             }
         })
 
@@ -357,12 +357,12 @@ describe('FileSystem - Facade', () => {
             expect(fs.createFile('config.kyaml').ok).toBe(true)
         })
 
-        it('should return error for unsupported extension', () => {
+        it('should allow any file extension', () => {
             const result = fs.createFile('readme.txt')
 
-            expect(result.ok).toBe(false)
-            if (!result.ok) {
-                expect(result.error).toContain('Unsupported')
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value.name).toBe('readme.txt')
             }
         })
 
@@ -382,21 +382,18 @@ describe('FileSystem - Facade', () => {
             expect(result.ok).toBe(false)
         })
 
-        it('should enforce max depth', () => {
-            // Create directories up to max depth (3)
-            fs.createDirectory('a/b/c', true)
-            fs.changeDirectory('/a/b/c')
+        it('should allow unlimited depth for files', () => {
+            // Create directories to any depth
+            fs.createDirectory('a/b/c/d/e/f/g/h/i/j', true)
+            fs.changeDirectory('/a/b/c/d/e/f/g/h/i/j')
 
-            // Should be able to create file at depth 3
+            // Should be able to create file at any depth
             const result = fs.createFile('file.yaml')
             expect(result.ok).toBe(true)
 
-            // Depth 4 would exceed max, so can't create directory there
-            const dirResult = fs.createDirectory('d')
-            expect(dirResult.ok).toBe(false)
-            if (!dirResult.ok) {
-                expect(dirResult.error).toContain('Max depth')
-            }
+            // Should be able to create directory at any depth
+            const dirResult = fs.createDirectory('k')
+            expect(dirResult.ok).toBe(true)
         })
     })
 

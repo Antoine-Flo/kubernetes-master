@@ -1,8 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
     createFile,
     getFileExtension,
-    isValidExtension,
 } from '../../../src/filesystem/models/File'
 
 describe('File Model', () => {
@@ -29,25 +28,6 @@ describe('File Model', () => {
         })
     })
 
-    describe('isValidExtension', () => {
-        it('should return true for supported extensions', () => {
-            expect(isValidExtension('.yaml')).toBe(true)
-            expect(isValidExtension('.yml')).toBe(true)
-            expect(isValidExtension('.json')).toBe(true)
-            expect(isValidExtension('.kyaml')).toBe(true)
-        })
-
-        it('should return false for unsupported extensions', () => {
-            expect(isValidExtension('.txt')).toBe(false)
-            expect(isValidExtension('.xml')).toBe(false)
-            expect(isValidExtension('')).toBe(false)
-        })
-
-        it('should be case sensitive', () => {
-            expect(isValidExtension('.YAML')).toBe(false)
-            expect(isValidExtension('.Json')).toBe(false)
-        })
-    })
 
     describe('createFile', () => {
         it('should create file with valid yaml extension', () => {
@@ -104,16 +84,14 @@ describe('File Model', () => {
             }).toThrow()
         })
 
-        it('should throw error for unsupported extension', () => {
-            expect(() => {
-                createFile('readme.txt', '/readme.txt')
-            }).toThrow('Unsupported file extension: .txt')
-        })
+        it('should allow any file extension', () => {
+            const txtFile = createFile('readme.txt', '/readme.txt')
+            expect(txtFile.name).toBe('readme.txt')
+            expect(txtFile.extension).toBe('.txt')
 
-        it('should throw error for no extension', () => {
-            expect(() => {
-                createFile('README', '/README')
-            }).toThrow('Unsupported file extension: ')
+            const noExtFile = createFile('README', '/README')
+            expect(noExtFile.name).toBe('README')
+            expect(noExtFile.extension).toBe('')
         })
     })
 })

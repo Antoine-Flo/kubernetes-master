@@ -1,13 +1,13 @@
-import { createFileSystem } from '../../filesystem/FileSystem'
-import { parseShellCommand } from './parser'
-import type { ParsedShellCommand } from './types'
-import type { ExecutionResult } from '../../shared/result'
-import { error, success } from '../../shared/result'
 import { createImageRegistry } from '../../containers/registry/ImageRegistry'
+import type { EditorModal } from '../../editor/EditorModal'
+import { createFileSystem } from '../../filesystem/FileSystem'
 import type { Logger } from '../../logger/Logger'
 import { formatColumns, formatLongListing, formatTable, type FileEntry } from '../../shared/formatter'
-import type { EditorModal } from '../../editor/EditorModal'
+import type { ExecutionResult } from '../../shared/result'
+import { error, success } from '../../shared/result'
 import { handleNano } from './handlers/nano'
+import { parseShellCommand } from './parser'
+import type { ParsedShellCommand } from './types'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SHELL COMMAND EXECUTOR

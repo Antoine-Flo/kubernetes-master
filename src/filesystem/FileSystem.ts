@@ -1,3 +1,5 @@
+import type { Result } from '../shared/result'
+import { error, success } from '../shared/result'
 import {
     createDirectory,
     createFile,
@@ -5,9 +7,6 @@ import {
     type FileNode,
     type FileSystemNode
 } from './models'
-import { getFileExtension, isValidExtension } from './models/File'
-import type { Result } from '../shared/result'
-import { success, error } from '../shared/result'
 
 // ╔═══════════════════════════════════════════════════════════════════════╗
 // ║                      FILESYSTEM STATE MANAGEMENT                      ║
@@ -206,11 +205,6 @@ const validateDirectoryCreation = (
         return error(`Invalid directory name: ${name}`)
     }
 
-    // Max depth check (spec requirement)
-    if (getDepth(absolutePath) > 3) {
-        return error(`Max depth of 3 exceeded: ${absolutePath}`)
-    }
-
     const existing = findNode(tree, absolutePath)
     if (existing) {
         return error(`Directory already exists: ${absolutePath}`)
@@ -225,26 +219,15 @@ const validateDirectoryCreation = (
 const validateFileCreation = (
     name: string,
     absolutePath: string,
-    currentPath: string,
     tree: DirectoryNode
 ): Result<void> => {
     if (!validateFilename(name)) {
         return error(`Invalid filename: ${name}`)
     }
 
-    // Files don't add to depth - check parent directory depth only
-    if (getDepth(currentPath) > 3) {
-        return error(`Max depth of 3 exceeded: ${absolutePath}`)
-    }
-
     const existing = findNode(tree, absolutePath)
     if (existing) {
         return error(`File already exists: ${absolutePath}`)
-    }
-
-    const ext = getFileExtension(name)
-    if (!isValidExtension(ext)) {
-        return error(`Unsupported file extension: ${ext}`)
     }
 
     return success(undefined)
@@ -377,7 +360,6 @@ const createFileOps = (getState: () => FileSystemState) => ({
         const validation = validateFileCreation(
             name,
             absolutePath,
-            state.currentPath,
             state.tree
         )
         if (!validation.ok) {

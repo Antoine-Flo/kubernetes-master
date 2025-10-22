@@ -1,15 +1,20 @@
 import { Terminal } from '@xterm/xterm'
-import { getCompletions, getCommonPrefix, formatSuggestions, type AutocompleteContext } from './autocomplete'
+import { formatSuggestions, getCommonPrefix, getCompletions, type AutocompleteContext } from './autocomplete'
+import { ShellContextStack } from './ShellContext'
 
 type CommandCallback = (command: string) => void
 
-interface TerminalManager {
+export interface TerminalManager {
     write: (text: string) => void
     onCommand: (callback: CommandCallback) => void
     simulateInput: (data: string) => void
     showPrompt: () => void
     setPrompt: (newPrompt: string) => void
     focus: () => void
+    enterContainer: (podName: string, containerName: string, namespace: string, containerFileSystem: any) => void
+    exitContainer: () => boolean
+    getCurrentFileSystem: () => any
+    updatePrompt: () => void
 }
 
 export const createTerminalManager = (
@@ -27,21 +32,29 @@ export const createTerminalManager = (
         },
     })
 
+    // Initialize shell context stack with host filesystem
+    const hostFileSystem = autocompleteContext?.fileSystem?.toJSON() || { currentPath: '/', tree: { type: 'directory', name: 'root', path: '/', children: new Map(), createdAt: '', modifiedAt: '' } }
+    const shellContextStack = new ShellContextStack(hostFileSystem)
+
     let currentLine = ''
     let cursorPosition = 0 // Position of cursor in currentLine (0 = start)
     let commandCallback: CommandCallback | undefined
-    let prompt = 'kubectl> '
     const commandHistory: string[] = []
     let historyIndex = -1
     let tempCurrentLine = ''
     let lastTabPress = 0
 
     const showPrompt = (): void => {
-        terminal.write(prompt)
+        const currentPrompt = shellContextStack.getCurrentPrompt()
+        terminal.write(currentPrompt)
     }
 
-    const setPrompt = (newPrompt: string): void => {
-        prompt = newPrompt
+    const setPrompt = (_newPrompt: string): void => {
+        // This is kept for backward compatibility but now we use dynamic prompts
+    }
+
+    const updatePrompt = (): void => {
+        shellContextStack.updateCurrentPrompt()
     }
 
     const handleEnter = (): void => {
@@ -282,6 +295,16 @@ export const createTerminalManager = (
         showPrompt,
         setPrompt,
         focus: () => terminal.focus(),
+        enterContainer: (podName: string, containerName: string, namespace: string, containerFileSystem: any) => {
+            shellContextStack.pushContainerContext(podName, containerName, namespace, containerFileSystem)
+        },
+        exitContainer: () => {
+            return shellContextStack.popContext()
+        },
+        getCurrentFileSystem: () => {
+            return shellContextStack.getCurrentFileSystem()
+        },
+        updatePrompt
     }
 }
 

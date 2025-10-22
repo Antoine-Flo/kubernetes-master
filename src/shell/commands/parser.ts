@@ -1,15 +1,15 @@
-import type { ShellCommand, ParsedShellCommand } from './types'
-import type { Result } from '../../shared/result'
-import { success, error } from '../../shared/result'
 import {
-    trim,
-    tokenize,
-    extract,
-    parseFlags,
     checkFlags,
+    extract,
     extractArgs,
-    pipeResult
+    parseFlags,
+    pipeResult,
+    tokenize,
+    trim
 } from '../../shared/parsing'
+import type { Result } from '../../shared/result'
+import { error, success } from '../../shared/result'
+import type { ParsedShellCommand, ShellCommand } from './types'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SHELL COMMAND PARSER

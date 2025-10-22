@@ -54,18 +54,7 @@ const handleEnvCommand = (state: ClusterStateData, podName: string, namespace: s
     return [...standardEnvVars, ...customEnvVars].join('\n')
 }
 
-/**
- * Simulate ls command
- */
-const handleLsCommand = (args: string[]): string => {
-    const path = args.length > 1 ? args[1] : '/'
 
-    if (path === '/') {
-        return 'bin  etc  lib  tmp  usr  var  app'
-    }
-
-    return `Contents of ${path}:\nindex.js  package.json  node_modules`
-}
 
 /**
  * Handle kubectl exec command
@@ -99,13 +88,17 @@ export const handleExec = (state: ClusterStateData, parsed: ParsedCommand): stri
         return `Error: pod "${podName}" is not running (current phase: ${pod.status.phase})`
     }
 
+    // Get container name (use first container if not specified)
+    const containerName = pod.spec.containers[0]?.name || 'default'
+
     // Execute command
     const command = parsed.execCommand[0]
     const args = parsed.execCommand
 
-    // Shell commands - return message about interactive mode
+    // Shell commands - enter interactive mode
     if (command === 'sh' || command === 'bash' || command === '/bin/sh' || command === '/bin/bash') {
-        return `Interactive shell simulation for pod "${podName}"\nShell: ${command}\n\nNote: In a real cluster, you would now have an interactive ${command} session.`
+        // This will be handled by the main dispatcher to enter container mode
+        return `ENTER_CONTAINER:${podName}:${containerName}:${namespace}`
     }
 
     // env command - show environment variables
@@ -113,23 +106,9 @@ export const handleExec = (state: ClusterStateData, parsed: ParsedCommand): stri
         return handleEnvCommand(state, podName, namespace)
     }
 
-    // ls command - simulate directory listing
-    if (command === 'ls') {
-        return handleLsCommand(args)
-    }
-
-    // pwd command - show current directory
-    if (command === 'pwd') {
-        return '/app'
-    }
-
-    // whoami command - show user
-    if (command === 'whoami') {
-        return 'root'
-    }
-
-    // Generic command - simulate execution
+    // For all other commands, let the shell executor handle them
+    // This will be processed by the main dispatcher
     const fullCommand = args.join(' ')
-    return `Simulated output for: ${fullCommand}\n\nNote: This is a simulation. In a real cluster, this command would execute inside the container.`
+    return `SHELL_COMMAND:${fullCommand}`
 }
 

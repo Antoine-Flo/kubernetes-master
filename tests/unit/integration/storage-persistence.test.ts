@@ -7,7 +7,7 @@ import { createSeedCluster } from '../../../src/cluster/seedCluster'
 import { createAutoSaveClusterState, createAutoSaveFileSystem } from '../../../src/cluster/storage/autoSave'
 import { createStorageAdapter } from '../../../src/cluster/storage/storageAdapter'
 import type { FileSystemState } from '../../../src/filesystem/FileSystem'
-import { createSeedFileSystem } from '../../../src/filesystem/seedFileSystem'
+import { createHostFileSystem } from '../../../src/filesystem/debianFileSystem'
 
 describe('Storage Persistence Integration', () => {
     const CLUSTER_STATE_KEY = 'kube-simulator:cluster-state'
@@ -65,7 +65,9 @@ describe('Storage Persistence Integration', () => {
 
             // Initialize as in main.ts
             const loadedFileSystemState = storage.load<FileSystemState>(FILESYSTEM_STATE_KEY)
-            const fileSystemState = loadedFileSystemState.ok ? loadedFileSystemState.value : createSeedFileSystem()
+            const fileSystemState = loadedFileSystemState.ok ? loadedFileSystemState.value : (() => {
+                return createHostFileSystem()
+            })()
             const fileSystem = createAutoSaveFileSystem(storage, FILESYSTEM_STATE_KEY, fileSystemState)
 
             // Should have seed data
@@ -119,7 +121,9 @@ describe('Storage Persistence Integration', () => {
 
         it('should persist filesystem changes to localStorage', () => {
             const storage = createStorageAdapter()
-            const fileSystemState = createSeedFileSystem()
+            const fileSystemState = (() => {
+                return createHostFileSystem()
+            })()
             const fileSystem = createAutoSaveFileSystem(storage, FILESYSTEM_STATE_KEY, fileSystemState)
 
             // Create a new file
@@ -132,10 +136,18 @@ describe('Storage Persistence Integration', () => {
             const loadResult = storage.load<FileSystemState>(FILESYSTEM_STATE_KEY)
             expect(loadResult.ok).toBe(true)
             if (loadResult.ok) {
-                expect(loadResult.value.tree.children.has('new-file.yaml')).toBe(true)
-                const file = loadResult.value.tree.children.get('new-file.yaml')
-                if (file && file.type === 'file') {
-                    expect(file.content).toBe('Test content')
+                const homeDir = loadResult.value.tree.children.get('home')
+                expect(homeDir?.type).toBe('directory')
+                if (homeDir?.type === 'directory') {
+                    const kubeHome = homeDir.children.get('kube')
+                    expect(kubeHome?.type).toBe('directory')
+                    if (kubeHome?.type === 'directory') {
+                        expect(kubeHome.children.has('new-file.yaml')).toBe(true)
+                        const file = kubeHome.children.get('new-file.yaml')
+                        if (file && file.type === 'file') {
+                            expect(file.content).toBe('Test content')
+                        }
+                    }
                 }
             }
         })
@@ -175,7 +187,9 @@ describe('Storage Persistence Integration', () => {
             const storage = createStorageAdapter()
 
             // First "session" - create and save state
-            const fileSystemState1 = createSeedFileSystem()
+            const fileSystemState1 = (() => {
+                return createHostFileSystem()
+            })()
             const fileSystem1 = createAutoSaveFileSystem(storage, FILESYSTEM_STATE_KEY, fileSystemState1)
 
             fileSystem1.createFile('persistent-file.yaml', 'Persistent content')
@@ -184,14 +198,14 @@ describe('Storage Persistence Integration', () => {
 
             // Simulate page reload - load from storage
             const loadedFileSystemState = storage.load<FileSystemState>(FILESYSTEM_STATE_KEY)
-            const fileSystemState2 = loadedFileSystemState.ok ? loadedFileSystemState.value : createSeedFileSystem()
+            const fileSystemState2 = loadedFileSystemState.ok ? loadedFileSystemState.value : createHostFileSystem()
             const fileSystem2 = createAutoSaveFileSystem(storage, FILESYSTEM_STATE_KEY, fileSystemState2)
 
             // Should be in the same directory as before reload
-            expect(fileSystem2.getCurrentPath()).toBe('/examples')
+            expect(fileSystem2.getCurrentPath()).toBe('/home/kube/examples')
 
             // Should have the file from previous session (need to cd back to read it)
-            fileSystem2.changeDirectory('/')
+            fileSystem2.changeDirectory('/home/kube')
             const readResult = fileSystem2.readFile('persistent-file.yaml')
             expect(readResult.ok).toBe(true)
             if (readResult.ok) {
@@ -209,7 +223,9 @@ describe('Storage Persistence Integration', () => {
             const eventBus = createEventBus()
             const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData, eventBus)
 
-            const fileSystemState = createSeedFileSystem()
+            const fileSystemState = (() => {
+                return createHostFileSystem()
+            })()
             const fileSystem = createAutoSaveFileSystem(storage, FILESYSTEM_STATE_KEY, fileSystemState)
 
             // Modify cluster state
@@ -238,7 +254,15 @@ describe('Storage Persistence Integration', () => {
             }
 
             if (fileSystemLoad.ok) {
-                expect(fileSystemLoad.value.tree.children.has('fs-file.yaml')).toBe(true)
+                const homeDir = fileSystemLoad.value.tree.children.get('home')
+                expect(homeDir?.type).toBe('directory')
+                if (homeDir?.type === 'directory') {
+                    const kubeHome = homeDir.children.get('kube')
+                    expect(kubeHome?.type).toBe('directory')
+                    if (kubeHome?.type === 'directory') {
+                        expect(kubeHome.children.has('fs-file.yaml')).toBe(true)
+                    }
+                }
             }
         })
     })
@@ -317,7 +341,9 @@ describe('Storage Persistence Integration', () => {
             const eventBus = createEventBus()
             const clusterState = createAutoSaveClusterState(storage, CLUSTER_STATE_KEY, clusterStateData, eventBus)
 
-            const fileSystemState = createSeedFileSystem()
+            const fileSystemState = (() => {
+                return createHostFileSystem()
+            })()
             const fileSystem = createAutoSaveFileSystem(storage, FILESYSTEM_STATE_KEY, fileSystemState)
 
             clusterState.addPod(createPod({

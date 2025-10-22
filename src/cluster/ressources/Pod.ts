@@ -5,10 +5,12 @@
 // Includes Zod schemas for YAML manifest validation
 
 import { z } from 'zod'
+import type { FileSystemState } from '../../filesystem/FileSystem'
+import { debianFileSystem } from '../../filesystem/debianFileSystem'
 import { deepFreeze } from '../../shared/deepFreeze'
-import type { KubernetesResource } from '../repositories/types'
 import type { Result } from '../../shared/result'
-import { success, error } from '../../shared/result'
+import { error, success } from '../../shared/result'
+import type { KubernetesResource } from '../repositories/types'
 
 export type PodPhase = 'Pending' | 'Running' | 'Succeeded' | 'Failed' | 'Unknown'
 
@@ -112,10 +114,19 @@ interface PodSpec {
     volumes?: Volume[]
 }
 
+interface ContainerStatus {
+    name: string
+    image: string
+    ready: boolean
+    restartCount: number
+    fileSystem: FileSystemState
+}
+
 interface PodStatus {
     phase: PodPhase
     restartCount: number
     logs?: string[]
+    containerStatuses?: ContainerStatus[]
 }
 
 export interface Pod extends KubernetesResource {
@@ -158,10 +169,47 @@ export const createPod = (config: PodConfig): Pod => {
             phase: config.phase || 'Pending',
             restartCount: config.restartCount || 0,
             ...(config.logs && { logs: config.logs }),
+            containerStatuses: config.containers.map(container => ({
+                name: container.name,
+                image: container.image,
+                ready: config.phase === 'Running',
+                restartCount: 0,
+                fileSystem: debianFileSystem() // Each container gets its own isolated filesystem
+            }))
         },
     }
 
     return deepFreeze(pod)
+}
+
+// ─── Helper Functions ─────────────────────────────────────────────────────
+
+/**
+ * Get filesystem for a specific container in a pod
+ */
+export const getContainerFileSystem = (pod: Pod, containerName: string): FileSystemState | undefined => {
+    const containerStatus = pod.status.containerStatuses?.find(cs => cs.name === containerName)
+    return containerStatus?.fileSystem
+}
+
+/**
+ * Update filesystem for a specific container in a pod
+ * Returns a new pod with updated filesystem
+ */
+export const updateContainerFileSystem = (pod: Pod, containerName: string, fileSystem: FileSystemState): Pod => {
+    const updatedContainerStatuses = pod.status.containerStatuses?.map(cs => 
+        cs.name === containerName 
+            ? { ...cs, fileSystem }
+            : cs
+    )
+
+    return {
+        ...pod,
+        status: {
+            ...pod.status,
+            containerStatuses: updatedContainerStatuses
+        }
+    }
 }
 
 // ─── Zod Schemas for YAML Validation (internal use only) ────────────────

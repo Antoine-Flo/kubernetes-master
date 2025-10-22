@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest'
-import { handleExec } from '../../../../../src/kubectl/commands/handlers/exec'
-import { createEmptyState, addPod } from '../../../../../src/cluster/ClusterState'
+import { describe, expect, it } from 'vitest'
+import { addPod, createEmptyState } from '../../../../../src/cluster/ClusterState'
 import { createPod } from '../../../../../src/cluster/ressources/Pod'
+import { handleExec } from '../../../../../src/kubectl/commands/handlers/exec'
 import type { ParsedCommand } from '../../../../../src/kubectl/commands/types'
 
 describe('handleExec', () => {
@@ -123,8 +123,7 @@ describe('handleExec', () => {
             }
 
             const result = handleExec(state, parsed)
-            expect(result).toContain('Interactive shell simulation')
-            expect(result).toContain('sh')
+            expect(result).toBe('ENTER_CONTAINER:app:app:default')
         })
 
         it('should handle bash command', () => {
@@ -146,8 +145,7 @@ describe('handleExec', () => {
             }
 
             const result = handleExec(state, parsed)
-            expect(result).toContain('Interactive shell simulation')
-            expect(result).toContain('bash')
+            expect(result).toBe('ENTER_CONTAINER:app:app:default')
         })
 
         it('should handle /bin/sh command', () => {
@@ -169,7 +167,7 @@ describe('handleExec', () => {
             }
 
             const result = handleExec(state, parsed)
-            expect(result).toContain('Interactive shell simulation')
+            expect(result).toBe('ENTER_CONTAINER:app:app:default')
         })
     })
 
@@ -310,9 +308,7 @@ describe('handleExec', () => {
             }
 
             const result = handleExec(state, parsed)
-            expect(result).toContain('bin')
-            expect(result).toContain('etc')
-            expect(result).toContain('app')
+            expect(result).toBe('SHELL_COMMAND:ls')
         })
 
         it('should simulate ls with path argument', () => {
@@ -334,7 +330,7 @@ describe('handleExec', () => {
             }
 
             const result = handleExec(state, parsed)
-            expect(result).toContain('Contents of /app')
+            expect(result).toBe('SHELL_COMMAND:ls /app')
         })
 
         it('should simulate pwd command', () => {
@@ -356,7 +352,7 @@ describe('handleExec', () => {
             }
 
             const result = handleExec(state, parsed)
-            expect(result).toBe('/app')
+            expect(result).toBe('SHELL_COMMAND:pwd')
         })
 
         it('should simulate whoami command', () => {
@@ -378,7 +374,7 @@ describe('handleExec', () => {
             }
 
             const result = handleExec(state, parsed)
-            expect(result).toBe('root')
+            expect(result).toBe('SHELL_COMMAND:whoami')
         })
     })
 
@@ -403,7 +399,7 @@ describe('handleExec', () => {
             }
 
             const result = handleExec(state, parsed)
-            expect(result).toBe('/app')
+            expect(result).toBe('SHELL_COMMAND:pwd')
         })
 
         it('should default to "default" namespace', () => {
@@ -425,7 +421,7 @@ describe('handleExec', () => {
             }
 
             const result = handleExec(state, parsed)
-            expect(result).toBe('/app')
+            expect(result).toBe('SHELL_COMMAND:pwd')
         })
     })
 
@@ -449,8 +445,7 @@ describe('handleExec', () => {
             }
 
             const result = handleExec(state, parsed)
-            expect(result).toContain('Simulated output')
-            expect(result).toContain('curl http://api')
+            expect(result).toBe('SHELL_COMMAND:curl http://api')
         })
 
         it('should handle complex command with multiple arguments', () => {
