@@ -41,7 +41,16 @@
                 <div class="badge badge-success badge-sm mt-2">✨ New: kubectl logs & exec for debugging!</div>
             </div>
 
-            <div id="terminal"></div>
+            <!-- Terminal wrapper with reset button -->
+            <div class="relative">
+                <!-- Reset button container (top-right) -->
+                <div id="reset-button-container" class="absolute top-2 right-2 z-10"></div>
+
+                <div id="terminal"></div>
+            </div>
+
+            <!-- Registry Panel -->
+            <div id="registry-panel"></div>
 
             <!-- Command Reference -->
             <div class="mt-8 mb-8">
@@ -110,8 +119,11 @@
                             <div class="text-xs space-y-1 font-mono">
                                 <div><span class="text-accent">help</span></div>
                                 <div><span class="text-accent">clear</span></div>
-                                <div><span class="text-accent">debug</span> <span class="text-base-content/60">[clear |
-                                        images]</span></div>
+                                <div><span class="text-accent">debug</span> <span class="text-base-content/60">[logs |
+                                        clear]</span></div>
+                            </div>
+                            <div class="text-xs mt-2 text-base-content/60">
+                                See available images in Registry panel below
                             </div>
                         </div>
                     </div>

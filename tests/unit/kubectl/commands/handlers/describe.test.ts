@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { handleDescribe } from '../../../../../src/kubectl/commands/handlers/describe'
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { ClusterStateData } from '../../../../../src/cluster/ClusterState'
-import type { ParsedCommand } from '../../../../../src/kubectl/commands/types'
-import { createPod } from '../../../../../src/cluster/ressources/Pod'
 import { createConfigMap } from '../../../../../src/cluster/ressources/ConfigMap'
+import { createPod } from '../../../../../src/cluster/ressources/Pod'
 import { createSecret } from '../../../../../src/cluster/ressources/Secret'
+import { handleDescribe } from '../../../../../src/kubectl/commands/handlers/describe'
+import type { ParsedCommand } from '../../../../../src/kubectl/commands/types'
 
 describe('handleDescribe', () => {
     let state: ClusterStateData
@@ -31,7 +31,7 @@ describe('handleDescribe', () => {
             const result = handleDescribe(state, parsed)
             expect(result.ok).toBe(false)
             if (!result.ok) {
-                expect(result.error).toContain('Resource name is required')
+                expect(result.error).toContain('must specify the name')
             }
         })
 
@@ -46,7 +46,7 @@ describe('handleDescribe', () => {
             const result = handleDescribe(state, parsed)
             expect(result.ok).toBe(false)
             if (!result.ok) {
-                expect(result.error).toContain('not supported')
+                expect(result.error).toContain("doesn't have a resource type")
                 expect(result.error).toContain('deployments')
             }
         })
@@ -62,7 +62,7 @@ describe('handleDescribe', () => {
             const result = handleDescribe(state, parsed)
             expect(result.ok).toBe(false)
             if (!result.ok) {
-                expect(result.error).toContain('not found')
+                expect(result.error).toContain('Error from server (NotFound)')
                 expect(result.error).toContain('nonexistent')
             }
         })
@@ -87,8 +87,8 @@ describe('handleDescribe', () => {
             const result = handleDescribe(state, parsed)
             expect(result.ok).toBe(false)
             if (!result.ok) {
+                expect(result.error).toContain('Error from server (NotFound)')
                 expect(result.error).toContain('not found')
-                expect(result.error).toContain('kube-system')
             }
         })
     })
@@ -542,7 +542,8 @@ describe('handleDescribe', () => {
             const result = handleDescribe(state, parsed)
             expect(result.ok).toBe(false)
             if (!result.ok) {
-                expect(result.error).toContain('ConfigMap "missing" not found')
+                expect(result.error).toContain('Error from server (NotFound)')
+                expect(result.error).toContain('missing')
             }
         })
 
@@ -647,7 +648,8 @@ describe('handleDescribe', () => {
             const result = handleDescribe(state, parsed)
             expect(result.ok).toBe(false)
             if (!result.ok) {
-                expect(result.error).toContain('Secret "missing" not found')
+                expect(result.error).toContain('Error from server (NotFound)')
+                expect(result.error).toContain('missing')
             }
         })
 

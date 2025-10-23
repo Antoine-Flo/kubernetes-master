@@ -21,7 +21,7 @@ export const handleDelete = (
     const namespace = parsed.namespace || 'default'
 
     if (!parsed.name) {
-        return error(`Resource name is required for delete command`)
+        return error(`error: you must specify the name of the resource to delete`)
     }
 
     const resource = parsed.resource

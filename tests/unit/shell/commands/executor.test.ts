@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { createShellExecutor, type FileSystem } from '../../../../src/shell/commands/executor'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { createFileSystem } from '../../../../src/filesystem/FileSystem'
 import { createLogger, type Logger } from '../../../../src/logger/Logger'
+import { createShellExecutor, type FileSystem } from '../../../../src/shell/commands/executor'
 
 describe('Shell Executor', () => {
     let fileSystem: FileSystem
@@ -63,7 +63,7 @@ describe('Shell Executor', () => {
 
             expect(result.ok).toBe(false)
             if (!result.ok) {
-                expect(result.error).toContain('not found')
+                expect(result.error).toContain('No such file or directory')
             }
         })
     })
@@ -194,7 +194,7 @@ describe('Shell Executor', () => {
 
             expect(result.ok).toBe(false)
             if (!result.ok) {
-                expect(result.error).toContain('not found')
+                expect(result.error).toContain('No such file or directory')
             }
         })
 
@@ -302,35 +302,11 @@ describe('Shell Executor', () => {
     })
 
     describe('debug command', () => {
-        it('should list all available images with debug images', () => {
-            const result = executor.execute('debug images')
-
-            expect(result.ok).toBe(true)
-            if (result.ok) {
-                expect(result.value).toContain('Available Container Images')
-                expect(result.value).toContain('nginx')
-                expect(result.value).toContain('redis')
-                expect(result.value).toContain('postgres')
-            }
-        })
-
-        it('should show image details including tags and ports', () => {
-            const result = executor.execute('debug images')
-
-            expect(result.ok).toBe(true)
-            if (result.ok) {
-                expect(result.value).toContain('Tags:')
-                expect(result.value).toContain('Ports:')
-                expect(result.value).toContain('Status:')
-            }
-        })
-
         it('should show usage message for debug without args', () => {
             const result = executor.execute('debug')
 
             expect(result.ok).toBe(true)
             if (result.ok) {
-                expect(result.value).toContain('debug images')
                 expect(result.value).toContain('debug logs')
                 expect(result.value).toContain('debug clear')
             }

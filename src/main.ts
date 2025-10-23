@@ -3,6 +3,7 @@ import { createEventBus } from './cluster/events/EventBus'
 import { createSeedCluster } from './cluster/seedCluster'
 import { createAutoSaveClusterState, createAutoSaveFileSystem } from './cluster/storage/autoSave'
 import { createStorageAdapter } from './cluster/storage/storageAdapter'
+import { createRegistryPanel } from './containers/registry/RegistryPanel'
 import { createEditorModal } from './editor/EditorModal'
 import type { FileSystemState } from './filesystem/FileSystem'
 import { createHostFileSystem } from './filesystem/debianFileSystem'
@@ -10,6 +11,7 @@ import { createLogger } from './logger/Logger'
 import './style.css'
 import { createCommandDispatcher } from './terminal/CommandDispatcher'
 import { createTerminalManager } from './terminal/TerminalManager'
+import { createResetButton } from './ui/ResetButton'
 
 // ╔═══════════════════════════════════════════════════════════════════════╗
 // ║                      KUBECTL SIMULATOR - MAIN                         ║
@@ -81,3 +83,23 @@ terminal.focus()
 terminal.onCommand((command) => {
     commandDispatcher.execute(command)
 })
+
+// Initialize Reset Button
+const resetButtonContainer = document.getElementById('reset-button-container')
+if (resetButtonContainer) {
+    createResetButton(resetButtonContainer, {
+        storage,
+        clusterStateKey: CLUSTER_STATE_KEY,
+        fileSystemKey: FILESYSTEM_STATE_KEY,
+        eventBus,
+        onReset: (type) => {
+            logger.info('SYSTEM', `Reset performed: ${type}`)
+        }
+    })
+}
+
+// Initialize Registry Panel
+const registryPanelContainer = document.getElementById('registry-panel')
+if (registryPanelContainer) {
+    createRegistryPanel(registryPanelContainer)
+}

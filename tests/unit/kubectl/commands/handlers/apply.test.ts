@@ -31,7 +31,7 @@ describe('handleApply', () => {
 
       expect(result.ok).toBe(false)
       if (!result.ok) {
-        expect(result.error).toContain('filename is required')
+        expect(result.error).toContain('must specify one of -f')
       }
     })
 
@@ -46,7 +46,7 @@ describe('handleApply', () => {
 
       expect(result.ok).toBe(false)
       if (!result.ok) {
-        expect(result.error).toContain('not found')
+        expect(result.error).toContain('No such file or directory')
       }
     })
 
@@ -63,7 +63,7 @@ describe('handleApply', () => {
 
       expect(result.ok).toBe(false)
       if (!result.ok) {
-        expect(result.error).toContain('Error')
+        expect(result.error).toContain('error')
       }
     })
   })

@@ -131,7 +131,7 @@ export const handleMetadataChange = (
 
     // Validate resource name
     if (!parsed.name) {
-        return error(`Resource name is required for ${config.commandName} command`)
+        return error(`error: you must specify the name of the resource to ${config.commandName}`)
     }
 
     // Validate metadata changes
@@ -180,7 +180,7 @@ const handleMetadataChangeWithEvents = (
     )
 
     if (!resource) {
-        return error(`${accessor.resourceTypeName} "${name}" not found in namespace "${namespace}"`)
+        return error(`Error from server (NotFound): ${resourceType} "${name}" not found`)
     }
 
     // Apply metadata changes

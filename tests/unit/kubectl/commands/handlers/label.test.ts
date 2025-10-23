@@ -33,7 +33,7 @@ describe('handleLabel', () => {
         const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
-                expect(result.error).toContain('Resource name is required')
+                expect(result.error).toContain('must specify the name')
             }
         })
 
@@ -83,7 +83,7 @@ describe('handleLabel', () => {
         const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
-                expect(result.error).toContain('not found')
+                expect(result.error).toContain('Error from server (NotFound)')
                 expect(result.error).toContain('nonexistent')
             }
         })
@@ -110,8 +110,8 @@ describe('handleLabel', () => {
         const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
+                expect(result.error).toContain('Error from server (NotFound)')
                 expect(result.error).toContain('not found')
-                expect(result.error).toContain('kube-system')
             }
         })
 
@@ -554,7 +554,7 @@ describe('handleLabel', () => {
         const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
-                expect(result.error).toContain('ConfigMap')
+                expect(result.error).toContain('Error from server (NotFound)')
                 expect(result.error).toContain('not found')
             }
         })
@@ -634,7 +634,7 @@ describe('handleLabel', () => {
         const result = handleLabel(state, parsed, eventBus)
             expect(result.ok).toBe(false)
             if (!result.ok) {
-                expect(result.error).toContain('Secret')
+                expect(result.error).toContain('Error from server (NotFound)')
                 expect(result.error).toContain('not found')
             }
         })

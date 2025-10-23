@@ -1,4 +1,3 @@
-import { createImageRegistry } from '../../containers/registry/ImageRegistry'
 import type { EditorModal } from '../../editor/EditorModal'
 import { createFileSystem } from '../../filesystem/FileSystem'
 import type { Logger } from '../../logger/Logger'
@@ -286,9 +285,9 @@ const handleHelp = (_logger: Logger): ExecutionResult => {
   rm -r <dir>     Remove directory
   clear           Clear terminal
   help            Show this help
-  debug images    List available container images
 
-Use 'kubectl' prefix for Kubernetes commands`
+Use 'kubectl' prefix for Kubernetes commands
+See available images in the Registry panel below`
 
     return success(helpText)
 }
@@ -298,36 +297,12 @@ const handleDebug = (logger: Logger, _fileSystem: FileSystem, args: string[]): E
 
     if (!subcommand) {
         const usageText = `Debug commands:
-  debug images    List all available container images
   debug logs      Show application logs (last 50 entries)
   debug clear     Clear application logs
 
 Usage: debug <subcommand>`
 
         return success(usageText)
-    }
-
-    // Handle 'images' subcommand
-    if (subcommand === 'images') {
-        // Instantiate registry locally - no need to pass as dependency
-        const imageRegistry = createImageRegistry()
-        const images = imageRegistry.listAllImages()
-
-        const lines = ['=== Available Container Images ===', '']
-
-        images.forEach((img) => {
-            lines.push(`${img.registry}/${img.name}`)
-            lines.push(`  Tags: ${img.tags.join(', ')}`)
-            if (img.defaultPorts.length > 0) {
-                lines.push(`  Ports: ${img.defaultPorts.join(', ')}`)
-            }
-            lines.push(`  Status: ${img.behavior.defaultStatus}`)
-            lines.push('')
-        })
-
-        lines.push('Use these images in your pod manifests.')
-
-        return success(lines.join('\n'))
     }
 
     // Handle 'logs' subcommand

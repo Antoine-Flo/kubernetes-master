@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // Generic CRUD operations for any Kubernetes resource type
 
-import { success, error, type Result } from '../../shared/result'
+import { error, success, type Result } from '../../shared/result'
 import type { KubernetesResource, ResourceCollection } from './types'
 
 // Create empty collection (internal use only)
@@ -42,7 +42,7 @@ const find = <T extends KubernetesResource>(
     )
 
     if (!item) {
-        return error(`${kind} "${name}" not found in namespace "${namespace}"`)
+        return error(`Error from server (NotFound): ${kind.toLowerCase()}s "${name}" not found`)
     }
 
     return success(item)
@@ -60,7 +60,7 @@ const remove = <T extends KubernetesResource>(
     )
 
     if (index === -1) {
-        return error(`${kind} "${name}" not found in namespace "${namespace}"`)
+        return error(`Error from server (NotFound): ${kind.toLowerCase()}s "${name}" not found`)
     }
 
     const deleted = collection.items[index]
@@ -86,7 +86,7 @@ const update = <T extends KubernetesResource>(
     )
 
     if (index === -1) {
-        return error(`${kind} "${name}" not found in namespace "${namespace}"`)
+        return error(`Error from server (NotFound): ${kind.toLowerCase()}s "${name}" not found`)
     }
 
     const updated = updateFn(collection.items[index])

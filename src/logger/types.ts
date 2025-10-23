@@ -12,7 +12,7 @@ export type LogLevel = 'info' | 'warn' | 'error' | 'debug'
 /**
  * Categories for organizing logs by system component
  */
-export type LogCategory = 'COMMAND' | 'EXECUTOR' | 'FILESYSTEM' | 'CLUSTER'
+export type LogCategory = 'COMMAND' | 'EXECUTOR' | 'FILESYSTEM' | 'CLUSTER' | 'SYSTEM'
 
 /**
  * Log entry - immutable event in the log stream

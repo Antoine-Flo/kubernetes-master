@@ -23,19 +23,19 @@ const loadAndParseYaml = (
     const filename = parsed.flags.f || parsed.flags.filename
 
     if (!filename) {
-        return error('Error: filename is required (use -f or --filename)')
+        return error('error: must specify one of -f or --filename')
     }
 
     // Read file from filesystem
     const fileResult = fileSystem.readFile(filename as string)
     if (!fileResult.ok) {
-        return error(`Error: ${fileResult.error}`)
+        return error(`error: ${fileResult.error}`)
     }
 
     // Parse and validate YAML
     const parseResult = parseKubernetesYaml(fileResult.value)
     if (!parseResult.ok) {
-        return error(`Error: ${parseResult.error}`)
+        return error(`error: ${parseResult.error}`)
     }
 
     return { ok: true, value: '', resource: parseResult.value }

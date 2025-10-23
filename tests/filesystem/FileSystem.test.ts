@@ -198,7 +198,7 @@ describe('FileSystem - Facade', () => {
 
             expect(result.ok).toBe(false)
             if (!result.ok) {
-                expect(result.error).toContain('not found')
+                expect(result.error).toContain('No such file or directory')
             }
             expect(fs.getCurrentPath()).toBe('/')
         })
@@ -309,7 +309,7 @@ describe('FileSystem - Facade', () => {
 
             expect(result.ok).toBe(false)
             if (!result.ok) {
-                expect(result.error).toContain('already exists')
+                expect(result.error).toContain('File exists')
             }
         })
 
@@ -372,7 +372,7 @@ describe('FileSystem - Facade', () => {
 
             expect(result.ok).toBe(false)
             if (!result.ok) {
-                expect(result.error).toContain('already exists')
+                expect(result.error).toContain('File exists')
             }
         })
 
@@ -423,7 +423,7 @@ describe('FileSystem - Facade', () => {
 
             expect(result.ok).toBe(false)
             if (!result.ok) {
-                expect(result.error).toContain('not found')
+                expect(result.error).toContain('No such file or directory')
             }
         })
 
@@ -546,7 +546,7 @@ describe('FileSystem - Facade', () => {
 
             expect(result.ok).toBe(false)
             if (!result.ok) {
-                expect(result.error).toContain('root')
+                expect(result.error).toContain('cannot remove')
             }
         })
     })

@@ -181,7 +181,7 @@ const createSingleDirectory = (
     const parent = findNode(tree, parentPath)
 
     if (!parent || parent.type !== 'directory') {
-        return error(`Parent directory not found: ${parentPath}`)
+        return error(`mkdir: cannot create directory '${absolutePath}': No such file or directory`)
     }
 
     const dirName = parts[parts.length - 1]
@@ -202,12 +202,12 @@ const validateDirectoryCreation = (
     tree: DirectoryNode
 ): Result<void> => {
     if (!validateFilename(name.split('/').pop() || '')) {
-        return error(`Invalid directory name: ${name}`)
+        return error(`mkdir: cannot create directory '${name}': Invalid argument`)
     }
 
     const existing = findNode(tree, absolutePath)
     if (existing) {
-        return error(`Directory already exists: ${absolutePath}`)
+        return error(`mkdir: cannot create directory '${absolutePath}': File exists`)
     }
 
     return success(undefined)
@@ -222,12 +222,12 @@ const validateFileCreation = (
     tree: DirectoryNode
 ): Result<void> => {
     if (!validateFilename(name)) {
-        return error(`Invalid filename: ${name}`)
+        return error(`touch: cannot touch '${name}': Invalid argument`)
     }
 
     const existing = findNode(tree, absolutePath)
     if (existing) {
-        return error(`File already exists: ${absolutePath}`)
+        return error(`touch: cannot touch '${absolutePath}': File exists`)
     }
 
     return success(undefined)
@@ -238,14 +238,15 @@ const validateFileCreation = (
  */
 const validateIsDirectory = (
     node: FileSystemNode | undefined,
-    path: string
+    path: string,
+    command: string = 'cd'
 ): Result<DirectoryNode> => {
     if (!node) {
-        return error(`Directory not found: ${path}`)
+        return error(`${command}: ${path}: No such file or directory`)
     }
 
     if (node.type !== 'directory') {
-        return error(`Not a directory: ${path}`)
+        return error(`${command}: ${path}: Not a directory`)
     }
 
     return success(node)
@@ -256,14 +257,15 @@ const validateIsDirectory = (
  */
 const validateIsFile = (
     node: FileSystemNode | undefined,
-    path: string
+    path: string,
+    command: string = 'cat'
 ): Result<FileNode> => {
     if (!node) {
-        return error(`File not found: ${path}`)
+        return error(`${command}: ${path}: No such file or directory`)
     }
 
     if (node.type !== 'file') {
-        return error(`Not a file: ${path}`)
+        return error(`${command}: ${path}: Is a directory`)
     }
 
     return success(node)
@@ -295,7 +297,7 @@ const createNavigationOps = (getState: () => FileSystemState, setState: (s: File
         const targetPath = path ? resolvePath(state.currentPath, path) : state.currentPath
         const node = findNode(state.tree, targetPath)
 
-        const validation = validateIsDirectory(node, targetPath)
+        const validation = validateIsDirectory(node, targetPath, 'ls')
         if (!validation.ok) {
             return validation
         }
@@ -332,17 +334,20 @@ const createDirectoryOps = (getState: () => FileSystemState) => ({
         const absolutePath = resolvePath(state.currentPath, path)
 
         if (absolutePath === '/') {
-            return error('Cannot delete root directory')
+            return error(`rm: cannot remove '/': Invalid argument`)
         }
 
         const node = findNode(state.tree, absolutePath)
-        const validation = validateIsDirectory(node, absolutePath)
-        if (!validation.ok) {
-            return validation
+        if (!node) {
+            return error(`rm: cannot remove '${absolutePath}': No such file or directory`)
+        }
+        
+        if (node.type !== 'directory') {
+            return error(`rm: cannot remove '${absolutePath}': Not a directory`)
         }
 
-        if (!recursive && validation.value.children.size > 0) {
-            return error(`Directory not empty: ${absolutePath}`)
+        if (!recursive && node.children.size > 0) {
+            return error(`rm: cannot remove '${absolutePath}': Directory not empty`)
         }
 
         removeNode(state.tree, absolutePath)
@@ -393,7 +398,7 @@ const createFileOps = (getState: () => FileSystemState) => ({
         const absolutePath = resolvePath(state.currentPath, path)
         const node = findNode(state.tree, absolutePath)
 
-        const validation = validateIsFile(node, absolutePath)
+        const validation = validateIsFile(node, absolutePath, 'nano')
         if (!validation.ok) {
             return validation
         }
@@ -411,7 +416,7 @@ const createFileOps = (getState: () => FileSystemState) => ({
         const absolutePath = resolvePath(state.currentPath, path)
         const node = findNode(state.tree, absolutePath)
 
-        const validation = validateIsFile(node, absolutePath)
+        const validation = validateIsFile(node, absolutePath, 'rm')
         if (!validation.ok) {
             return validation
         }

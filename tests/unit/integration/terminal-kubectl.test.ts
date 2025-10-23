@@ -397,7 +397,7 @@ spec:
 
             const outputCalls = writeSpy.mock.calls.map(call => call[0]).join('')
             expect(outputCalls).toContain('Error:')
-            expect(outputCalls).toContain('not found')
+            expect(outputCalls).toContain('No such file or directory')
         })
 
         it('handles invalid YAML syntax error', () => {

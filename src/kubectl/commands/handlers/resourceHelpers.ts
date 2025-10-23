@@ -45,7 +45,7 @@ export const applyResourceWithEvents = (
     } else if (kind === 'Secret') {
         existing = clusterState.findSecret(name, namespace)
     } else {
-        return error(`Error: Unknown resource kind: ${kind}`)
+        return error(`error: the server doesn't have a resource type "${(kind as string).toLowerCase()}s"`)
     }
 
     // Emit appropriate event
@@ -94,7 +94,7 @@ export const createResourceWithEvents = (
     } else if (kind === 'Secret') {
         existing = clusterState.findSecret(name, namespace)
     } else {
-        return error(`Error: Unknown resource kind: ${kind}`)
+        return error(`error: the server doesn't have a resource type "${(kind as string).toLowerCase()}s"`)
     }
 
     if (existing.ok) {

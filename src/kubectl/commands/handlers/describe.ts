@@ -1,8 +1,8 @@
 import type { ClusterStateData } from '../../../cluster/ClusterState'
-import type { ParsedCommand } from '../types'
 import type { ExecutionResult } from '../../../shared/result'
-import { success, error } from '../../../shared/result'
-import { describePod, describeConfigMap, describeSecret } from '../../formatters/describeFormatters'
+import { error, success } from '../../../shared/result'
+import { describeConfigMap, describePod, describeSecret } from '../../formatters/describeFormatters'
+import type { ParsedCommand } from '../types'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // KUBECTL DESCRIBE HANDLER
@@ -46,12 +46,12 @@ export const handleDescribe = (
     parsed: ParsedCommand
 ): ExecutionResult => {
     if (!parsed.name) {
-        return error(`Resource name is required for describe command`)
+        return error(`error: you must specify the name of the resource to describe`)
     }
 
     const config = DESCRIBE_CONFIG[parsed.resource]
     if (!config) {
-        return error(`Resource type "${parsed.resource}" is not supported by describe command`)
+        return error(`error: the server doesn't have a resource type "${parsed.resource}"`)
     }
 
     const namespace = parsed.namespace || 'default'
@@ -60,7 +60,7 @@ export const handleDescribe = (
     )
 
     if (!resource) {
-        return error(`${config.type} "${parsed.name}" not found in namespace "${namespace}"`)
+        return error(`Error from server (NotFound): ${parsed.resource} "${parsed.name}" not found`)
     }
 
     return success(config.formatter(resource))

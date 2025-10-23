@@ -2,105 +2,31 @@
 
 ## Current Status
 
-**873 tests passing** | **~89% coverage** | **Architecture: Functional (Factory + Pure functions + ADT + Event Sourcing)**
+**975 tests passing** | **~89% coverage** | **Phase 1 MVP Complete** ✅
 
-## Completed Sprints
+**Architecture**: Functional (Factory + Pure functions + ADT + Event Sourcing)
 
-### Core Foundation
-- ✅ Sprint 1: Terminal xterm.js (9 tests)
-- ✅ Sprint 2: Pod model + ClusterState (43 tests)
-- ✅ Sprint 3.1-3.3: kubectl Parser, Executor, Terminal Integration (65 tests)
+## ✅ Phase 1 MVP - Completed (Sprints 1-6)
 
-### Filesystem & Shell
-- ✅ Sprint 4.1-4.3: FileSystem Foundation (103 tests) - Library-ready design
-- ✅ Sprint 4.4: Shell Parser + Executor (47 tests)
-- ✅ Sprint 4.6: Shell Handlers - cd, ls, pwd, mkdir, touch, cat, rm (47 tests)
+**Terminal & Core kubectl**
+- Terminal xterm.js avec historique de commandes et autocomplétion
+- kubectl commands: get, describe, delete, create, apply, logs, exec, label, annotate
+- Cluster simulé avec Pods, Deployments, Services, ConfigMaps, Secrets, Namespaces
 
-### Registry & Logging
-- ✅ Sprint 4.5: Image Registry + Pull Simulation (25 tests)
-- ✅ Sprint 4.7: Application Logger (21 tests) - Event Sourcing + Observer Pattern
+**Filesystem & Shell**
+- Virtual filesystem avec commandes: cd, ls, pwd, mkdir, touch, cat, rm, nano
+- Éditeur YAML intégré (CodeMirror 6)
 
-### UX Enhancements
-- ✅ Sprint 4.8: Command Dispatcher (8 tests) - Routing kubectl vs shell
-- ✅ Sprint 4.9: Terminal UX - Command history + Enhanced prompt (12 tests)
-- ✅ Sprint 4.10: Tab Autocompletion (61 tests) - Bash-like autocomplete
+**Persistence & UX**
+- localStorage avec auto-save
+- Command history, tab autocompletion, enhanced prompt
+- Registry panel UI avec liste d'images disponibles
+- Reset button (cluster/filesystem/all)
+- Messages d'erreur authentiques (kubectl + shell)
 
-### Core Resources
-- ✅ Sprint 5.1: Generic Formatter Module (54 tests)
-- ✅ Sprint 5.2: ConfigMaps, Secrets, Pod enrichment (72 tests)
-- ✅ Sprint 5.3: Get Handlers - configmaps/secrets with filters (21 tests)
-- ✅ Sprint 5.4: Describe Handlers - pods, configmaps, secrets (23 tests)
+## 🚀 Next: Phase 2 - Advanced Kubernetes (Sprints 7-14)
 
-### Code Quality & Refactoring
-- ✅ **Result Pattern Migration** - `{type, data/message}` → `{ok, value/error}` (Fetch API style)
-- ✅ **Sprint 5.5**: Apply/Create Handlers - YAML parser + kubectl apply/create (63 tests)
-- ✅ **Handler Refactoring**: Configuration-driven pattern for kubectl handlers (describe.ts: 69→62 lines, -10% code duplication)
-- ✅ **ClusterState Refactoring**: Generic factory pattern with `createResourceOperations` and `createFacadeMethods` helpers (304→213 lines, -30% code, eliminated repetitive CRUD operations)
-
-### Editor Integration
-- ✅ **Sprint 13 (Early)**: YAML Editor - CodeMirror 6 integration with nano command (25 tests)
-
-### Advanced kubectl Commands
-- ✅ **Sprint 5.6**: kubectl logs + exec (69 tests) - Dynamic log generation, tail/follow flags, interactive shell simulation, autocomplete
-- ✅ **Sprint 5.7**: kubectl label & annotate (75 tests) - Add/remove labels and annotations, --overwrite flag support
-
-### UI Enhancements
-- ✅ **UI Polish**: Navigation bar with GitHub link, footer with useful links, SEO metadata - Minimalist and modern design
-
-### Documentation
-- ✅ **User-focused README**: Transformed README from developer-centric to user-friendly documentation with examples, FAQ, learning path
-- ✅ **CONTRIBUTING.md**: Standard contribution guide with setup, coding standards, testing, and PR process
-
-### Storage & Integration
-- ✅ **Sprint 6.1**: Storage Adapter - localStorage persistence with Map serialization support, quota error handling
-- ✅ **Sprint 6.2**: Integration - Auto-save wrapper with debouncing, main.ts orchestration, load-or-seed pattern
-
-## Next Sprint
-
-**Sprint 6.3-6.5** - Error Handling, UI Polish & Documentation
-
-See details in "Upcoming (Phase 1 - MVP)" section below.
-
-## Upcoming (Phase 1 - MVP)
-
-### Sprint 6: Storage + Integration + Polish
-
-**6.1 - Storage Adapter**
-- localStorage adapter factory
-- Save/load ClusterState and FileSystem
-- Auto-save on state changes
-
-**6.2 - Integration**
-- Orchestration in main.ts
-- Load from storage or seed
-- End-to-end tests
-
-**6.3 - Error Handling & UX**
-- Clear error messages
-- help command
-- reset command
-- Graceful error handling
-
-**6.4 - UI Polish**
-- Registry panel (available images)
-- Responsive design
-- ANSI colors (green/red/yellow)
-- Favicon and loading states
-
-**6.5 - Documentation**
-- README with examples
-- Coverage >80%
-- ~700+ tests total
-
-## Backlog (Deferred Features)
-
-**Sprint 5.8** - Dynamic Log Generator Enhancement
-- Replace hardcoded log patterns with dynamic generation
-- Context-aware logs based on pod state and events
-- Realistic timestamps and log volume simulation
-- Support for different log levels and formats
-
-## Phase 2: Advanced Kubernetes (Sprints 7-14)
+## Phase 2: Advanced Kubernetes
 
 ### Sprint 7: Multi-Container Pods & Init Containers
 - Multiple containers per pod
@@ -146,7 +72,7 @@ See details in "Upcoming (Phase 1 - MVP)" section below.
 - Fallback to hardcoded registry
 - Chaos infrastructure in models
 
-## Phase 3: Learning Platform (Sprints 15-20)
+## Phase 3: Learning Platform
 
 ### Sprint 15: Chaos Engineering System
 - Chaos GUI panel
@@ -182,9 +108,9 @@ See details in "Upcoming (Phase 1 - MVP)" section below.
 - Coverage >85%
 - E2E tests
 
-## Phase 4: Advanced Infrastructure (Sprints 21-26)
+## Phase 4: Advanced Infrastructure
 
-**Priority: Low** (Nice-to-have for advanced users)
+**Priority: Low** - Nice-to-have for advanced users
 
 ### Sprint 21: Nodes Management & Scheduling
 - Multi-node simulation (3-5 nodes)
@@ -221,25 +147,26 @@ See details in "Upcoming (Phase 1 - MVP)" section below.
 
 ## Summary
 
-| Phase | Sprints | Focus | Priority |
-|-------|---------|-------|----------|
-| **MVP (Phase 1)** | 1-6 | Core features (Terminal, kubectl, Storage) | ⭐⭐⭐ |
-| **Phase 2** | 7-14 | Advanced K8s resources | ⭐⭐ |
-| **Phase 3** | 15-20 | Learning platform | ⭐⭐ |
-| **Phase 4** | 21-26 | Advanced infrastructure | ⭐ |
-| **TOTAL** | **26 sprints** | Full K8s learning platform | - |
+| Phase             | Sprints        | Focus                                      | Priority |
+| ----------------- | -------------- | ------------------------------------------ | -------- |
+| **MVP (Phase 1)** | 1-6            | Core features (Terminal, kubectl, Storage) | ⭐⭐⭐      |
+| **Phase 2**       | 7-14           | Advanced K8s resources                     | ⭐⭐       |
+| **Phase 3**       | 15-20          | Learning platform                          | ⭐⭐       |
+| **Phase 4**       | 21-26          | Advanced infrastructure                    | ⭐        |
+| **TOTAL**         | **26 sprints** | Full K8s learning platform                 | -        |
 
 ## Must-Have Features
 
-To compete with KodeKloud/Killer.sh:
-- ✅ Sprint 5: ConfigMaps, Secrets, kubectl exec, Resource limits, Probes
-- ✅ Sprint 7-10: Multi-container, PV/PVC, Jobs, kubectl rollout/port-forward
-- ✅ Sprint 15-17: Chaos engineering, Challenges, Lessons
+Pour rivaliser avec KodeKloud/Killer.sh:
+- ✅ Phase 1: Terminal complet, kubectl core, Filesystem, Persistence
+- 🎯 Phase 2 (Sprint 7-14): Multi-container, PV/PVC, Jobs, kubectl avancé
+- 🎯 Phase 3 (Sprint 15-20): Chaos engineering, Challenges, Lessons
 
 ## Unique Differentiators
 
-- Sprint 15: Chaos Engineering GUI (unique!)
-- Sprint 26: Time-travel debugging, Scenario recording
+- Chaos Engineering GUI avec scenarios configurables
+- Time-travel debugging et scenario recording/replay
+- Architecture 100% fonctionnelle (pas d'OOP)
 
 ## TDD Workflow
 
