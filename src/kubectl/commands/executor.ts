@@ -82,23 +82,22 @@ const routeCommand = (
 
 /**
  * Create a kubectl executor
- * Factory function that encapsulates ClusterState, FileSystem, Logger, and EventBus in closures
+ * Factory function that encapsulates ClusterState, Logger, and EventBus in closures
+ * FileSystem is passed per-execution to support dynamic filesystem context (host vs container)
  * 
  * @param clusterState - The cluster state to operate on
- * @param fileSystem - The filesystem to read YAML files from
+ * @param defaultFileSystem - The default filesystem (used if none provided)
  * @param logger - Application logger for tracking commands
  * @param eventBus - EventBus for event-driven architecture
- * @returns Executor with execute method
+ * @returns Executor with execute method that accepts optional filesystem
  */
 export const createKubectlExecutor = (
     clusterState: ClusterState,
-    fileSystem: FileSystem,
+    defaultFileSystem: FileSystem,
     logger: Logger,
     eventBus: EventBus
 ) => {
-    const handlers = createHandlers(clusterState, fileSystem, logger, eventBus)
-
-    const execute = (input: string): ExecutionResult => {
+    const execute = (input: string, fileSystem?: FileSystem): ExecutionResult => {
         logger.info('COMMAND', `Kubectl: ${input}`)
 
         const parseResult = parseCommand(input)
@@ -106,6 +105,10 @@ export const createKubectlExecutor = (
             logger.error('EXECUTOR', `Parse error: ${parseResult.error}`)
             return error(parseResult.error)
         }
+
+        // Use provided filesystem or fallback to default
+        const fs = fileSystem || defaultFileSystem
+        const handlers = createHandlers(clusterState, fs, logger, eventBus)
 
         return routeCommand(handlers, parseResult.value, logger)
     }

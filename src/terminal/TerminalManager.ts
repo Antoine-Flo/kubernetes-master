@@ -1,6 +1,9 @@
 import { Terminal } from '@xterm/xterm'
-import { formatSuggestions, getCommonPrefix, getCompletions, type AutocompleteContext } from './autocomplete'
+import { formatSuggestions, getCommonPrefix, getCompletionResults, type AutocompleteContext } from './autocomplete'
+import { VALID_COMMANDS } from '../shell/commands/parser'
 import { ShellContextStack } from './ShellContext'
+
+const COMMANDS = ['kubectl', ...VALID_COMMANDS]
 
 type CommandCallback = (command: string) => void
 
@@ -155,43 +158,85 @@ export const createTerminalManager = (
     }
 
     const getCurrentToken = (): string => {
-        if (currentLine.endsWith(' ')) return ''
+        if (currentLine.endsWith(' ')) {
+            return ''
+        }
         const lastSpace = currentLine.lastIndexOf(' ')
-        if (lastSpace === -1) return currentLine
+        if (lastSpace === -1) {
+            return currentLine
+        }
         return currentLine.slice(lastSpace + 1)
     }
 
     const handleTab = (): void => {
         // Skip if no autocomplete context provided
-        if (!autocompleteContext) return
+        if (!autocompleteContext) {
+            return
+        }
 
         const now = Date.now()
         const isDoubleTap = (now - lastTabPress) < 500
         lastTabPress = now
 
-        const completions = getCompletions(currentLine, autocompleteContext)
+        // Use current filesystem from shell context instead of static context
+        const currentFileSystem = shellContextStack.getCurrentFileSystem()
+        const dynamicContext = {
+            clusterState: autocompleteContext.clusterState,
+            fileSystem: currentFileSystem
+        }
 
-        if (completions.length === 0) return
+        const completionResults = getCompletionResults(currentLine, dynamicContext)
+        if (completionResults.length === 0) {
+            return
+        }
 
-        if (completions.length === 1) {
-            // Single match - complete it and add space
-            const completion = completions[0]
+        if (completionResults.length === 1) {
+            // Single match - complete it with appropriate suffix
+            const result = completionResults[0]
             const currentToken = getCurrentToken()
-            const toAdd = completion.slice(currentToken.length) + ' '
-            currentLine += toAdd
-            cursorPosition = currentLine.length
-            terminal.write(toAdd)
+
+            // Check if the completion is already complete
+            // If currentToken is empty (line ends with space), check if the completion was just added
+            if (currentToken === result.text || (currentToken === '' && currentLine.trim().endsWith(result.text))) {
+                // Already complete, just add suffix if not already there
+                if (!currentLine.endsWith(result.suffix)) {
+                    currentLine += result.suffix
+                    cursorPosition = currentLine.length
+                    terminal.write(result.suffix)
+                }
+            } else {
+                // Complete the partial token
+                const toAdd = result.text.slice(currentToken.length) + result.suffix
+                currentLine += toAdd
+                cursorPosition = currentLine.length
+                terminal.write(toAdd)
+            }
+        } else if (completionResults.length === 0) {
+            // No completions found - check if current token is a complete command
+            const currentToken = getCurrentToken()
+            const tokens = currentLine.trim().split(/\s+/)
+
+            // If we have a single token that's a complete command, add space
+            if (tokens.length === 1 && COMMANDS.includes(currentToken)) {
+                if (!currentLine.endsWith(' ')) {
+                    currentLine += ' '
+                    cursorPosition = currentLine.length
+                    terminal.write(' ')
+                }
+            }
         } else if (isDoubleTap) {
             // Double tab - show all options
             terminal.write('\r\n')
-            terminal.write(formatSuggestions(completions))
+            const completionTexts = completionResults.map(result => result.text)
+            terminal.write(formatSuggestions(completionTexts))
             terminal.write('\r\n')
             showPrompt()
             terminal.write(currentLine)
             cursorPosition = currentLine.length
         } else {
             // Single tab - complete common prefix
-            const prefix = getCommonPrefix(completions)
+            const completionTexts = completionResults.map(result => result.text)
+            const prefix = getCommonPrefix(completionTexts)
             const currentToken = getCurrentToken()
             const toAdd = prefix.slice(currentToken.length)
             if (toAdd) {

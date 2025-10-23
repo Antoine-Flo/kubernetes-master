@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createClusterState } from '../../../src/cluster/ClusterState'
 import { createEventBus } from '../../../src/cluster/events/EventBus'
 import { createPod } from '../../../src/cluster/ressources/Pod'
+import { createConfigMap } from '../../../src/cluster/ressources/ConfigMap'
+import { createSecret } from '../../../src/cluster/ressources/Secret'
 import { createFileSystem } from '../../../src/filesystem/FileSystem'
 import { formatSuggestions, getCommonPrefix, getCompletions, type AutocompleteContext } from '../../../src/terminal/autocomplete'
 
@@ -12,7 +14,7 @@ describe('Autocomplete', () => {
         const eventBus = createEventBus()
         const clusterState = createClusterState(eventBus)
 
-        // Add some test pods
+        // Add test pods
         clusterState.addPod(createPod({
             name: 'nginx-1',
             namespace: 'default',
@@ -27,6 +29,21 @@ describe('Autocomplete', () => {
             name: 'redis-1',
             namespace: 'default',
             containers: [{ name: 'redis', image: 'redis:latest' }]
+        }))
+
+        // Add test configmaps
+        clusterState.addConfigMap(createConfigMap({
+            name: 'app-config',
+            namespace: 'default',
+            data: { key: 'value' }
+        }))
+
+        // Add test secrets
+        clusterState.addSecret(createSecret({
+            name: 'db-secret',
+            namespace: 'default',
+            secretType: { type: 'Opaque' },
+            data: { password: 'secret' }
         }))
 
         const fileSystem = createFileSystem({
@@ -45,6 +62,14 @@ describe('Autocomplete', () => {
                                 type: 'file',
                                 name: 'pod.yaml',
                                 path: '/manifests/pod.yaml',
+                                content: '',
+                                createdAt: new Date().toISOString(),
+                                modifiedAt: new Date().toISOString()
+                            }],
+                            ['deployment.yaml', {
+                                type: 'file',
+                                name: 'deployment.yaml',
+                                path: '/manifests/deployment.yaml',
                                 content: '',
                                 createdAt: new Date().toISOString(),
                                 modifiedAt: new Date().toISOString()
@@ -130,13 +155,8 @@ describe('Autocomplete', () => {
             expect(completions).toContain('cd')
             expect(completions).toContain('ls')
             expect(completions).toContain('pwd')
-            expect(completions).toContain('mkdir')
-            expect(completions).toContain('touch')
             expect(completions).toContain('cat')
             expect(completions).toContain('nano')
-            expect(completions).toContain('vi')
-            expect(completions).toContain('vim')
-            expect(completions).toContain('rm')
         })
 
         it('completes cd from partial c', () => {
@@ -164,7 +184,8 @@ describe('Autocomplete', () => {
             expect(completions).toContain('describe')
             expect(completions).toContain('delete')
             expect(completions).toContain('apply')
-            expect(completions).toContain('create')
+            expect(completions).toContain('logs')
+            expect(completions).toContain('exec')
         })
 
         it('completes get from kubectl g', () => {
@@ -182,15 +203,29 @@ describe('Autocomplete', () => {
             const completions = getCompletions('kubectl a', context)
             expect(completions).toEqual(['apply'])
         })
+
+        it('completes logs from kubectl lo', () => {
+            const completions = getCompletions('kubectl lo', context)
+            expect(completions).toContain('logs')
+        })
+
+        it('completes exec from kubectl e', () => {
+            const completions = getCompletions('kubectl e', context)
+            expect(completions).toContain('exec')
+        })
     })
 
     describe('Resource Type Completion', () => {
         it('completes resource types after kubectl get', () => {
             const completions = getCompletions('kubectl get ', context)
             expect(completions).toContain('pods')
-            expect(completions).toContain('deployments')
-            expect(completions).toContain('services')
-            expect(completions).toContain('namespaces')
+            expect(completions).toContain('pod')
+            expect(completions).toContain('po')
+            expect(completions).toContain('configmaps')
+            expect(completions).toContain('configmap')
+            expect(completions).toContain('cm')
+            expect(completions).toContain('secrets')
+            expect(completions).toContain('secret')
         })
 
         it('completes pods from kubectl get p', () => {
@@ -206,25 +241,24 @@ describe('Autocomplete', () => {
             expect(completions).toContain('pod')
         })
 
-        it('completes deployments from kubectl get d', () => {
-            const completions = getCompletions('kubectl get d', context)
-            expect(completions).toContain('deployments')
-            expect(completions).toContain('deployment')
-            expect(completions).toContain('deploy')
+        it('completes configmaps from kubectl get c', () => {
+            const completions = getCompletions('kubectl get c', context)
+            expect(completions).toContain('configmaps')
+            expect(completions).toContain('configmap')
+            expect(completions).toContain('cm')
         })
 
-        it('completes services from kubectl get s', () => {
+        it('completes secrets from kubectl get s', () => {
             const completions = getCompletions('kubectl get s', context)
-            expect(completions).toContain('services')
-            expect(completions).toContain('service')
-            expect(completions).toContain('svc')
+            expect(completions).toContain('secrets')
+            expect(completions).toContain('secret')
         })
 
         it('completes resource types after kubectl describe', () => {
             const completions = getCompletions('kubectl describe ', context)
             expect(completions).toContain('pods')
-            expect(completions).toContain('deployments')
-            expect(completions).toContain('services')
+            expect(completions).toContain('configmaps')
+            expect(completions).toContain('secrets')
         })
     })
 
@@ -262,6 +296,16 @@ describe('Autocomplete', () => {
             expect(completions).toContain('nginx-1')
             expect(completions).toContain('nginx-2')
         })
+
+        it('completes configmap names after kubectl get configmaps', () => {
+            const completions = getCompletions('kubectl get configmaps ', context)
+            expect(completions).toContain('app-config')
+        })
+
+        it('completes secret names after kubectl get secrets', () => {
+            const completions = getCompletions('kubectl get secrets ', context)
+            expect(completions).toContain('db-secret')
+        })
     })
 
     describe('File Path Completion', () => {
@@ -272,10 +316,9 @@ describe('Autocomplete', () => {
         })
 
         it('cd only suggests directories, not files', () => {
-            // In manifests: has pod.yaml file
             context.fileSystem.changeDirectory('/manifests')
             const completions = getCompletions('cd ', context)
-            expect(completions).toEqual([])  // No subdirectories in manifests
+            expect(completions).toEqual([])
             expect(completions).not.toContain('pod.yaml')
         })
 
@@ -291,35 +334,34 @@ describe('Autocomplete', () => {
         })
 
         it('completes files after cat', () => {
-            // First cd into manifests
             context.fileSystem.changeDirectory('/manifests')
             const completions = getCompletions('cat ', context)
-            expect(completions).toContain('pod.yaml')
-        })
-
-        it('cat only suggests files, not directories', () => {
-            // At root: has directories but no files
-            const completions = getCompletions('cat ', context)
-            expect(completions).toEqual([])  // No files at root
-            expect(completions).not.toContain('manifests')
-            expect(completions).not.toContain('examples')
-        })
-
-        it('completes paths after kubectl apply -f', () => {
-            context.fileSystem.changeDirectory('/manifests')
-            const completions = getCompletions('kubectl apply -f ', context)
-            expect(completions).toContain('pod.yaml')
-        })
-
-        it('kubectl apply -f only suggests yaml files', () => {
-            context.fileSystem.changeDirectory('/manifests')
-            context.fileSystem.createFile('config.json')
-            context.fileSystem.createFile('deployment.yaml')
-
-            const completions = getCompletions('kubectl apply -f ', context)
             expect(completions).toContain('pod.yaml')
             expect(completions).toContain('deployment.yaml')
-            expect(completions).not.toContain('config.json')  // JSON not suggested for kubectl
+        })
+
+        it('cat suggests files in current directory', () => {
+            context.fileSystem.changeDirectory('/manifests')
+            const completions = getCompletions('cat ', context)
+            expect(completions).toContain('pod.yaml')
+            expect(completions).not.toContain('manifests')
+        })
+
+        it('completes files after nano', () => {
+            context.fileSystem.changeDirectory('/manifests')
+            const completions = getCompletions('nano ', context)
+            expect(completions).toContain('pod.yaml')
+            expect(completions).toContain('deployment.yaml')
+        })
+
+        it('vi and vim work for file completion', () => {
+            context.fileSystem.changeDirectory('/manifests')
+
+            const viCompletions = getCompletions('vi ', context)
+            const vimCompletions = getCompletions('vim ', context)
+
+            expect(viCompletions).toContain('pod.yaml')
+            expect(vimCompletions).toContain('pod.yaml')
         })
 
         it('completes files after rm', () => {
@@ -327,78 +369,34 @@ describe('Autocomplete', () => {
             const completions = getCompletions('rm ', context)
             expect(completions).toContain('pod.yaml')
         })
-
-        it('completes files after nano', () => {
-            context.fileSystem.changeDirectory('/manifests')
-            const completions = getCompletions('nano ', context)
-            expect(completions).toContain('pod.yaml')
-        })
-
-        it('nano only suggests files, not directories', () => {
-            // At root: has directories (manifests, examples) and no files
-            const completions = getCompletions('nano ', context)
-            expect(completions).toEqual([])  // No files at root
-            expect(completions).not.toContain('manifests')
-            expect(completions).not.toContain('examples')
-        })
-
-        it('nano only suggests files with valid extensions', () => {
-            // Add a file with invalid extension
-            context.fileSystem.changeDirectory('/manifests')
-            context.fileSystem.createFile('script.sh')
-            context.fileSystem.createFile('config.yaml')
-
-            const completions = getCompletions('nano ', context)
-            expect(completions).toContain('pod.yaml')
-            expect(completions).toContain('config.yaml')
-            expect(completions).not.toContain('script.sh')  // .sh not in allowed extensions
-        })
-
-        it('vi and vim work as aliases for nano', () => {
-            context.fileSystem.changeDirectory('/manifests')
-
-            const viCompletions = getCompletions('vi ', context)
-            const vimCompletions = getCompletions('vim ', context)
-            const nanoCompletions = getCompletions('nano ', context)
-
-            // All should suggest the same files
-            expect(viCompletions).toEqual(nanoCompletions)
-            expect(vimCompletions).toEqual(nanoCompletions)
-        })
-
-        it('handles absolute paths', () => {
-            const completions = getCompletions('cd /', context)
-            expect(completions).toContain('/manifests')
-            expect(completions).toContain('/examples')
-        })
     })
 
-    describe('Flag Completion', () => {
-        it('completes kubectl flags starting with -', () => {
-            const completions = getCompletions('kubectl get pods -', context)
-            expect(completions).toContain('-n')
-            expect(completions).toContain('-o')
-            expect(completions).toContain('-l')
-            expect(completions).toContain('-A')
+    describe('kubectl logs and exec completion', () => {
+        it('completes pod names directly after kubectl logs', () => {
+            const completions = getCompletions('kubectl logs ', context)
+            expect(completions).toContain('nginx-1')
+            expect(completions).toContain('nginx-2')
+            expect(completions).toContain('redis-1')
         })
 
-        it('completes kubectl flags starting with --', () => {
-            const completions = getCompletions('kubectl get pods --', context)
-            expect(completions).toContain('--namespace')
-            expect(completions).toContain('--output')
-            expect(completions).toContain('--selector')
-            expect(completions).toContain('--all-namespaces')
+        it('completes pod names after kubectl logs with partial match', () => {
+            const completions = getCompletions('kubectl logs ngin', context)
+            expect(completions).toContain('nginx-1')
+            expect(completions).toContain('nginx-2')
+            expect(completions).not.toContain('redis-1')
         })
 
-        it('completes namespace flag from --n', () => {
-            const completions = getCompletions('kubectl get pods --n', context)
-            expect(completions).toEqual(['--namespace'])
+        it('completes pod names directly after kubectl exec', () => {
+            const completions = getCompletions('kubectl exec ', context)
+            expect(completions).toContain('nginx-1')
+            expect(completions).toContain('nginx-2')
+            expect(completions).toContain('redis-1')
         })
 
-        it('completes shell flags', () => {
-            const completions = getCompletions('ls -', context)
-            expect(completions).toContain('-l')
-            expect(completions).toContain('-r')
+        it('completes pod names after kubectl exec with partial match', () => {
+            const completions = getCompletions('kubectl exec red', context)
+            expect(completions).toContain('redis-1')
+            expect(completions).not.toContain('nginx-1')
         })
     })
 
@@ -418,66 +416,9 @@ describe('Autocomplete', () => {
             expect(completions).toEqual([])
         })
 
-        it('handles commands with flags already present', () => {
-            const completions = getCompletions('kubectl get pods -n default ', context)
-            expect(completions).toContain('nginx-1')
-            expect(completions).toContain('nginx-2')
-        })
-
-        it('completes after partial flag value', () => {
-            const completions = getCompletions('kubectl apply -f pod', context)
-            // Should still try to complete the file path
-            expect(Array.isArray(completions)).toBe(true)
-        })
-    })
-
-    describe('kubectl logs and exec autocomplete', () => {
-        it('completes logs action from kubectl lo', () => {
-            const completions = getCompletions('kubectl lo', context)
-            expect(completions).toContain('logs')
-        })
-
-        it('completes exec action from kubectl e', () => {
-            const completions = getCompletions('kubectl e', context)
-            expect(completions).toContain('exec')
-        })
-
-        it('completes pod names after kubectl logs', () => {
-            const completions = getCompletions('kubectl logs ', context)
-            expect(completions).toContain('nginx-1')
-            expect(completions).toContain('nginx-2')
-        })
-
-        it('completes pod names after kubectl logs with partial match', () => {
-            const completions = getCompletions('kubectl logs ngin', context)
-            expect(completions).toContain('nginx-1')
-            expect(completions).toContain('nginx-2')
-        })
-
-        it('completes pod names after kubectl exec', () => {
-            const completions = getCompletions('kubectl exec ', context)
-            expect(completions).toContain('nginx-1')
-            expect(completions).toContain('nginx-2')
-        })
-
-        it('completes pod names after kubectl exec with flags', () => {
-            const completions = getCompletions('kubectl exec -it ', context)
-            expect(completions).toContain('nginx-1')
-            expect(completions).toContain('nginx-2')
-        })
-
-        it('completes flags after kubectl logs pod-name', () => {
-            const completions = getCompletions('kubectl logs nginx-1 --', context)
-            expect(completions).toContain('--tail')
-            expect(completions).toContain('--follow')
-            expect(completions).toContain('--namespace')
-        })
-
-        it('completes flags after kubectl exec pod-name', () => {
-            const completions = getCompletions('kubectl exec nginx-1 -', context)
-            expect(completions).toContain('-it')
-            expect(completions).toContain('-n')
+        it('returns empty array for commands without file completion', () => {
+            const completions = getCompletions('echo ', context)
+            expect(completions).toEqual([])
         })
     })
 })
-

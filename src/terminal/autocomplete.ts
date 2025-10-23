@@ -8,60 +8,131 @@ type FileSystem = ReturnType<typeof createFileSystem>
 // ═══════════════════════════════════════════════════════════════════════════
 // TERMINAL AUTOCOMPLETE
 // ═══════════════════════════════════════════════════════════════════════════
-// Bash-like tab autocompletion for commands, kubectl resources, and file paths.
-// Pure functions for completion logic with context-aware suggestions.
+// Bash-like tab autocompletion using Strategy Pattern.
+// Clean architecture with separate strategies for each completion type.
 
 export interface AutocompleteContext {
     clusterState: ClusterState
     fileSystem: FileSystem
 }
 
+export interface CompletionResult {
+    text: string
+    suffix: string // ' ' for commands/files, '/' for directories
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────
 
 const COMMANDS = ['kubectl', ...VALID_COMMANDS]
-const KUBECTL_ACTIONS = ['get', 'describe', 'delete', 'apply', 'create', 'logs', 'exec']
-const KUBECTL_RESOURCES = ['pods', 'pod', 'po', 'deployments', 'deployment', 'deploy', 'services', 'service', 'svc', 'namespaces', 'namespace', 'ns', 'configmaps', 'configmap', 'cm', 'secrets', 'secret']
-const KUBECTL_FLAGS = ['-n', '--namespace', '-o', '--output', '-l', '--selector', '-f', '--filename', '-A', '--all-namespaces', '--tail', '--follow', '-i', '-t', '-it']
-const SHELL_FLAGS = ['-l', '-r', '-p']
+const KUBECTL_ACTIONS = ['get', 'describe', 'delete', 'apply', 'logs', 'exec']
+const FILE_COMMANDS = ['cd', 'ls', 'cat', 'nano', 'rm', 'vi', 'vim']
 
-// ─── File Completion Configuration ───────────────────────────────────────
-
-interface FileCompletionOptions {
-    directoriesOnly?: boolean    // Only suggest directories (e.g., cd)
-    filesOnly?: boolean          // Only suggest files (e.g., cat, nano)
-    extensions?: string[]        // Filter by extensions (e.g., ['.yaml', '.yml'])
-}
-
-const COMMAND_FILE_COMPLETION: Record<string, FileCompletionOptions> = {
-    'cd': { directoriesOnly: true },
-    'cat': { filesOnly: true },
-    'nano': { filesOnly: true, extensions: ['.yaml', '.yml', '.json', '.txt', '.kyaml'] },
-    'vi': { filesOnly: true, extensions: ['.yaml', '.yml', '.json', '.txt', '.kyaml'] },
-    'vim': { filesOnly: true, extensions: ['.yaml', '.yml', '.json', '.txt', '.kyaml'] },
-    'ls': {},  // All files and directories
-    'rm': {},  // All files and directories
-}
-
-// Resource type to canonical mapping
-const RESOURCE_CANONICAL: Record<string, string> = {
+// Resource type aliases (for kubectl completion)
+const RESOURCE_ALIASES: Record<string, string> = {
     'pods': 'pods',
     'pod': 'pods',
     'po': 'pods',
-    'deployments': 'deployments',
-    'deployment': 'deployments',
-    'deploy': 'deployments',
-    'services': 'services',
-    'service': 'services',
-    'svc': 'services',
-    'namespaces': 'namespaces',
-    'namespace': 'namespaces',
-    'ns': 'namespaces',
     'configmaps': 'configmaps',
     'configmap': 'configmaps',
     'cm': 'configmaps',
     'secrets': 'secrets',
     'secret': 'secrets',
 }
+
+// ─── Strategy Pattern ────────────────────────────────────────────────────
+
+interface CompletionStrategy {
+    match(tokens: string[], currentToken: string, line: string): boolean
+    complete(tokens: string[], currentToken: string, context: AutocompleteContext): CompletionResult[]
+}
+
+// ─── Strategy Implementations ────────────────────────────────────────────
+
+// Strategy 1: Complete command names
+const createCommandStrategy = (): CompletionStrategy => ({
+    match: (tokens: string[], _currentToken: string, line: string): boolean => {
+        return tokens.length === 0 || (tokens.length === 1 && !line.endsWith(' '))
+    },
+    complete: (_tokens: string[], currentToken: string, _context: AutocompleteContext): CompletionResult[] => {
+        return filterMatches(COMMANDS, currentToken).map(cmd => ({ text: cmd, suffix: ' ' }))
+    }
+})
+
+// Strategy 2: Complete kubectl actions (get, describe, etc.)
+const createKubectlActionStrategy = (): CompletionStrategy => ({
+    match: (tokens: string[], _currentToken: string, line: string): boolean => {
+        return tokens[0] === 'kubectl' && (tokens.length === 1 || (tokens.length === 2 && !line.endsWith(' ')))
+    },
+    complete: (_tokens: string[], currentToken: string, _context: AutocompleteContext): CompletionResult[] => {
+        return filterMatches(KUBECTL_ACTIONS, currentToken).map(action => ({ text: action, suffix: ' ' }))
+    }
+})
+
+// Strategy 3: Complete kubectl resource types (pods, configmaps, etc.)
+const createKubectlResourceStrategy = (): CompletionStrategy => ({
+    match: (tokens: string[], _currentToken: string, line: string): boolean => {
+        if (tokens[0] !== 'kubectl' || tokens.length < 2) {
+            return false
+        }
+        const action = tokens[1]
+        // logs/exec take pod names directly (no resource type)
+        if (action === 'logs' || action === 'exec') {
+            return false
+        }
+        return tokens.length === 2 || (tokens.length === 3 && !line.endsWith(' '))
+    },
+    complete: (_tokens: string[], currentToken: string, _context: AutocompleteContext): CompletionResult[] => {
+        const allResourceTypes = Object.keys(RESOURCE_ALIASES)
+        return filterMatches(allResourceTypes, currentToken).map(resource => ({ text: resource, suffix: ' ' }))
+    }
+})
+
+// Strategy 4: Complete resource names from cluster
+const createResourceNameStrategy = (): CompletionStrategy => ({
+    match: (tokens: string[], _currentToken: string, _line: string): boolean => {
+        if (tokens[0] !== 'kubectl' || tokens.length < 2) {
+            return false
+        }
+        const action = tokens[1]
+        // logs/exec: position 2 is pod name
+        if (action === 'logs' || action === 'exec') {
+            return tokens.length >= 2
+        }
+        // Other actions: position 3 is resource name
+        return tokens.length >= 3
+    },
+    complete: (tokens: string[], currentToken: string, context: AutocompleteContext): CompletionResult[] => {
+        const action = tokens[1]
+        let resourceType = 'pods'
+
+        // For logs/exec, always use pods
+        if (action === 'logs' || action === 'exec') {
+            resourceType = 'pods'
+        } else if (tokens.length >= 3) {
+            // Map resource alias to canonical name
+            const resource = tokens[2]
+            resourceType = RESOURCE_ALIASES[resource] || resource
+        }
+
+        return getResourceNames(resourceType, currentToken, context)
+    }
+})
+
+// Strategy 5: Complete file/directory names
+const createFileStrategy = (): CompletionStrategy => ({
+    match: (tokens: string[], _currentToken: string, _line: string): boolean => {
+        if (tokens.length === 0) {
+            return false
+        }
+        const command = tokens[0]
+        return FILE_COMMANDS.includes(command)
+    },
+    complete: (tokens: string[], currentToken: string, context: AutocompleteContext): CompletionResult[] => {
+        const command = tokens[0]
+        const directoriesOnly = command === 'cd'
+        return getFileCompletions(currentToken, context.fileSystem, directoriesOnly)
+    }
+})
 
 // ─── Public API ──────────────────────────────────────────────────────────
 
@@ -70,23 +141,33 @@ const RESOURCE_CANONICAL: Record<string, string> = {
  * Returns matching strings based on context (commands, resources, files, etc.)
  */
 export const getCompletions = (currentLine: string, context: AutocompleteContext): string[] => {
+    const results = getCompletionResults(currentLine, context)
+    return results.map(result => result.text)
+}
+
+/**
+ * Get completion results with proper suffixes for directories vs files/commands
+ */
+export const getCompletionResults = (currentLine: string, context: AutocompleteContext): CompletionResult[] => {
     const tokens = tokenize(currentLine)
     const currentToken = getCurrentToken(currentLine)
 
-    // Empty line or first token - complete commands
-    if (tokens.length === 0 || (tokens.length === 1 && !currentLine.endsWith(' '))) {
-        return filterMatches(COMMANDS, currentToken)
+    // Strategy pattern: try each strategy in order
+    const strategies: CompletionStrategy[] = [
+        createCommandStrategy(),
+        createKubectlActionStrategy(),
+        createKubectlResourceStrategy(),
+        createResourceNameStrategy(),
+        createFileStrategy(),
+    ]
+
+    for (const strategy of strategies) {
+        if (strategy.match(tokens, currentToken, currentLine)) {
+            return strategy.complete(tokens, currentToken, context)
+        }
     }
 
-    const command = tokens[0]
-
-    // kubectl command completions
-    if (command === 'kubectl') {
-        return getKubectlCompletions(tokens, currentToken, context, currentLine)
-    }
-
-    // Shell command completions
-    return getShellCompletions(currentToken, context, command)
+    return []
 }
 
 /**
@@ -112,8 +193,12 @@ export const getCommonPrefix = (suggestions: string[]): string => {
  * Format suggestions for display (bash-like column format)
  */
 export const formatSuggestions = (suggestions: string[]): string => {
-    if (suggestions.length === 0) return ''
-    if (suggestions.length === 1) return suggestions[0]
+    if (suggestions.length === 0) {
+        return ''
+    }
+    if (suggestions.length === 1) {
+        return suggestions[0]
+    }
 
     // Simple column format - 4 items per row with padding
     const itemsPerRow = 4
@@ -127,150 +212,58 @@ export const formatSuggestions = (suggestions: string[]): string => {
     return rows.join('\r\n')
 }
 
-// ─── Kubectl Completions ─────────────────────────────────────────────────
+// ─── Helper Functions ────────────────────────────────────────────────────
 
-const getKubectlCompletions = (
-    tokens: string[],
-    currentToken: string,
-    context: AutocompleteContext,
-    currentLine: string
-): string[] => {
-    // kubectl <action>
-    if (tokens.length === 1 || (tokens.length === 2 && !currentLine.endsWith(' '))) {
-        return filterMatches(KUBECTL_ACTIONS, currentToken)
-    }
-
-    const action = tokens[1]
-
-    // Handle flags
-    if (currentToken.startsWith('-')) {
-        return filterMatches(KUBECTL_FLAGS, currentToken)
-    }
-
-    // kubectl apply/create -f <file>
-    if ((action === 'apply' || action === 'create') && currentLine.includes('-f')) {
-        return getFileCompletions(currentToken, context.fileSystem, {
-            filesOnly: true,
-            extensions: ['.yaml', '.yml']
-        })
-    }
-
-    // kubectl logs/exec <pod-name> (position 2, no resource type)
-    if (action === 'logs' || action === 'exec') {
-        return getResourceNameCompletions('pods', currentToken, context)
-    }
-
-    // kubectl <action> <resource>
-    if (tokens.length === 2 || (tokens.length === 3 && !currentLine.endsWith(' '))) {
-        return filterMatches(KUBECTL_RESOURCES, currentToken)
-    }
-
-    // kubectl <action> <resource> <name>
-    const resource = tokens[2]
-    const canonicalResource = RESOURCE_CANONICAL[resource]
-
-    if (canonicalResource) {
-        return getResourceNameCompletions(canonicalResource, currentToken, context)
-    }
-
-    return []
-}
-
-const getResourceNameCompletions = (
-    resource: string,
+/**
+ * Get resource names from cluster state
+ */
+const getResourceNames = (
+    resourceType: string,
     currentToken: string,
     context: AutocompleteContext
-): string[] => {
+): CompletionResult[] => {
     let names: string[] = []
 
-    if (resource === 'pods') {
+    if (resourceType === 'pods') {
         names = context.clusterState.getPods().map(pod => pod.metadata.name)
-    } else if (resource === 'configmaps') {
+    } else if (resourceType === 'configmaps') {
         names = context.clusterState.getConfigMaps().map(cm => cm.metadata.name)
-    } else if (resource === 'secrets') {
+    } else if (resourceType === 'secrets') {
         names = context.clusterState.getSecrets().map(secret => secret.metadata.name)
     }
-    // TODO: Add getDeployments, getServices, getNamespaces when implemented in ClusterState
 
-    return filterMatches(names, currentToken)
+    return filterMatches(names, currentToken).map(name => ({ text: name, suffix: ' ' }))
 }
 
-// ─── Shell Completions ───────────────────────────────────────────────────
-
-const getShellCompletions = (
-    currentToken: string,
-    context: AutocompleteContext,
-    command: string
-): string[] => {
-    // Handle flags
-    if (currentToken.startsWith('-')) {
-        return filterMatches(SHELL_FLAGS, currentToken)
-    }
-
-    // Check if command has file completion config
-    const fileCompletionConfig = COMMAND_FILE_COMPLETION[command]
-    if (fileCompletionConfig !== undefined) {
-        return getFileCompletions(currentToken, context.fileSystem, fileCompletionConfig)
-    }
-
-    return []
-}
-
-// ─── File System Completions ─────────────────────────────────────────────
-
+/**
+ * Get file/directory completions from filesystem (current directory only)
+ */
 const getFileCompletions = (
     currentToken: string,
     fileSystem: FileSystem,
-    options: FileCompletionOptions = {}
-): string[] => {
-    const currentPath = fileSystem.getCurrentPath()
-    let targetPath = currentPath
-
-    // Handle absolute paths
-    if (currentToken.startsWith('/')) {
-        targetPath = currentToken
-        // Get parent directory for listing
-        const lastSlash = targetPath.lastIndexOf('/')
-        if (lastSlash > 0) {
-            targetPath = targetPath.slice(0, lastSlash)
-        } else {
-            targetPath = '/'
-        }
-    }
-
-    const listing = fileSystem.listDirectory(targetPath)
+    directoriesOnly: boolean
+): CompletionResult[] => {
+    const listing = fileSystem.listDirectory(fileSystem.getCurrentPath())
     if (!listing.ok) {
         return []
     }
 
     let entries = listing.value
 
-    // Filter by type
-    if (options.directoriesOnly) {
+    if (directoriesOnly) {
         entries = entries.filter(e => e.type === 'directory')
-    } else if (options.filesOnly) {
-        entries = entries.filter(e => e.type === 'file')
     }
 
-    // Filter by extensions
-    if (options.extensions && options.extensions.length > 0) {
-        const extensions = options.extensions
-        entries = entries.filter(e => {
-            if (e.type === 'directory') return false
-            return extensions.some(ext => e.name.endsWith(ext))
-        })
-    }
+    const names = entries.map(e => e.name)
+    const matches = filterMatches(names, currentToken)
 
-    // Extract names
-    let names = entries.map(e => e.name)
-
-    // Handle absolute path completion - prefix with path
-    if (currentToken.startsWith('/')) {
-        const prefix = targetPath === '/' ? '/' : targetPath + '/'
-        names = names.map(name => prefix + name)
-    }
-
-    return filterMatches(names, currentToken)
+    return matches.map(name => {
+        const isDir = entries.find(e => e.name === name)?.type === 'directory'
+        return {
+            text: name,
+            suffix: isDir ? '/' : ' '
+        }
+    })
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -286,10 +279,14 @@ const tokenize = (input: string): string[] => {
  * Get the current token being typed (last token, even if incomplete)
  */
 const getCurrentToken = (input: string): string => {
-    if (input.endsWith(' ')) return ''
+    if (input.endsWith(' ')) {
+        return ''
+    }
 
     const lastSpace = input.lastIndexOf(' ')
-    if (lastSpace === -1) return input
+    if (lastSpace === -1) {
+        return input
+    }
 
     return input.slice(lastSpace + 1)
 }
@@ -298,7 +295,8 @@ const getCurrentToken = (input: string): string => {
  * Filter array to items that start with prefix (case-sensitive)
  */
 const filterMatches = (items: string[], prefix: string): string[] => {
-    if (!prefix) return items
+    if (!prefix) {
+        return items
+    }
     return items.filter(item => item.startsWith(prefix))
 }
-

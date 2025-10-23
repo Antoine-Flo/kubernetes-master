@@ -310,7 +310,7 @@ describe('TerminalManager', () => {
             manager.simulateInput('\t') // Tab
             manager.simulateInput('\r') // Enter
 
-            expect(mockCallback).toHaveBeenCalledWith('cd manifests')
+            expect(mockCallback).toHaveBeenCalledWith('cd manifests/')
         })
 
         it('adds space after completing single match', () => {
@@ -346,6 +346,14 @@ describe('TerminalManager', () => {
             manager.simulateInput('\r') // Enter
 
             expect(mockCallback).toHaveBeenCalledWith('kubectl get pods')
+        })
+
+        it('adds slash after directory completion', () => {
+            manager.simulateInput('cd ')
+            manager.simulateInput('\t') // Tab - should complete to 'manifests/'
+            manager.simulateInput('\r') // Enter
+
+            expect(mockCallback).toHaveBeenCalledWith('cd manifests/')
         })
 
         it('does not interfere with history navigation', () => {

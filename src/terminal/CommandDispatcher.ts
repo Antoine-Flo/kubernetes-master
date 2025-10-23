@@ -37,10 +37,10 @@ const handleEnterContainer = (terminal: TerminalManager, clusterState: any, resu
     }
 
     const [, podName, containerName, namespace] = result.value.split(':')
-    const pod = clusterState.getPods().find((p: any) => 
+    const pod = clusterState.getPods().find((p: any) =>
         p.metadata.name === podName && p.metadata.namespace === namespace
     )
-    
+
     if (!pod) {
         terminal.write(`Error: Could not find pod ${podName}\r\n`)
         terminal.updatePrompt()
@@ -68,13 +68,13 @@ const handleShellInContainer = (terminal: TerminalManager, result: ExecutionResu
     const command = result.value.substring('SHELL_COMMAND:'.length)
     const shellExecutor = createShellExecutor(fileSystem, logger, editorModal)
     const shellResult = shellExecutor.execute(command)
-    
+
     if (shellResult.ok && shellResult.value) {
         writeOutput(terminal, shellResult.value)
     } else if (!shellResult.ok) {
         terminal.write(`Error: ${shellResult.error}\r\n`)
     }
-    
+
     terminal.updatePrompt()
     return true
 }
@@ -115,10 +115,10 @@ export const createCommandDispatcher = (
         }
 
         const currentFS = terminal.getCurrentFileSystem()
-        
-        // Execute command
+
+        // Execute command with current filesystem context
         const result = trimmed.startsWith('kubectl')
-            ? kubectlExecutor.execute(trimmed)
+            ? kubectlExecutor.execute(trimmed, currentFS)
             : createShellExecutor(currentFS, logger, editorModal).execute(trimmed)
 
         // Handle special kubectl responses
