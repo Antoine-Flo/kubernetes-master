@@ -4,7 +4,7 @@
 // Pure functions for formatting detailed kubectl describe output.
 // Reproduces real kubectl describe style with proper indentation and sections.
 
-import type { Pod, Probe, EnvVar, VolumeMount, Volume } from '../../cluster/ressources/Pod'
+import type { Pod, Probe, EnvVar, VolumeMount, Volume, ContainerStatus } from '../../cluster/ressources/Pod'
 import type { ConfigMap } from '../../cluster/ressources/ConfigMap'
 import type { Secret } from '../../cluster/ressources/Secret'
 
@@ -131,6 +131,104 @@ const formatSecretType = (secretType: Secret['type']): string => {
     return 'Unknown'
 }
 
+// ─── Container Formatter ─────────────────────────────────────────────────
+
+/**
+ * Format a single container (works for both init and regular containers)
+ */
+const formatContainer = (container: Pod['spec']['containers'][0], lines: string[], containerStatus?: ContainerStatus): void => {
+
+    // Container state (for init containers)
+    if (containerStatus?.state) {
+        lines.push(`    State:      ${containerStatus.state}`)
+    }
+
+    lines.push(`    Image:      ${container.image}`)
+
+    // Command and args
+    if (container.command && container.command.length > 0) {
+        lines.push(`    Command:`)
+        container.command.forEach(cmd => lines.push(`      ${cmd}`))
+    }
+
+    if (container.args && container.args.length > 0) {
+        lines.push(`    Args:`)
+        container.args.forEach(arg => lines.push(`      ${arg}`))
+    }
+
+    // Ports
+    if (container.ports && container.ports.length > 0) {
+        const portsStr = container.ports
+            .map(p => `${p.containerPort}/${p.protocol || 'TCP'}`)
+            .join(', ')
+        lines.push(`    Ports:      ${portsStr}`)
+    }
+
+    // Resources
+    if (container.resources) {
+        if (container.resources.requests) {
+            const requests = container.resources.requests
+            const requestParts = []
+            if (requests.cpu) {
+                requestParts.push(`cpu: ${requests.cpu}`)
+            }
+            if (requests.memory) {
+                requestParts.push(`memory: ${requests.memory}`)
+            }
+            if (requestParts.length > 0) {
+                lines.push(`    Requests:`)
+                requestParts.forEach(part => lines.push(`      ${part}`))
+            }
+        }
+        if (container.resources.limits) {
+            const limits = container.resources.limits
+            const limitParts = []
+            if (limits.cpu) {
+                limitParts.push(`cpu: ${limits.cpu}`)
+            }
+            if (limits.memory) {
+                limitParts.push(`memory: ${limits.memory}`)
+            }
+            if (limitParts.length > 0) {
+                lines.push(`    Limits:`)
+                limitParts.forEach(part => lines.push(`      ${part}`))
+            }
+        }
+    }
+
+    // Probes
+    if (container.livenessProbe) {
+        lines.push(`    Liveness:`)
+        formatProbe(container.livenessProbe).forEach(line => lines.push(line))
+    }
+
+    if (container.readinessProbe) {
+        lines.push(`    Readiness:`)
+        formatProbe(container.readinessProbe).forEach(line => lines.push(line))
+    }
+
+    if (container.startupProbe) {
+        lines.push(`    Startup:`)
+        formatProbe(container.startupProbe).forEach(line => lines.push(line))
+    }
+
+    // Environment variables
+    if (container.env && container.env.length > 0) {
+        lines.push(`    Environment:`)
+        container.env.forEach(envVar => {
+            lines.push(formatEnvVar(envVar))
+        })
+    }
+
+    // Volume mounts
+    if (container.volumeMounts && container.volumeMounts.length > 0) {
+        lines.push(`    Mounts:`)
+        container.volumeMounts.forEach(mount => {
+            lines.push(formatVolumeMount(mount))
+        })
+    }
+}
+
 // ─── Main Formatters ─────────────────────────────────────────────────────
 
 /**
@@ -148,75 +246,21 @@ export const describePod = (pod: Pod): string => {
     lines.push(`IP:           ${simulatePodIP(pod.metadata.name)}`)
     lines.push('')
 
+    // Init Containers section (if any)
+    if (pod.spec.initContainers && pod.spec.initContainers.length > 0) {
+        lines.push('Init Containers:')
+        for (const initContainer of pod.spec.initContainers) {
+            const status = pod.status.containerStatuses?.find(cs => cs.name === initContainer.name)
+            formatContainer(initContainer, lines, status)
+        }
+        lines.push('')
+    }
+
     // Containers section
     lines.push('Containers:')
     for (const container of pod.spec.containers) {
-        lines.push(`  ${container.name}:`)
-        lines.push(`    Image:      ${container.image}`)
-
-        // Ports
-        if (container.ports && container.ports.length > 0) {
-            const portsStr = container.ports
-                .map(p => `${p.containerPort}/${p.protocol || 'TCP'}`)
-                .join(', ')
-            lines.push(`    Ports:      ${portsStr}`)
-        }
-
-        // Resources
-        if (container.resources) {
-            if (container.resources.requests) {
-                const requests = container.resources.requests
-                const requestParts = []
-                if (requests.cpu) requestParts.push(`cpu: ${requests.cpu}`)
-                if (requests.memory) requestParts.push(`memory: ${requests.memory}`)
-                if (requestParts.length > 0) {
-                    lines.push(`    Requests:`)
-                    requestParts.forEach(part => lines.push(`      ${part}`))
-                }
-            }
-            if (container.resources.limits) {
-                const limits = container.resources.limits
-                const limitParts = []
-                if (limits.cpu) limitParts.push(`cpu: ${limits.cpu}`)
-                if (limits.memory) limitParts.push(`memory: ${limits.memory}`)
-                if (limitParts.length > 0) {
-                    lines.push(`    Limits:`)
-                    limitParts.forEach(part => lines.push(`      ${part}`))
-                }
-            }
-        }
-
-        // Probes
-        if (container.livenessProbe) {
-            lines.push(`    Liveness:`)
-            formatProbe(container.livenessProbe).forEach(line => lines.push(line))
-        }
-
-        if (container.readinessProbe) {
-            lines.push(`    Readiness:`)
-            formatProbe(container.readinessProbe).forEach(line => lines.push(line))
-        }
-
-        if (container.startupProbe) {
-            lines.push(`    Startup:`)
-            formatProbe(container.startupProbe).forEach(line => lines.push(line))
-        }
-
-        // Environment variables
-        if (container.env && container.env.length > 0) {
-            lines.push(`    Environment:`)
-            container.env.forEach(envVar => {
-                lines.push(formatEnvVar(envVar))
-            })
-        }
-
-        // Volume mounts
-        if (container.volumeMounts && container.volumeMounts.length > 0) {
-            lines.push(`    Mounts:`)
-            container.volumeMounts.forEach(mount => {
-                lines.push(formatVolumeMount(mount))
-            })
-        }
+        const status = pod.status.containerStatuses?.find(cs => cs.name === container.name)
+        formatContainer(container, lines, status)
     }
 
     lines.push('')

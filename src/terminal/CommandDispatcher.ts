@@ -7,7 +7,7 @@ import type { ExecutionResult } from '../shared/result'
 import { createShellExecutor } from '../shell/commands/executor'
 import type { TerminalManager } from './TerminalManager'
 
-export interface CommandDispatcher {
+interface CommandDispatcher {
     execute: (command: string) => void
     enterContainer: (podName: string, containerName: string, namespace: string, containerFileSystem: FileSystemState) => void
     exitContainer: () => boolean

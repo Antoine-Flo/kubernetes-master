@@ -32,10 +32,11 @@ const FLAG_ALIASES: Record<string, string> = {
     'l': 'selector',
     'f': 'filename',  // Note: -f is also used for --follow in logs, but filename takes precedence
     'A': 'all-namespaces',
+    'c': 'container',  // Container name for logs/exec
 }
 
 // Flags that require a value (cannot be boolean)
-const FLAGS_REQUIRING_VALUES = ['n', 'namespace', 'o', 'output', 'l', 'selector', 'tail']
+const FLAGS_REQUIRING_VALUES = ['n', 'namespace', 'o', 'output', 'l', 'selector', 'tail', 'c', 'container']
 // Note: 'filename' is required for apply/create, but 'f' and 'follow' are boolean for logs
 
 // Output formats for kubectl commands

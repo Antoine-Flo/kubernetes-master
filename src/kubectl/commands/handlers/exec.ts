@@ -88,8 +88,32 @@ export const handleExec = (state: ClusterStateData, parsed: ParsedCommand): stri
         return `Error: pod "${podName}" is not running (current phase: ${pod.status.phase})`
     }
 
-    // Get container name (use first container if not specified)
-    const containerName = pod.spec.containers[0]?.name || 'default'
+    // Multi-container support: determine which container to use
+    const regularContainers = pod.spec.containers
+    const containerFlagValue = parsed.flags.c || parsed.flags.container
+
+    let containerName: string
+
+    if (containerFlagValue) {
+        // Container specified via -c flag - validate it exists
+        const targetContainer = regularContainers.find(c => c.name === containerFlagValue)
+
+        if (!targetContainer) {
+            const availableNames = regularContainers.map(c => c.name).join(', ')
+            return `Error: container ${containerFlagValue} not found in pod ${podName}. Available containers: ${availableNames}`
+        }
+
+        containerName = containerFlagValue as string
+    } else if (regularContainers.length > 1) {
+        // Multiple containers but no -c flag specified
+        const containerNames = regularContainers.map(c => c.name).join(', ')
+        return `Error: a container name must be specified for pod ${podName}, choose one of: [${containerNames}]`
+    } else if (regularContainers.length === 1) {
+        // Single container - use it automatically
+        containerName = regularContainers[0].name
+    } else {
+        return `Error: pod ${podName} has no containers`
+    }
 
     // Execute command
     const command = parsed.execCommand[0]

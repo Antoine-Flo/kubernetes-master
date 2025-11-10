@@ -385,5 +385,138 @@ describe('Event Handlers', () => {
             expect(newState.secrets.items[0].metadata.annotations).toEqual({ rotation: 'monthly' })
         })
     })
+
+    describe('Init Container Integration', () => {
+        it('should reconcile init containers when pod is created', () => {
+            const podWithInit: Pod = {
+                apiVersion: 'v1',
+                kind: 'Pod',
+                metadata: {
+                    name: 'init-pod',
+                    namespace: 'default',
+                    creationTimestamp: new Date().toISOString(),
+                },
+                spec: {
+                    initContainers: [{
+                        name: 'init-setup',
+                        image: 'busybox:latest',
+                        command: ['touch'],
+                        args: ['/tmp/ready'],
+                    }],
+                    containers: [{
+                        name: 'nginx',
+                        image: 'nginx:latest',
+                    }],
+                },
+                status: {
+                    phase: 'Pending',
+                    restartCount: 0,
+                    containerStatuses: [
+                        {
+                            name: 'init-setup',
+                            image: 'busybox:latest',
+                            ready: false,
+                            restartCount: 0,
+                            fileSystem: { currentPath: '/', tree: { type: 'directory', name: '/', path: '/', children: new Map() } },
+                            containerType: 'init',
+                            state: 'Waiting',
+                        },
+                        {
+                            name: 'nginx',
+                            image: 'nginx:latest',
+                            ready: false,
+                            restartCount: 0,
+                            fileSystem: { currentPath: '/', tree: { type: 'directory', name: '/', path: '/', children: new Map() } },
+                            containerType: 'regular',
+                            state: 'Waiting',
+                        },
+                    ],
+                },
+            }
+
+            const emptyState = createEmptyState()
+            const createEvent = createPodCreatedEvent(podWithInit, 'kubectl')
+
+            const newState = handlePodCreated(emptyState, createEvent)
+
+            expect(newState.pods.items).toHaveLength(1)
+            const addedPod = newState.pods.items[0]
+
+            // Pod should be Running after successful init container execution
+            expect(addedPod.status.phase).toBe('Running')
+
+            // Init container should be Terminated
+            const initStatus = addedPod.status.containerStatuses?.find(cs => cs.name === 'init-setup')
+            expect(initStatus?.state).toBe('Terminated')
+
+            // Regular container should be Running
+            const nginxStatus = addedPod.status.containerStatuses?.find(cs => cs.name === 'nginx')
+            expect(nginxStatus?.state).toBe('Running')
+            expect(nginxStatus?.ready).toBe(true)
+        })
+
+        it('should mark pod as Failed if init container has invalid image', () => {
+            const podWithBadInit: Pod = {
+                apiVersion: 'v1',
+                kind: 'Pod',
+                metadata: {
+                    name: 'bad-init-pod',
+                    namespace: 'default',
+                    creationTimestamp: new Date().toISOString(),
+                },
+                spec: {
+                    initContainers: [{
+                        name: 'init-bad',
+                        image: 'invalid-image:latest',
+                        command: ['touch'],
+                        args: ['/tmp/ready'],
+                    }],
+                    containers: [{
+                        name: 'nginx',
+                        image: 'nginx:latest',
+                    }],
+                },
+                status: {
+                    phase: 'Pending',
+                    restartCount: 0,
+                    containerStatuses: [
+                        {
+                            name: 'init-bad',
+                            image: 'invalid-image:latest',
+                            ready: false,
+                            restartCount: 0,
+                            fileSystem: { currentPath: '/', tree: { type: 'directory', name: '/', path: '/', children: new Map() } },
+                            containerType: 'init',
+                            state: 'Waiting',
+                        },
+                        {
+                            name: 'nginx',
+                            image: 'nginx:latest',
+                            ready: false,
+                            restartCount: 0,
+                            fileSystem: { currentPath: '/', tree: { type: 'directory', name: '/', path: '/', children: new Map() } },
+                            containerType: 'regular',
+                            state: 'Waiting',
+                        },
+                    ],
+                },
+            }
+
+            const emptyState = createEmptyState()
+            const createEvent = createPodCreatedEvent(podWithBadInit, 'kubectl')
+
+            const newState = handlePodCreated(emptyState, createEvent)
+
+            expect(newState.pods.items).toHaveLength(1)
+            const addedPod = newState.pods.items[0]
+
+            // Pod should be Failed
+            expect(addedPod.status.phase).toBe('Failed')
+
+            // Init container should be Terminated
+            const initStatus = addedPod.status.containerStatuses?.find(cs => cs.name === 'init-bad')
+            expect(initStatus?.state).toBe('Terminated')
+        })
+    })
 })
 

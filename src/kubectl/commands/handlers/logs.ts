@@ -35,15 +35,39 @@ export const handleLogs = (state: ClusterStateData, parsed: ParsedCommand): stri
         return `Error from server (NotFound): pods "${podName}" not found`
     }
 
+    // Multi-container support: determine which container to use
+    const regularContainers = pod.spec.containers
+    const containerName = parsed.flags.c || parsed.flags.container
+
+    let targetContainer
+
+    if (containerName) {
+        // Container specified via -c flag
+        // Check both init and regular containers
+        const allContainers = [...(pod.spec.initContainers || []), ...regularContainers]
+        targetContainer = allContainers.find(c => c.name === containerName)
+
+        if (!targetContainer) {
+            const availableNames = allContainers.map(c => c.name).join(', ')
+            return `Error: container ${containerName} not found in pod ${podName}. Available containers: ${availableNames}`
+        }
+    } else if (regularContainers.length > 1) {
+        // Multiple containers but no -c flag specified
+        const containerNames = regularContainers.map(c => c.name).join(', ')
+        return `Error: a container name must be specified for pod ${podName}, choose one of: [${containerNames}]`
+    } else if (regularContainers.length === 1) {
+        // Single container - use it automatically
+        targetContainer = regularContainers[0]
+    } else {
+        return `Error: pod ${podName} has no containers`
+    }
+
     // Get or generate logs
     let logs = pod.status.logs || []
 
     if (logs.length === 0) {
-        // Generate logs based on first container image
-        const firstContainer = pod.spec.containers[0]
-        if (firstContainer) {
-            logs = generateLogs(firstContainer.image, DEFAULT_LOG_COUNT)
-        }
+        // Generate logs based on target container image
+        logs = generateLogs(targetContainer.image, DEFAULT_LOG_COUNT)
     }
 
     // Apply --tail flag if present

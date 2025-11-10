@@ -29,11 +29,20 @@
 
 ## Phase 2: Advanced Kubernetes
 
-### Sprint 7: Multi-Container Pods & Init Containers
-- Multiple containers per pod
-- Init containers with execution order
-- Shared volumes (emptyDir)
-- Sidecar patterns
+### ✅ Sprint 7: Multi-Container Pods & Init Containers (IN PROGRESS)
+- ✅ Multiple containers per pod
+- ✅ Init containers with execution order (synchronous execution, command simulation)
+- ✅ Multi-container support in kubectl logs/exec with -c flag
+- ✅ Init containers displayed in kubectl describe
+- ⏳ Shared volumes (emptyDir) - DEFERRED to Sprint 8
+- ✅ Sidecar patterns (multi-container demonstration)
+
+**Implementation Notes:**
+- Init containers execute sequentially with simulated command execution (touch, mkdir, echo, sh -c)
+- Commands supported: touch, mkdir -p, echo redirect, chained commands with &&
+- Each container (init and regular) has isolated Debian filesystem
+- Reconciler pattern allows easy evolution to async execution in Phase 3
+- Multi-container pods require -c flag to specify container for logs/exec
 
 ### Sprint 8: Storage (PV/PVC) & StatefulSets
 - PersistentVolume and PersistentVolumeClaim

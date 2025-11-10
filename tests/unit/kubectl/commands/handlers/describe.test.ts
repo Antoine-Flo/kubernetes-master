@@ -726,5 +726,158 @@ describe('handleDescribe', () => {
             }
         })
     })
+
+    // ─── Init Containers ─────────────────────────────────────────────────
+
+    describe('init containers', () => {
+        it('should display init containers section before containers', () => {
+            const pod = createPod({
+                name: 'init-pod',
+                namespace: 'default',
+                initContainers: [
+                    {
+                        name: 'init-setup',
+                        image: 'busybox:latest',
+                        command: ['touch'],
+                        args: ['/tmp/ready'],
+                    },
+                ],
+                containers: [
+                    {
+                        name: 'nginx',
+                        image: 'nginx:latest',
+                    },
+                ],
+            })
+
+            state.pods.items.push(pod)
+
+            const parsed: ParsedCommand = {
+                action: 'describe',
+                resource: 'pods',
+                name: 'init-pod',
+                flags: {},
+            }
+
+            const result = handleDescribe(state, parsed)
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Init Containers:')
+                expect(result.value).toContain('init-setup:')
+                expect(result.value).toContain('busybox:latest')
+                expect(result.value).toContain('Containers:')
+                expect(result.value).toContain('nginx:')
+
+                // Init Containers section should come before Containers section
+                const initIndex = result.value.indexOf('Init Containers:')
+                const containersIndex = result.value.indexOf('Containers:')
+                expect(initIndex).toBeLessThan(containersIndex)
+            }
+        })
+
+        it('should display container state for init containers', () => {
+            const pod = createPod({
+                name: 'init-pod',
+                namespace: 'default',
+                initContainers: [
+                    {
+                        name: 'init-setup',
+                        image: 'busybox:latest',
+                    },
+                ],
+                containers: [
+                    {
+                        name: 'nginx',
+                        image: 'nginx:latest',
+                    },
+                ],
+            })
+
+            state.pods.items.push(pod)
+
+            const parsed: ParsedCommand = {
+                action: 'describe',
+                resource: 'pods',
+                name: 'init-pod',
+                flags: {},
+            }
+
+            const result = handleDescribe(state, parsed)
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('State:')
+                expect(result.value).toMatch(/State:\s+(Waiting|Running|Terminated)/)
+            }
+        })
+
+        it('should display command and args for init containers', () => {
+            const pod = createPod({
+                name: 'init-pod',
+                namespace: 'default',
+                initContainers: [
+                    {
+                        name: 'init-setup',
+                        image: 'busybox:latest',
+                        command: ['sh'],
+                        args: ['-c', 'echo hello'],
+                    },
+                ],
+                containers: [
+                    {
+                        name: 'nginx',
+                        image: 'nginx:latest',
+                    },
+                ],
+            })
+
+            state.pods.items.push(pod)
+
+            const parsed: ParsedCommand = {
+                action: 'describe',
+                resource: 'pods',
+                name: 'init-pod',
+                flags: {},
+            }
+
+            const result = handleDescribe(state, parsed)
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).toContain('Command:')
+                expect(result.value).toContain('sh')
+                expect(result.value).toContain('Args:')
+                expect(result.value).toContain('-c')
+                expect(result.value).toContain('echo hello')
+            }
+        })
+
+        it('should not display init containers section when pod has none', () => {
+            const pod = createPod({
+                name: 'no-init-pod',
+                namespace: 'default',
+                containers: [
+                    {
+                        name: 'nginx',
+                        image: 'nginx:latest',
+                    },
+                ],
+            })
+
+            state.pods.items.push(pod)
+
+            const parsed: ParsedCommand = {
+                action: 'describe',
+                resource: 'pods',
+                name: 'no-init-pod',
+                flags: {},
+            }
+
+            const result = handleDescribe(state, parsed)
+            expect(result.ok).toBe(true)
+            if (result.ok) {
+                expect(result.value).not.toContain('Init Containers:')
+                expect(result.value).toContain('Containers:')
+            }
+        })
+    })
 })
 

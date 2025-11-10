@@ -16,7 +16,7 @@ export interface AutocompleteContext {
     fileSystem: FileSystem
 }
 
-export interface CompletionResult {
+interface CompletionResult {
     text: string
     suffix: string // ' ' for commands/files, '/' for directories
 }

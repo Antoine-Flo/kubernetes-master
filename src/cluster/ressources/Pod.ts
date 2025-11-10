@@ -90,6 +90,8 @@ interface ContainerPort {
 export interface Container {
     name: string
     image: string
+    command?: string[]
+    args?: string[]
     ports?: ContainerPort[]
     resources?: ResourceRequirements
     env?: EnvVar[]
@@ -110,16 +112,19 @@ interface PodMetadata {
 }
 
 interface PodSpec {
+    initContainers?: readonly Container[]
     containers: readonly Container[]
     volumes?: Volume[]
 }
 
-interface ContainerStatus {
+export interface ContainerStatus {
     name: string
     image: string
     ready: boolean
     restartCount: number
     fileSystem: FileSystemState
+    containerType: 'init' | 'regular'
+    state?: 'Waiting' | 'Running' | 'Terminated'
 }
 
 interface PodStatus {
@@ -140,6 +145,7 @@ export interface Pod extends KubernetesResource {
 interface PodConfig {
     name: string
     namespace: string
+    initContainers?: Container[]
     containers: Container[]
     volumes?: Volume[]
     labels?: Record<string, string>
@@ -151,6 +157,31 @@ interface PodConfig {
 }
 
 export const createPod = (config: PodConfig): Pod => {
+    // Create container statuses for init containers
+    const initContainerStatuses = (config.initContainers || []).map(container => ({
+        name: container.name,
+        image: container.image,
+        ready: false,
+        restartCount: 0,
+        fileSystem: debianFileSystem(),
+        containerType: 'init' as const,
+        state: 'Waiting' as const,
+    }))
+
+    // Create container statuses for regular containers
+    const regularContainerStatuses = config.containers.map(container => ({
+        name: container.name,
+        image: container.image,
+        ready: config.phase === 'Running',
+        restartCount: 0,
+        fileSystem: debianFileSystem(),
+        containerType: 'regular' as const,
+        state: 'Waiting' as const,
+    }))
+
+    // Combine: init containers first, then regular containers
+    const allContainerStatuses = [...initContainerStatuses, ...regularContainerStatuses]
+
     const pod: Pod = {
         apiVersion: 'v1',
         kind: 'Pod',
@@ -162,6 +193,7 @@ export const createPod = (config: PodConfig): Pod => {
             ...(config.annotations && { annotations: config.annotations }),
         },
         spec: {
+            ...(config.initContainers && { initContainers: config.initContainers }),
             containers: config.containers,
             ...(config.volumes && { volumes: config.volumes }),
         },
@@ -169,13 +201,7 @@ export const createPod = (config: PodConfig): Pod => {
             phase: config.phase || 'Pending',
             restartCount: config.restartCount || 0,
             ...(config.logs && { logs: config.logs }),
-            containerStatuses: config.containers.map(container => ({
-                name: container.name,
-                image: container.image,
-                ready: config.phase === 'Running',
-                restartCount: 0,
-                fileSystem: debianFileSystem() // Each container gets its own isolated filesystem
-            }))
+            containerStatuses: allContainerStatuses,
         },
     }
 
@@ -197,8 +223,8 @@ export const getContainerFileSystem = (pod: Pod, containerName: string): FileSys
  * Returns a new pod with updated filesystem
  */
 export const updateContainerFileSystem = (pod: Pod, containerName: string, fileSystem: FileSystemState): Pod => {
-    const updatedContainerStatuses = pod.status.containerStatuses?.map(cs => 
-        cs.name === containerName 
+    const updatedContainerStatuses = pod.status.containerStatuses?.map(cs =>
+        cs.name === containerName
             ? { ...cs, fileSystem }
             : cs
     )
@@ -217,6 +243,8 @@ export const updateContainerFileSystem = (pod: Pod, containerName: string, fileS
 const ContainerSchema = z.object({
     name: z.string().min(1, 'Container name is required'),
     image: z.string().min(1, 'Container image is required'),
+    command: z.array(z.string()).optional(),
+    args: z.array(z.string()).optional(),
     ports: z.array(z.object({
         containerPort: z.number().int().positive(),
         protocol: z.enum(['TCP', 'UDP']).optional()
@@ -249,6 +277,7 @@ const PodManifestSchema = z.object({
         creationTimestamp: z.string().optional()
     }),
     spec: z.object({
+        initContainers: z.array(ContainerSchema).optional(),
         containers: z.array(ContainerSchema).min(1, 'At least one container is required'),
         volumes: z.array(z.any()).optional()
     }),
@@ -271,27 +300,20 @@ export const parsePodManifest = (data: unknown): Result<Pod> => {
 
     const manifest = result.data
 
-    // Create Pod with proper defaults
-    const pod: Pod = {
-        apiVersion: 'v1',
-        kind: 'Pod',
-        metadata: {
-            name: manifest.metadata.name,
-            namespace: manifest.metadata.namespace,
-            creationTimestamp: manifest.metadata.creationTimestamp || new Date().toISOString(),
-            ...(manifest.metadata.labels && { labels: manifest.metadata.labels }),
-            ...(manifest.metadata.annotations && { annotations: manifest.metadata.annotations })
-        },
-        spec: {
-            containers: manifest.spec.containers as Container[],
-            ...(manifest.spec.volumes && { volumes: manifest.spec.volumes as Volume[] })
-        },
-        status: {
-            phase: manifest.status?.phase || 'Pending',
-            restartCount: manifest.status?.restartCount || 0
-        }
-    }
+    // Use createPod to properly initialize all container statuses
+    const pod = createPod({
+        name: manifest.metadata.name,
+        namespace: manifest.metadata.namespace,
+        ...(manifest.spec.initContainers && { initContainers: manifest.spec.initContainers as Container[] }),
+        containers: manifest.spec.containers as Container[],
+        ...(manifest.spec.volumes && { volumes: manifest.spec.volumes as Volume[] }),
+        ...(manifest.metadata.labels && { labels: manifest.metadata.labels }),
+        ...(manifest.metadata.annotations && { annotations: manifest.metadata.annotations }),
+        ...(manifest.metadata.creationTimestamp && { creationTimestamp: manifest.metadata.creationTimestamp }),
+        ...(manifest.status?.phase && { phase: manifest.status.phase }),
+        ...(manifest.status?.restartCount && { restartCount: manifest.status.restartCount }),
+    })
 
-    return success(deepFreeze(pod))
+    return success(pod)
 }
 

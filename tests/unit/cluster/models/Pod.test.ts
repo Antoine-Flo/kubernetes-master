@@ -768,5 +768,119 @@ describe('Pod Model', () => {
             }).toThrow()
         })
     })
+
+    describe('Init Containers', () => {
+        it('should create pod with init containers', () => {
+            const initContainers: Container[] = [
+                {
+                    name: 'init-setup',
+                    image: 'busybox:latest',
+                },
+            ]
+            const containers: Container[] = [
+                {
+                    name: 'nginx',
+                    image: 'nginx:latest',
+                },
+            ]
+
+            const pod = createPod({
+                name: 'init-pod',
+                namespace: 'default',
+                initContainers,
+                containers,
+            })
+
+            expect(pod.spec.initContainers).toEqual(initContainers)
+            expect(pod.spec.containers).toEqual(containers)
+        })
+
+        it('should initialize containerStatuses for both init and regular containers', () => {
+            const initContainers: Container[] = [
+                { name: 'init-setup', image: 'busybox:latest' },
+                { name: 'init-data', image: 'alpine:latest' },
+            ]
+            const containers: Container[] = [
+                { name: 'nginx', image: 'nginx:latest' },
+            ]
+
+            const pod = createPod({
+                name: 'multi-init-pod',
+                namespace: 'default',
+                initContainers,
+                containers,
+            })
+
+            expect(pod.status.containerStatuses).toHaveLength(3)
+
+            const initStatus1 = pod.status.containerStatuses?.find(cs => cs.name === 'init-setup')
+            const initStatus2 = pod.status.containerStatuses?.find(cs => cs.name === 'init-data')
+            const regularStatus = pod.status.containerStatuses?.find(cs => cs.name === 'nginx')
+
+            expect(initStatus1).toBeDefined()
+            expect(initStatus2).toBeDefined()
+            expect(regularStatus).toBeDefined()
+        })
+
+        it('should mark init containers with correct containerType', () => {
+            const initContainers: Container[] = [
+                { name: 'init-setup', image: 'busybox:latest' },
+            ]
+            const containers: Container[] = [
+                { name: 'nginx', image: 'nginx:latest' },
+            ]
+
+            const pod = createPod({
+                name: 'typed-pod',
+                namespace: 'default',
+                initContainers,
+                containers,
+            })
+
+            const initStatus = pod.status.containerStatuses?.find(cs => cs.name === 'init-setup')
+            const regularStatus = pod.status.containerStatuses?.find(cs => cs.name === 'nginx')
+
+            expect(initStatus?.containerType).toBe('init')
+            expect(regularStatus?.containerType).toBe('regular')
+        })
+
+        it('should set initial state for containers', () => {
+            const initContainers: Container[] = [
+                { name: 'init-setup', image: 'busybox:latest' },
+            ]
+            const containers: Container[] = [
+                { name: 'nginx', image: 'nginx:latest' },
+            ]
+
+            const pod = createPod({
+                name: 'state-pod',
+                namespace: 'default',
+                initContainers,
+                containers,
+            })
+
+            const initStatus = pod.status.containerStatuses?.find(cs => cs.name === 'init-setup')
+            const regularStatus = pod.status.containerStatuses?.find(cs => cs.name === 'nginx')
+
+            expect(initStatus?.state).toBe('Waiting')
+            expect(regularStatus?.state).toBe('Waiting')
+        })
+
+        it('should work with pod having no init containers', () => {
+            const containers: Container[] = [
+                { name: 'nginx', image: 'nginx:latest' },
+            ]
+
+            const pod = createPod({
+                name: 'no-init-pod',
+                namespace: 'default',
+                containers,
+            })
+
+            expect(pod.spec.initContainers).toBeUndefined()
+            expect(pod.status.containerStatuses).toHaveLength(1)
+            expect(pod.status.containerStatuses?.[0].containerType).toBe('regular')
+        })
+    })
 })
 

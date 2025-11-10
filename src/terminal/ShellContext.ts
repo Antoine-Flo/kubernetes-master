@@ -1,7 +1,7 @@
 import type { FileSystemState } from '../filesystem/FileSystem'
 import { createFileSystem } from '../filesystem/FileSystem'
 
-export interface ShellContext {
+interface ShellContext {
     id: string
     type: 'host' | 'container'
     podName?: string

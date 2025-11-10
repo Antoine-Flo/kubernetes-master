@@ -3,6 +3,7 @@ import { addPod, deletePod, updatePod } from '../ClusterState'
 import { createResourceRepository } from '../repositories/resourceRepository'
 import type { ConfigMap } from '../ressources/ConfigMap'
 import type { Secret } from '../ressources/Secret'
+import { reconcileInitContainers } from '../initContainers/reconciler'
 import type {
     ConfigMapAnnotatedEvent,
     ConfigMapCreatedEvent,
@@ -86,8 +87,11 @@ const secretHandler = createRepoHandler(secretRepo, 'secrets')
 
 // ─── Pod Handlers ────────────────────────────────────────────────────────
 
-export const handlePodCreated = (state: ClusterStateData, event: PodCreatedEvent) =>
-    podHandler.created(state, event.payload.pod)
+export const handlePodCreated = (state: ClusterStateData, event: PodCreatedEvent) => {
+    // Reconcile init containers before adding pod to state
+    const reconciledPod = reconcileInitContainers(event.payload.pod)
+    return podHandler.created(state, reconciledPod)
+}
 
 export const handlePodDeleted = (state: ClusterStateData, event: PodDeletedEvent) =>
     podHandler.deleted(state, event.payload.name, event.payload.namespace)
